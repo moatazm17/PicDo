@@ -22,7 +22,31 @@
         "NSPhotoLibraryUsageDescription": "PicDo needs photo library access to select images for processing.",
         "NSContactsUsageDescription": "PicDo can save extracted contact information to your contacts.",
         "NSCalendarsUsageDescription": "PicDo can add extracted events to your calendar.",
-        "NSRemindersUsageDescription": "PicDo can create reminders from extracted information."
+        "NSRemindersUsageDescription": "PicDo can create reminders from extracted information.",
+        "CFBundleDocumentTypes": [
+          {
+            "CFBundleTypeName": "Images",
+            "LSHandlerRank": "Alternate",
+            "LSItemContentTypes": [
+              "public.image",
+              "public.jpeg",
+              "public.png"
+            ]
+          }
+        ],
+        "UTExportedTypeDeclarations": [
+          {
+            "UTTypeIdentifier": "com.picdo.image",
+            "UTTypeTagSpecification": {
+              "public.mime-type": "image/jpeg",
+              "public.filename-extension": "jpg"
+            },
+            "UTTypeConformsTo": [
+              "public.image",
+              "public.jpeg"
+            ]
+          }
+        ]
       }
     },
     "android": {
@@ -52,42 +76,23 @@
           "photosPermission": "PicDo needs access to your photos to select images for processing."
         }
       ],
+      "expo-localization",
       [
-        "expo-media-library",
+        "expo-document-picker",
         {
-          "photosPermission": "PicDo needs access to your photo library to select images.",
-          "savePhotosPermission": "Allow PicDo to save processed results to your photo library.",
-          "isAccessMediaLocationEnabled": true
+          "iCloudContainerEnvironment": "Production"
         }
       ],
-      [
-        "expo-contacts",
-        {
-          "contactsPermission": "PicDo can save extracted contact information to your contacts."
-        }
-      ],
-      [
-        "expo-calendar",
-        {
-          "calendarPermission": "PicDo can add extracted events to your calendar."
-        }
-      ],
-      [
-        "expo-notifications",
-        {
-          "icon": "./assets/notification-icon.png",
-          "color": "#7C3AED",
-          "defaultChannel": "default"
-        }
-      ]
+      "expo-sharing"
     ],
     "scheme": "picdo",
+    "ios": {
+      "usesIcloudStorage": false,
+      "associatedDomains": []
+    },
     "extra": {
       "router": {
         "origin": false
-      },
-      "eas": {
-        "projectId": "your-project-id"
       }
     }
   }

@@ -1,11 +1,13 @@
 import React, { useEffect, useState, useCallback } from 'react';
-import { Stack } from 'expo-router';
+import { Stack, useRouter } from 'expo-router';
 import { StatusBar } from 'expo-status-bar';
 import { I18nextProvider } from 'react-i18next';
 import { SafeAreaProvider } from 'react-native-safe-area-context';
 import { GestureHandlerRootView } from 'react-native-gesture-handler';
 import Toast from 'react-native-toast-message';
 import * as SplashScreen from 'expo-splash-screen';
+import * as Linking from 'expo-linking';
+import * as FileSystem from 'expo-file-system';
 
 import i18n from '../src/utils/i18n';
 import { ThemeProvider } from '../src/contexts/ThemeContext';
@@ -16,6 +18,8 @@ SplashScreen.preventAutoHideAsync();
 
 export default function RootLayout() {
   const [appIsReady, setAppIsReady] = useState(false);
+
+  const router = useRouter();
 
   useEffect(() => {
     async function prepare() {
@@ -34,7 +38,47 @@ export default function RootLayout() {
     }
 
     prepare();
-  }, []);
+
+    // Set up URL listener for shared content
+    const handleUrl = async ({ url }) => {
+      if (!url) return;
+      
+      // Handle shared image URLs
+      if (url.startsWith('picdo://') && url.includes('share')) {
+        try {
+          // Extract the shared image URI
+          const imageUri = decodeURIComponent(url.split('share=')[1]);
+          
+          if (imageUri) {
+            // Navigate to upload screen with the shared image
+            router.push({
+              pathname: '/upload',
+              params: { imageUri }
+            });
+          }
+        } catch (error) {
+          console.error('Error handling shared URL:', error);
+        }
+      }
+    };
+
+    // Add event listener for deep links
+    Linking.addEventListener('url', handleUrl);
+
+    // Check if app was opened with a URL
+    Linking.getInitialURL().then(url => {
+      if (url) {
+        handleUrl({ url });
+      }
+    });
+
+    return () => {
+      // Remove event listener when component unmounts
+      // Note: In newer versions of expo-linking, this might not be necessary
+      // as the listener is automatically cleaned up
+      Linking.removeAllListeners('url');
+    };
+  }, [router]);
 
   const onLayoutRootView = useCallback(async () => {
     if (appIsReady) {
