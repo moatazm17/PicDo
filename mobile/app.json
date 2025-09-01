@@ -17,6 +17,8 @@
     "ios": {
       "supportsTablet": true,
       "bundleIdentifier": "com.picdo.app",
+      "usesIcloudStorage": false,
+      "associatedDomains": [],
       "infoPlist": {
         "NSCameraUsageDescription": "PicDo needs camera access to capture screenshots for processing.",
         "NSPhotoLibraryUsageDescription": "PicDo needs photo library access to select images for processing.",
@@ -32,6 +34,14 @@
               "public.jpeg",
               "public.png"
             ]
+          }
+        ],
+        "LSApplicationQueriesSchemes": ["photos"],
+        "NSUserActivityTypes": ["com.picdo.app.import"],
+        "CFBundleURLTypes": [
+          {
+            "CFBundleURLSchemes": ["picdo"],
+            "CFBundleURLName": "com.picdo.app"
           }
         ],
         "UTExportedTypeDeclarations": [
@@ -63,6 +73,26 @@
         "android.permission.WRITE_CONTACTS",
         "android.permission.READ_CALENDAR",
         "android.permission.WRITE_CALENDAR"
+      ],
+      "intentFilters": [
+        {
+          "action": "android.intent.action.SEND",
+          "category": ["android.intent.category.DEFAULT"],
+          "data": [
+            {
+              "mimeType": "image/*"
+            }
+          ]
+        },
+        {
+          "action": "android.intent.action.VIEW",
+          "category": ["android.intent.category.DEFAULT", "android.intent.category.BROWSABLE"],
+          "data": [
+            {
+              "scheme": "picdo"
+            }
+          ]
+        }
       ]
     },
     "web": {
@@ -82,14 +112,10 @@
         {
           "iCloudContainerEnvironment": "Production"
         }
-      ],
-      "expo-sharing"
+      ]
     ],
     "scheme": "picdo",
-    "ios": {
-      "usesIcloudStorage": false,
-      "associatedDomains": []
-    },
+
     "extra": {
       "router": {
         "origin": false
