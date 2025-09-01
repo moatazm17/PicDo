@@ -23,9 +23,9 @@ class AIService {
         model: 'gpt-4o-mini',
         messages: [
           { role: 'system', content: systemPrompt },
-          { role: 'user', content: ocrText }
+          { role: 'user', content: `Here is the OCR text from a screenshot. Please classify it according to the instructions:\n\n${ocrText}` }
         ],
-        temperature: 0.1,
+        temperature: 0.05, // Reduced temperature for more deterministic outputs
         max_tokens: 1000,
         response_format: { type: 'json_object' }
       });
@@ -113,7 +113,13 @@ Rules:
 - For currencies: detect from context (EGP for Egypt, USD for US, etc.)
 - For phone numbers: normalize to E.164 if possible
 - If unsure about classification, pick the most likely type and set lower confidence
-- NEVER include any text outside the JSON object`;
+- NEVER include any text outside the JSON object
+- NEVER hallucinate or make up information not present in the OCR text
+- If the text appears to be a to-do list, classify it as an event with the title matching the first item
+- If you cannot confidently determine a type, default to "expense" with low confidence
+- Use ONLY information that appears in the OCR text - do not invent names, dates, or other details
+- If the OCR text is garbled or unclear, set confidence to 0.1 and use a generic title based on visible text
+- The title should be a direct quote from the OCR text whenever possible`;
 
     if (language === 'ar') {
       return basePrompt + `
