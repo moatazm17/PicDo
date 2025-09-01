@@ -5,7 +5,7 @@ import { I18nextProvider } from 'react-i18next';
 import { SafeAreaProvider } from 'react-native-safe-area-context';
 import { GestureHandlerRootView } from 'react-native-gesture-handler';
 import Toast from 'react-native-toast-message';
-// import * as SplashScreen from 'expo-splash-screen';
+import * as SplashScreen from 'expo-splash-screen';
 import * as Linking from 'expo-linking';
 import * as FileSystem from 'expo-file-system';
 
@@ -112,20 +112,24 @@ export default function RootLayout() {
     };
   }, [router]);
 
-  // No splash screen handling needed
-  const onLayoutRootView = useCallback(() => {}, []);
+    const onLayoutRootView = useCallback(async () => {
+    if (appIsReady) {
+      try {
+        await SplashScreen.hideAsync();
+      } catch (error) {
+        console.warn('Error hiding splash screen:', error);
+      }
+    }
+  }, [appIsReady]);
 
   // Always render the app immediately
-  // if (!appIsReady) {
-  //   return null;
-  // }
 
   return (
     <I18nextProvider i18n={i18n}>
       <ThemeProvider>
         <LanguageProvider>
           <SafeAreaProvider>
-            <GestureHandlerRootView style={{ flex: 1 }}>
+            <GestureHandlerRootView style={{ flex: 1 }} onLayout={onLayoutRootView}>
               <StatusBar style="auto" />
               <Stack
                 screenOptions={{
