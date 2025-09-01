@@ -1,5 +1,5 @@
 import React, { useEffect, useState, useCallback } from 'react';
-import { Stack, useRouter } from 'expo-router';
+import { Stack, useRouter, useSegments } from 'expo-router';
 import { StatusBar } from 'expo-status-bar';
 import { I18nextProvider } from 'react-i18next';
 import { SafeAreaProvider } from 'react-native-safe-area-context';
@@ -21,6 +21,9 @@ export default function RootLayout() {
 
   const router = useRouter();
 
+  // Get current segments to track navigation state
+  const segments = useSegments();
+  
   useEffect(() => {
     async function prepare() {
       try {
@@ -75,7 +78,8 @@ export default function RootLayout() {
             }
             
             // Navigate to upload screen with the shared image
-            router.push({
+            // Use replace instead of push to avoid navigation stack issues
+            router.replace({
               pathname: '/upload',
               params: { imageUri: finalUri, source: 'share' }
             });
