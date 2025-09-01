@@ -106,6 +106,14 @@ const resources = {
         category: 'Category',
       },
       
+      // Share Actions
+      share: {
+        extractText: 'Extract Text with PicDo',
+        processImage: 'Process Image with PicDo',
+        aiAnalysis: 'AI Analysis with PicDo',
+        quickAction: 'Quick Action',
+      },
+      
       // Errors
       errors: {
         networkError: 'Network error. Please check your connection.',
@@ -243,6 +251,14 @@ const resources = {
         description: 'الوصف',
         content: 'المحتوى',
         category: 'الفئة',
+      },
+      
+      // Share Actions
+      share: {
+        extractText: 'استخراج النص مع بيك دو',
+        processImage: 'معالجة الصورة مع بيك دو',
+        aiAnalysis: 'التحليل الذكي مع بيك دو',
+        quickAction: 'إجراء سريع',
       },
       
       // Errors

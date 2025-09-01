@@ -37,7 +37,12 @@
           }
         ],
         "LSApplicationQueriesSchemes": ["photos"],
-        "NSUserActivityTypes": ["com.picdo.app.import"],
+        "NSUserActivityTypes": [
+          "com.picdo.app.import",
+          "com.picdo.app.extract-text",
+          "com.picdo.app.process-image",
+          "com.picdo.app.ai-analysis"
+        ],
         "CFBundleURLTypes": [
           {
             "CFBundleURLSchemes": ["picdo"],
@@ -56,7 +61,21 @@
               "public.jpeg"
             ]
           }
-        ]
+        ],
+        "NSExtension": {
+          "NSExtensionAttributes": {
+            "NSExtensionActivationRule": {
+              "NSExtensionActivationSupportsImageWithMaxCount": 1,
+              "NSExtensionActivationSupportsWebURLWithMaxCount": 0,
+              "NSExtensionActivationSupportsText": false,
+              "NSExtensionActivationSupportsFileWithMaxCount": 1
+            },
+            "NSExtensionServiceRoleType": "NSExtensionServiceRoleTypeViewer",
+            "NSExtensionPointName": "com.apple.share-services"
+          },
+          "NSExtensionMainStoryboard": "MainInterface",
+          "NSExtensionPrincipalClass": "ShareViewController"
+        }
       }
     },
     "android": {
@@ -82,7 +101,28 @@
             {
               "mimeType": "image/*"
             }
-          ]
+          ],
+          "label": "Extract Text with PicDo"
+        },
+        {
+          "action": "android.intent.action.SEND",
+          "category": ["android.intent.category.DEFAULT"],
+          "data": [
+            {
+              "mimeType": "image/jpeg"
+            }
+          ],
+          "label": "Process Image with PicDo"
+        },
+        {
+          "action": "android.intent.action.SEND",
+          "category": ["android.intent.category.DEFAULT"],
+          "data": [
+            {
+              "mimeType": "image/png"
+            }
+          ],
+          "label": "AI Analysis with PicDo"
         },
         {
           "action": "android.intent.action.VIEW",
