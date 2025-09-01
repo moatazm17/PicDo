@@ -111,13 +111,16 @@ export default function RootLayout() {
 
   const onLayoutRootView = useCallback(async () => {
     if (appIsReady) {
-      await SplashScreen.hideAsync();
+      try {
+        await SplashScreen.hideAsync();
+      } catch (error) {
+        console.warn('Error hiding splash screen:', error);
+      }
     }
   }, [appIsReady]);
 
-  if (!appIsReady) {
-    return null;
-  }
+  // Always render the UI - don't wait for appIsReady
+  // The splash screen will handle the loading state
 
   return (
     <I18nextProvider i18n={i18n}>
