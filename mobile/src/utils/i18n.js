@@ -10,7 +10,7 @@ const resources = {
       // Navigation
       navigation: {
         home: 'Home',
-        history: 'History',
+        history: 'Library',
         settings: 'Settings',
       },
       // Onboarding
@@ -54,7 +54,7 @@ const resources = {
       
       // History
       history: {
-        title: 'History',
+        title: 'Library',
         empty: 'No items yet',
         emptySubtitle: 'Your processed items will appear here',
         filterAll: 'All',
@@ -62,6 +62,7 @@ const resources = {
         filterExpenses: 'Expenses',
         filterContacts: 'Contacts',
         filterAddresses: 'Addresses',
+        filterNotes: 'Notes',
       },
       
       // Settings
@@ -148,7 +149,7 @@ const resources = {
       // Navigation
       navigation: {
         home: 'الرئيسية',
-        history: 'السجل',
+        history: 'المكتبة',
         settings: 'الإعدادات',
       },
       // Onboarding
@@ -192,7 +193,7 @@ const resources = {
       
       // History
       history: {
-        title: 'السجل',
+        title: 'المكتبة',
         empty: 'لا توجد عناصر بعد',
         emptySubtitle: 'ستظهر العناصر المعالجة هنا',
         filterAll: 'الكل',
@@ -200,6 +201,7 @@ const resources = {
         filterExpenses: 'المصروفات',
         filterContacts: 'جهات الاتصال',
         filterAddresses: 'العناوين',
+        filterNotes: 'الملاحظات',
       },
       
       // Settings

@@ -51,6 +51,7 @@ const HistoryItem = ({ item, onPress, colors, isRTL }) => {
       case 'expense': return 'card';
       case 'contact': return 'person';
       case 'address': return 'location';
+      case 'note': return 'document-text';
       default: return 'document';
     }
   };
@@ -101,7 +102,7 @@ const HistoryItem = ({ item, onPress, colors, isRTL }) => {
   );
 };
 
-export default function HistoryScreen() {
+export default function LibraryScreen() {
   const { t } = useTranslation();
   const { colors } = useTheme();
   const { isRTL } = useLanguage();
@@ -118,6 +119,7 @@ export default function HistoryScreen() {
     { key: 'expense', title: t('history.filterExpenses') },
     { key: 'contact', title: t('history.filterContacts') },
     { key: 'address', title: t('history.filterAddresses') },
+    { key: 'note', title: t('history.filterNotes') },
   ];
 
   useEffect(() => {

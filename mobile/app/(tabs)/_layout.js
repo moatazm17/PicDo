@@ -18,7 +18,7 @@ export default function TabLayout() {
           if (route.name === 'home') {
             iconName = focused ? 'home' : 'home-outline';
           } else if (route.name === 'history') {
-            iconName = focused ? 'time' : 'time-outline';
+            iconName = focused ? 'library' : 'library-outline';
           } else if (route.name === 'settings') {
             iconName = focused ? 'settings' : 'settings-outline';
           }
