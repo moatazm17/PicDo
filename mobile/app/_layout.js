@@ -5,7 +5,7 @@ import { I18nextProvider } from 'react-i18next';
 import { SafeAreaProvider } from 'react-native-safe-area-context';
 import { GestureHandlerRootView } from 'react-native-gesture-handler';
 import Toast from 'react-native-toast-message';
-import * as SplashScreen from 'expo-splash-screen';
+// import * as SplashScreen from 'expo-splash-screen';
 import * as Linking from 'expo-linking';
 import * as FileSystem from 'expo-file-system';
 
@@ -20,7 +20,7 @@ import { LanguageProvider } from '../src/contexts/LanguageContext';
 // });
 
 export default function RootLayout() {
-  const [appIsReady, setAppIsReady] = useState(false);
+  // const [appIsReady, setAppIsReady] = useState(false);
 
   const router = useRouter();
 
@@ -28,22 +28,6 @@ export default function RootLayout() {
   const segments = useSegments();
   
   useEffect(() => {
-    async function prepare() {
-      try {
-        // Initialize i18n (it's already initialized in the import)
-        // await i18n.loadLanguages(['en', 'ar']);
-        
-        // Quick initialization
-        // await new Promise(resolve => setTimeout(resolve, 100));
-        
-      } catch (e) {
-        console.warn(e);
-      } finally {
-        setAppIsReady(true);
-      }
-    }
-
-    prepare();
 
     // Set up URL listener for shared content
     const handleUrl = async ({ url }) => {
@@ -112,24 +96,17 @@ export default function RootLayout() {
     };
   }, [router]);
 
-    const onLayoutRootView = useCallback(async () => {
-    if (appIsReady) {
-      try {
-        await SplashScreen.hideAsync();
-      } catch (error) {
-        console.warn('Error hiding splash screen:', error);
-      }
-    }
-  }, [appIsReady]);
+    // No splash screen handling
 
   // Always render the app immediately
+  // No appIsReady check
 
   return (
     <I18nextProvider i18n={i18n}>
       <ThemeProvider>
         <LanguageProvider>
           <SafeAreaProvider>
-            <GestureHandlerRootView style={{ flex: 1 }} onLayout={onLayoutRootView}>
+            <GestureHandlerRootView style={{ flex: 1 }}>
               <StatusBar style="auto" />
               <Stack
                 screenOptions={{
