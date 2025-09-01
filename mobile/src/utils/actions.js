@@ -23,13 +23,22 @@ export const addEventToCalendar = async (eventData) => {
     const eventDate = new Date(eventData.date + 'T' + (eventData.time || '00:00'));
     const endDate = new Date(eventDate.getTime() + 60 * 60 * 1000); // 1 hour duration
 
+    // Get device timezone
+    let timeZone;
+    try {
+      timeZone = Calendar.getTimeZone ? Calendar.getTimeZone() : Intl.DateTimeFormat().resolvedOptions().timeZone;
+    } catch (error) {
+      console.warn('Could not get timezone, using default');
+      timeZone = 'America/New_York'; // fallback
+    }
+
     const eventDetails = {
       title: eventData.title,
       startDate: eventDate,
       endDate: endDate,
       location: eventData.location || '',
       notes: eventData.url || '',
-      timeZone: Calendar.getTimeZone(),
+      timeZone: timeZone,
       alarms: [{ relativeOffset: -15 }], // 15 minutes before
     };
 
