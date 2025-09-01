@@ -29,7 +29,7 @@ const jobSchema = new mongoose.Schema({
   },
   type: {
     type: String,
-    enum: ['event', 'expense', 'contact', 'address'],
+    enum: ['event', 'expense', 'contact', 'address', null],
     default: null
   },
   classification: {
@@ -55,7 +55,7 @@ const jobSchema = new mongoose.Schema({
     },
     type: {
       type: String,
-      enum: ['calendar', 'expense', 'contact', 'maps'],
+      enum: ['calendar', 'expense', 'contact', 'maps', null],
       default: null
     },
     appliedAt: {

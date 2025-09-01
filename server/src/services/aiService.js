@@ -42,7 +42,12 @@ class AIService {
         title: 'Unclassified Item',
         summary: 'Could not classify this item',
         event: {},
-        expense: {},
+        expense: {
+          amount: 0,
+          currency: 'USD',
+          merchant: 'Unknown',
+          date: new Date().toISOString().split('T')[0]
+        },
         contact: {},
         address: {},
         confidence: 0.1

@@ -73,7 +73,13 @@ router.post('/', upload.single('image'), async (req, res) => {
       jobId,
       userId,
       source,
-      status: 'received'
+      status: 'received',
+      type: null,
+      action: {
+        applied: false,
+        type: null,
+        appliedAt: null
+      }
     });
 
     await job.save();
@@ -95,6 +101,10 @@ router.post('/', upload.single('image'), async (req, res) => {
 
   } catch (error) {
     console.error('Job creation error:', error);
+    // Log detailed validation errors if present
+    if (error.errors) {
+      console.error('Validation errors:', JSON.stringify(error.errors));
+    }
     res.status(500).json({
       error: 'server_error',
       message: 'Failed to create job'
