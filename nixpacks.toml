@@ -2,7 +2,7 @@
 nixPkgs = ['nodejs-18_x', 'npm-9_x']
 
 [phases.install]
-cmds = ['cd server && npm ci --omit=dev --ignore-workspace-root-check']
+cmds = ['cd server && npm install --omit=dev --ignore-workspace-root-check']
 
 [phases.build]
 cmds = ['echo "No build step required"']
