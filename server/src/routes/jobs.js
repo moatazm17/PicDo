@@ -284,6 +284,13 @@ function extractFieldsByType(classification) {
         full: classification.address.full,
         mapsQuery: classification.address.mapsQuery
       };
+      
+    case 'note':
+      return {
+        title: classification.title,
+        content: classification.note.content,
+        category: classification.note.category
+      };
     
     default:
       return { title: classification.title };

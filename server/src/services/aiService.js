@@ -73,13 +73,13 @@ class AIService {
 
 Your task is to:
 1. Analyze the provided OCR text
-2. Determine the most appropriate type: "event", "expense", "contact", or "address"
+2. Determine the most appropriate type: "event", "expense", "contact", "address", or "note"
 3. Extract relevant information and normalize it
 4. Return ONLY a valid JSON object matching the exact schema below
 
 JSON Schema (respond with ONLY this JSON, no other text):
 {
-  "type": "event" | "expense" | "contact" | "address",
+  "type": "event" | "expense" | "contact" | "address" | "note",
   "title": "string (descriptive title)",
   "summary": "string (short summary for history list)",
   "event": {
@@ -101,6 +101,10 @@ JSON Schema (respond with ONLY this JSON, no other text):
   "address": {
     "full": "string (complete address)",
     "mapsQuery": "string (optimized for maps search)"
+  },
+  "note": {
+    "content": "string (full text content)",
+    "category": "string (optional category like 'lyrics', 'quote', 'recipe', etc.)"
   },
   "confidence": number (0.0 to 1.0, your confidence in the classification)
 }
@@ -133,7 +137,7 @@ Rules:
 
   validateClassification(classification) {
     const requiredFields = ['type', 'title', 'summary', 'confidence'];
-    const validTypes = ['event', 'expense', 'contact', 'address'];
+    const validTypes = ['event', 'expense', 'contact', 'address', 'note'];
     
     for (const field of requiredFields) {
       if (!(field in classification)) {
@@ -146,7 +150,7 @@ Rules:
     }
     
     // Ensure all type sections exist
-    const typeSections = ['event', 'expense', 'contact', 'address'];
+    const typeSections = ['event', 'expense', 'contact', 'address', 'note'];
     for (const section of typeSections) {
       if (!(section in classification)) {
         classification[section] = {};
@@ -172,6 +176,10 @@ Rules:
       
       case 'address':
         return `${title} – ${classification.address.full || 'Address'}`;
+      
+      case 'note':
+        const { category } = classification.note;
+        return `${title}${category ? ` – ${category}` : ''}`;
       
       default:
         return title;

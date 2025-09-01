@@ -7,6 +7,12 @@ import * as Localization from 'expo-localization';
 const resources = {
   en: {
     translation: {
+      // Navigation
+      navigation: {
+        home: 'Home',
+        history: 'History',
+        settings: 'Settings',
+      },
       // Onboarding
       onboarding: {
         title: 'Any screenshot → instant action.',
@@ -39,6 +45,7 @@ const resources = {
         saveAsExpense: 'Save as Expense',
         saveContact: 'Save Contact',
         openInMaps: 'Open in Maps',
+        saveNote: 'Save Note',
         successToast: 'Action completed successfully!',
         edit: 'Edit',
         save: 'Save',
@@ -77,6 +84,7 @@ const resources = {
         expense: 'Expense',
         contact: 'Contact',
         address: 'Address',
+        note: 'Note',
       },
       
       // Fields
@@ -93,6 +101,8 @@ const resources = {
         phone: 'Phone',
         address: 'Address',
         description: 'Description',
+        content: 'Content',
+        category: 'Category',
       },
       
       // Errors
@@ -135,6 +145,12 @@ const resources = {
   },
   ar: {
     translation: {
+      // Navigation
+      navigation: {
+        home: 'الرئيسية',
+        history: 'السجل',
+        settings: 'الإعدادات',
+      },
       // Onboarding
       onboarding: {
         title: 'أي سكرينشوت ← فعل فوري.',
@@ -167,6 +183,7 @@ const resources = {
         saveAsExpense: 'احفظ كمصروف',
         saveContact: 'احفظ جهة الاتصال',
         openInMaps: 'افتح في الخرائط',
+        saveNote: 'احفظ الملاحظة',
         successToast: 'تم تنفيذ الإجراء بنجاح!',
         edit: 'تعديل',
         save: 'حفظ',
@@ -205,6 +222,7 @@ const resources = {
         expense: 'مصروف',
         contact: 'جهة اتصال',
         address: 'عنوان',
+        note: 'ملاحظة',
       },
       
       // Fields
@@ -221,6 +239,8 @@ const resources = {
         phone: 'الهاتف',
         address: 'العنوان',
         description: 'الوصف',
+        content: 'المحتوى',
+        category: 'الفئة',
       },
       
       // Errors

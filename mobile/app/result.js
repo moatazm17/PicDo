@@ -121,6 +121,9 @@ export default function ResultScreen() {
         case 'address':
           actionType = 'maps';
           break;
+        case 'note':
+          actionType = 'note';
+          break;
         default:
           throw new Error('Unknown action type');
       }
@@ -173,6 +176,7 @@ export default function ResultScreen() {
       case 'expense': return 'card';
       case 'contact': return 'person';
       case 'address': return 'location';
+      case 'note': return 'document-text';
       default: return 'document';
     }
   };
@@ -183,6 +187,7 @@ export default function ResultScreen() {
       case 'expense': return t('result.saveAsExpense');
       case 'contact': return t('result.saveContact');
       case 'address': return t('result.openInMaps');
+      case 'note': return t('result.saveNote');
       default: return t('common.save');
     }
   };
@@ -310,6 +315,34 @@ export default function ResultScreen() {
               label={t('fields.address')}
               value={fields.full || ''}
               onChangeText={(value) => handleFieldChange('full', value)}
+              multiline
+              colors={colors}
+              isRTL={isRTL}
+            />
+          </>
+        );
+        
+      case 'note':
+        return (
+          <>
+            <FieldInput
+              label={t('fields.title')}
+              value={fields.title || ''}
+              onChangeText={(value) => handleFieldChange('title', value)}
+              colors={colors}
+              isRTL={isRTL}
+            />
+            <FieldInput
+              label={t('fields.category')}
+              value={fields.category || ''}
+              onChangeText={(value) => handleFieldChange('category', value)}
+              colors={colors}
+              isRTL={isRTL}
+            />
+            <FieldInput
+              label={t('fields.content')}
+              value={fields.content || ''}
+              onChangeText={(value) => handleFieldChange('content', value)}
               multiline
               colors={colors}
               isRTL={isRTL}

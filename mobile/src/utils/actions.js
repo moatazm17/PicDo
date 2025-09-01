@@ -111,6 +111,17 @@ export const saveExpense = async (expenseData) => {
   }
 };
 
+export const saveNote = async (noteData) => {
+  try {
+    // For MVP, we just mark it as saved on the server
+    // In a full implementation, this might integrate with note-taking apps
+    return { success: true };
+  } catch (error) {
+    console.error('Error saving note:', error);
+    return { success: false, error: error.message };
+  }
+};
+
 export const executeAction = async (type, data) => {
   switch (type) {
     case 'calendar':
@@ -121,6 +132,8 @@ export const executeAction = async (type, data) => {
       return await openInMaps(data);
     case 'expense':
       return await saveExpense(data);
+    case 'note':
+      return await saveNote(data);
     default:
       return { success: false, error: 'Unknown action type' };
   }
