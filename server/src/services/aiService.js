@@ -15,6 +15,10 @@ class AIService {
     const systemPrompt = this.getSystemPrompt(language);
     
     try {
+      console.log('OpenAI API: Starting text classification');
+      console.log('OpenAI API: Input text length:', ocrText.length);
+      console.log('OpenAI API: Input text sample:', ocrText.substring(0, 100) + (ocrText.length > 100 ? '...' : ''));
+      
       const response = await this.openai.chat.completions.create({
         model: 'gpt-4o-mini',
         messages: [
@@ -27,6 +31,9 @@ class AIService {
       });
 
       const content = response.choices[0].message.content;
+      console.log('OpenAI API: Response received, length:', content.length);
+      console.log('OpenAI API: Response sample:', content.substring(0, 200) + (content.length > 200 ? '...' : ''));
+      
       const classification = JSON.parse(content);
       
       // Validate the response structure
@@ -35,6 +42,12 @@ class AIService {
       return classification;
     } catch (error) {
       console.error('OpenAI API error:', error);
+      
+      // Log more details about the error
+      if (error.response) {
+        console.error('OpenAI API error status:', error.response.status);
+        console.error('OpenAI API error data:', error.response.data);
+      }
       
       // Return a fallback classification
       return {

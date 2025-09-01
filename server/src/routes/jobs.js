@@ -191,18 +191,24 @@ router.post('/:jobId/mark-action', async (req, res) => {
 // Background job processing
 async function processJobAsync(job, imageBuffer, wantThumb, language) {
   try {
+    console.log(`Processing job ${job.jobId} for user ${job.userId}`);
+    
     // Update status to OCR in progress
     job.status = 'ocr_in_progress';
     await job.save();
+    console.log(`Job ${job.jobId}: Status updated to ocr_in_progress`);
 
     // Compress image for OCR
     const compressedImage = await ImageService.compressImage(imageBuffer);
+    console.log(`Job ${job.jobId}: Image compressed for OCR`);
 
     // Extract text using Google Vision
+    console.log(`Job ${job.jobId}: Starting Google Vision OCR`);
     const ocrResult = await visionService.extractTextFromImage(compressedImage);
     job.ocrText = ocrResult.text;
     job.status = 'ocr_done';
     await job.save();
+    console.log(`Job ${job.jobId}: OCR completed, text length: ${ocrResult.text.length}`);
 
     // Create thumbnail if requested
     if (wantThumb) {
@@ -212,9 +218,12 @@ async function processJobAsync(job, imageBuffer, wantThumb, language) {
     // Update status to AI in progress
     job.status = 'ai_in_progress';
     await job.save();
+    console.log(`Job ${job.jobId}: Status updated to ai_in_progress`);
 
     // Classify with AI
+    console.log(`Job ${job.jobId}: Starting OpenAI classification`);
     const classification = await aiService.classifyText(ocrResult.text, language);
+    console.log(`Job ${job.jobId}: Classification completed, type: ${classification.type}`);
     
     job.type = classification.type;
     job.classification = classification;
@@ -222,10 +231,12 @@ async function processJobAsync(job, imageBuffer, wantThumb, language) {
     job.summary = classification.summary || aiService.generateSummary(classification);
     job.status = 'ready';
     
+    console.log(`Job ${job.jobId}: Extracted fields:`, JSON.stringify(job.fields));
+    console.log(`Job ${job.jobId}: Status updated to ready`);
     await job.save();
 
   } catch (error) {
-    console.error('Job processing error:', error);
+    console.error(`Job ${job.jobId}: Processing error:`, error);
     
     job.status = 'failed';
     job.error = {
@@ -233,6 +244,7 @@ async function processJobAsync(job, imageBuffer, wantThumb, language) {
       message: error.message
     };
     
+    console.log(`Job ${job.jobId}: Status updated to failed: ${error.message}`);
     await job.save();
   }
 }

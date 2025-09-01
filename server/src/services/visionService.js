@@ -23,17 +23,20 @@ class VisionService {
 
   async extractTextFromImage(imageBuffer) {
     try {
+      console.log('Vision API: Starting OCR text detection');
       const [result] = await this.client.documentTextDetection({
         image: { content: imageBuffer }
       });
 
       const detections = result.textAnnotations;
       if (!detections || detections.length === 0) {
+        console.log('Vision API: No text detected in image');
         throw new Error('No text detected in image');
       }
 
       // The first annotation contains the full detected text
       const fullText = detections[0].description;
+      console.log('Vision API: Text detected:', fullText.substring(0, 100) + (fullText.length > 100 ? '...' : ''));
       
       return {
         text: fullText,
@@ -41,6 +44,10 @@ class VisionService {
       };
     } catch (error) {
       console.error('Vision API error:', error);
+      // Log more details about the error
+      if (error.details) {
+        console.error('Vision API error details:', error.details);
+      }
       throw new Error(`OCR failed: ${error.message}`);
     }
   }
