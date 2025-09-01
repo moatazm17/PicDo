@@ -9,7 +9,16 @@ const LanguageContext = createContext();
 export const useLanguage = () => {
   const context = useContext(LanguageContext);
   if (!context) {
-    throw new Error('useLanguage must be used within a LanguageProvider');
+    console.warn('useLanguage called outside LanguageProvider, using defaults');
+    return {
+      currentLanguage: 'en',
+      isRTL: false,
+      changeLanguage: () => {},
+      availableLanguages: [
+        { code: 'en', name: 'English' },
+        { code: 'ar', name: 'العربية' },
+      ],
+    };
   }
   return context;
 };
