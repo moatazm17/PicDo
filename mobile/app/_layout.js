@@ -14,10 +14,10 @@ import { ThemeProvider } from '../src/contexts/ThemeContext';
 import { LanguageProvider } from '../src/contexts/LanguageContext';
 
 // Keep the splash screen visible while we fetch resources
-SplashScreen.preventAutoHideAsync().catch(() => {
-  // Ignore errors in development
-  console.warn('SplashScreen.preventAutoHideAsync failed');
-});
+// SplashScreen.preventAutoHideAsync().catch(() => {
+//   // Ignore errors in development
+//   console.warn('SplashScreen.preventAutoHideAsync failed');
+// });
 
 export default function RootLayout() {
   const [appIsReady, setAppIsReady] = useState(false);
@@ -33,8 +33,8 @@ export default function RootLayout() {
         // Initialize i18n (it's already initialized in the import)
         // await i18n.loadLanguages(['en', 'ar']);
         
-        // Artificial delay to show splash screen (remove in production)
-        await new Promise(resolve => setTimeout(resolve, 500));
+        // Quick initialization
+        // await new Promise(resolve => setTimeout(resolve, 100));
         
       } catch (e) {
         console.warn(e);
@@ -115,19 +115,11 @@ export default function RootLayout() {
   const onLayoutRootView = useCallback(async () => {
     if (appIsReady) {
       try {
-        console.log('Hiding splash screen...');
+        console.log('App ready, hiding splash screen...');
         await SplashScreen.hideAsync();
         console.log('Splash screen hidden successfully');
       } catch (error) {
         console.warn('Error hiding splash screen:', error);
-        // Force hide splash screen even if there's an error
-        setTimeout(() => {
-          try {
-            SplashScreen.hideAsync();
-          } catch (e) {
-            console.warn('Force hide splash screen failed:', e);
-          }
-        }, 100);
       }
     }
   }, [appIsReady]);
