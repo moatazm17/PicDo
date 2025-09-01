@@ -42,19 +42,45 @@ export default function RootLayout() {
     // Set up URL listener for shared content
     const handleUrl = async ({ url }) => {
       if (!url) return;
+      console.log('Received URL:', url);
       
       // Handle shared image URLs
-      if (url.startsWith('picdo://') && url.includes('share')) {
+      if (url.startsWith('picdo://')) {
         try {
-          // Extract the shared image URI
-          const imageUri = decodeURIComponent(url.split('share=')[1]);
+          // Parse the URL
+          const parsedUrl = Linking.parse(url);
+          console.log('Parsed URL:', parsedUrl);
           
-          if (imageUri) {
+          // Check if it's a share action
+          if (parsedUrl.path === 'share' && parsedUrl.queryParams?.uri) {
+            const imageUri = parsedUrl.queryParams.uri;
+            console.log('Image URI:', imageUri);
+            
+            // Copy the shared file to a temporary location if needed
+            let finalUri = imageUri;
+            if (imageUri.startsWith('file://')) {
+              try {
+                const fileName = imageUri.split('/').pop();
+                const tempFilePath = FileSystem.cacheDirectory + fileName;
+                await FileSystem.copyAsync({
+                  from: imageUri,
+                  to: tempFilePath,
+                });
+                finalUri = tempFilePath;
+                console.log('Copied to:', finalUri);
+              } catch (copyError) {
+                console.error('Error copying file:', copyError);
+                // Continue with original URI if copy fails
+              }
+            }
+            
             // Navigate to upload screen with the shared image
             router.push({
               pathname: '/upload',
-              params: { imageUri }
+              params: { imageUri: finalUri, source: 'share' }
             });
+          } else {
+            console.log('Not a recognized share URL format');
           }
         } catch (error) {
           console.error('Error handling shared URL:', error);
@@ -63,20 +89,19 @@ export default function RootLayout() {
     };
 
     // Add event listener for deep links
-    Linking.addEventListener('url', handleUrl);
+    const subscription = Linking.addEventListener('url', handleUrl);
 
     // Check if app was opened with a URL
     Linking.getInitialURL().then(url => {
+      console.log('Initial URL:', url);
       if (url) {
         handleUrl({ url });
       }
     });
 
     return () => {
-      // Remove event listener when component unmounts
-      // Note: In newer versions of expo-linking, this might not be necessary
-      // as the listener is automatically cleaned up
-      Linking.removeAllListeners('url');
+      // Clean up subscription
+      subscription.remove();
     };
   }, [router]);
 
