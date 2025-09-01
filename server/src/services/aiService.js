@@ -104,7 +104,7 @@ JSON Schema (respond with ONLY this JSON, no other text):
   },
   "note": {
     "content": "string (full text content)",
-    "category": "string (optional category like 'lyrics', 'quote', 'recipe', etc.)"
+    "category": "string (optional category like 'todo list', 'lyrics', 'quote', 'recipe', etc.)"
   },
   "confidence": number (0.0 to 1.0, your confidence in the classification)
 }
@@ -119,7 +119,7 @@ Rules:
 - If unsure about classification, pick the most likely type and set lower confidence
 - NEVER include any text outside the JSON object
 - NEVER hallucinate or make up information not present in the OCR text
-- If the text appears to be a to-do list, classify it as an event with the title matching the first item
+- If the text appears to be a to-do list, classify it as a note with category "todo list"
 - If you cannot confidently determine a type, default to "expense" with low confidence
 - Use ONLY information that appears in the OCR text - do not invent names, dates, or other details
 - If the OCR text is garbled or unclear, set confidence to 0.1 and use a generic title based on visible text
