@@ -1,9 +1,12 @@
 import Constants from 'expo-constants';
 
 // Server configuration
-export const API_BASE_URL = __DEV__ 
-  ? 'http://localhost:3000'
-  : 'https://web-production-fea8c.up.railway.app';
+export const API_BASE_URL = 'https://web-production-fea8c.up.railway.app';
+
+// Use this if you want to switch back to local development
+// export const API_BASE_URL = __DEV__ 
+//   ? 'http://localhost:3000'
+//   : 'https://web-production-fea8c.up.railway.app';
 
 // Design tokens
 export const COLORS = {

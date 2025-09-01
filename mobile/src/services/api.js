@@ -23,8 +23,10 @@ class APIService {
         ...options,
       };
 
+      console.log(`API Request: ${url}`);
       const response = await fetch(url, config);
       const data = await response.json();
+      console.log(`API Response: ${JSON.stringify(data).substring(0, 200)}${data && JSON.stringify(data).length > 200 ? '...' : ''}`);
 
       if (!response.ok) {
         throw new APIError(data.error || 'api_error', data.message || 'Request failed', response.status);
@@ -35,6 +37,7 @@ class APIService {
       if (error instanceof APIError) {
         throw error;
       }
+      console.error('API Network Error:', error);
       throw new APIError('network_error', 'Network request failed');
     }
   }
@@ -52,7 +55,8 @@ class APIService {
       });
       formData.append('wantThumb', wantThumb.toString());
       formData.append('source', source);
-
+      
+      console.log(`Uploading image to ${this.baseURL}/jobs`);
       const response = await fetch(`${this.baseURL}/jobs`, {
         method: 'POST',
         headers: {
@@ -73,6 +77,7 @@ class APIService {
       if (error instanceof APIError) {
         throw error;
       }
+      console.error('API Upload Error:', error);
       throw new APIError('network_error', 'Upload failed');
     }
   }

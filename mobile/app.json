@@ -61,21 +61,7 @@
               "public.jpeg"
             ]
           }
-        ],
-        "NSExtension": {
-          "NSExtensionAttributes": {
-            "NSExtensionActivationRule": {
-              "NSExtensionActivationSupportsImageWithMaxCount": 1,
-              "NSExtensionActivationSupportsWebURLWithMaxCount": 0,
-              "NSExtensionActivationSupportsText": false,
-              "NSExtensionActivationSupportsFileWithMaxCount": 1
-            },
-            "NSExtensionServiceRoleType": "NSExtensionServiceRoleTypeViewer",
-            "NSExtensionPointName": "com.apple.share-services"
-          },
-          "NSExtensionMainStoryboard": "MainInterface",
-          "NSExtensionPrincipalClass": "ShareViewController"
-        }
+        ]
       }
     },
     "android": {
