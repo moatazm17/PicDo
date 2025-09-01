@@ -3,10 +3,6 @@
   "version": "1.0.0",
   "description": "PicDo - Turn screenshots into actionable items",
   "private": true,
-  "workspaces": [
-    "mobile",
-    "server"
-  ],
   "scripts": {
     "start:server": "cd server && npm start",
     "dev:server": "cd server && npm run dev",
