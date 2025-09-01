@@ -103,11 +103,17 @@ app.use((error, req, res, next) => {
 async function connectDatabase() {
   try {
     const fallbackLocal = 'mongodb://localhost:27017/picdo';
-    const mongoUri = process.env.MONGODB_URI || fallbackLocal;
+    const mongoUriCandidates = [
+      process.env.MONGODB_URI,
+      process.env.MONGO_URL,       // Railway default often
+      process.env.MONGODB_URL,     // Some providers use this
+      process.env.DATABASE_URL     // Generic
+    ].filter(Boolean);
+    const mongoUri = mongoUriCandidates[0] || fallbackLocal;
 
     // Guard: never use localhost in production
-    if (process.env.NODE_ENV === 'production' && (!process.env.MONGODB_URI || mongoUri === fallbackLocal)) {
-      throw new Error('MONGODB_URI is not set in production. Please configure it in your environment variables.');
+    if (process.env.NODE_ENV === 'production' && mongoUri === fallbackLocal) {
+      throw new Error('MONGODB_URI/MONGO_URL is not set in production. Please configure it in your environment variables.');
     }
 
     console.log('🗄️  Using Mongo URI:', process.env.NODE_ENV === 'production' ? '[redacted]' : mongoUri);
