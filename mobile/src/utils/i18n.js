@@ -1,0 +1,288 @@
+import i18n from 'i18next';
+import { initReactI18next } from 'react-i18next';
+import AsyncStoragePlugin from 'i18next-react-native-async-storage';
+import * as Localization from 'expo-localization';
+
+// Translation resources
+const resources = {
+  en: {
+    translation: {
+      // Onboarding
+      onboarding: {
+        title: 'Any screenshot → instant action.',
+        subtitle: 'Turn any screenshot into actionable items with AI',
+        getStarted: 'Get started',
+        privacyNote: 'We don\'t store your photos—only text.',
+      },
+      
+      // Home
+      home: {
+        emptyTitle: 'Ready to get started?',
+        emptySubtitle: 'Pick an image from your gallery to turn it into an actionable item',
+        pickFromGallery: 'Pick from Gallery',
+        shareHint: 'You can also share from your gallery to this app.',
+      },
+      
+      // Upload/Progress
+      upload: {
+        processing: 'Processing your image...',
+        extractingText: 'Extracting text',
+        analyzingContent: 'Analyzing content',
+        almostDone: 'Almost done',
+        backgroundNote: 'You can leave the app - we\'ll finish in the background',
+      },
+      
+      // Result
+      result: {
+        autoExtracted: 'Auto-extracted—edit fields if needed.',
+        addToCalendar: 'Add to Calendar',
+        saveAsExpense: 'Save as Expense',
+        saveContact: 'Save Contact',
+        openInMaps: 'Open in Maps',
+        successToast: 'Action completed successfully!',
+        edit: 'Edit',
+        save: 'Save',
+        cancel: 'Cancel',
+      },
+      
+      // History
+      history: {
+        title: 'History',
+        empty: 'No items yet',
+        emptySubtitle: 'Your processed items will appear here',
+        filterAll: 'All',
+        filterEvents: 'Events',
+        filterExpenses: 'Expenses',
+        filterContacts: 'Contacts',
+        filterAddresses: 'Addresses',
+      },
+      
+      // Settings
+      settings: {
+        title: 'Settings',
+        language: 'Language',
+        theme: 'Theme',
+        help: 'Help & Support',
+        privacy: 'Privacy Policy',
+        about: 'About PicDo',
+        version: 'Version',
+        themeAuto: 'Auto',
+        themeLight: 'Light',
+        themeDark: 'Dark',
+      },
+      
+      // Types
+      types: {
+        event: 'Event',
+        expense: 'Expense',
+        contact: 'Contact',
+        address: 'Address',
+      },
+      
+      // Fields
+      fields: {
+        title: 'Title',
+        date: 'Date',
+        time: 'Time',
+        location: 'Location',
+        url: 'URL',
+        amount: 'Amount',
+        currency: 'Currency',
+        merchant: 'Merchant',
+        name: 'Name',
+        phone: 'Phone',
+        address: 'Address',
+        description: 'Description',
+      },
+      
+      // Errors
+      errors: {
+        networkError: 'Network error. Please check your connection.',
+        uploadFailed: 'Upload failed. Please try again.',
+        processingFailed: 'Couldn\'t process this image. Try a clearer one.',
+        limitReached: 'You reached this month\'s limit (50). It resets next month.',
+        permissionDenied: 'Permission denied. Please check app settings.',
+        unknownError: 'Something went wrong. Please try again.',
+        noImageSelected: 'No image selected',
+        invalidImage: 'Invalid image format',
+      },
+      
+      // Common
+      common: {
+        ok: 'OK',
+        cancel: 'Cancel',
+        retry: 'Retry',
+        close: 'Close',
+        loading: 'Loading...',
+        error: 'Error',
+        success: 'Success',
+        warning: 'Warning',
+        info: 'Info',
+        yes: 'Yes',
+        no: 'No',
+        continue: 'Continue',
+        back: 'Back',
+        next: 'Next',
+        done: 'Done',
+        save: 'Save',
+        delete: 'Delete',
+        edit: 'Edit',
+        share: 'Share',
+        copy: 'Copy',
+        copied: 'Copied!',
+      },
+    },
+  },
+  ar: {
+    translation: {
+      // Onboarding
+      onboarding: {
+        title: 'أي سكرينشوت ← فعل فوري.',
+        subtitle: 'حوّل أي سكرينشوت إلى عناصر قابلة للتنفيذ بالذكاء الاصطناعي',
+        getStarted: 'ابدأ الآن',
+        privacyNote: 'لا نحتفظ بصورك - النص فقط.',
+      },
+      
+      // Home
+      home: {
+        emptyTitle: 'جاهز للبدء؟',
+        emptySubtitle: 'اختر صورة من معرض الصور لتحويلها إلى عنصر قابل للتنفيذ',
+        pickFromGallery: 'اختر من المعرض',
+        shareHint: 'يمكنك أيضاً مشاركة صورة من المعرض لهذا التطبيق.',
+      },
+      
+      // Upload/Progress
+      upload: {
+        processing: 'جاري معالجة الصورة...',
+        extractingText: 'استخراج النص',
+        analyzingContent: 'تحليل المحتوى',
+        almostDone: 'تقريباً انتهينا',
+        backgroundNote: 'يمكنك ترك التطبيق - سننتهي في الخلفية',
+      },
+      
+      // Result
+      result: {
+        autoExtracted: 'تم الاستخراج تلقائياً - عدّل الحقول إذا لزم الأمر.',
+        addToCalendar: 'أضف للتقويم',
+        saveAsExpense: 'احفظ كمصروف',
+        saveContact: 'احفظ جهة الاتصال',
+        openInMaps: 'افتح في الخرائط',
+        successToast: 'تم تنفيذ الإجراء بنجاح!',
+        edit: 'تعديل',
+        save: 'حفظ',
+        cancel: 'إلغاء',
+      },
+      
+      // History
+      history: {
+        title: 'السجل',
+        empty: 'لا توجد عناصر بعد',
+        emptySubtitle: 'ستظهر العناصر المعالجة هنا',
+        filterAll: 'الكل',
+        filterEvents: 'الأحداث',
+        filterExpenses: 'المصروفات',
+        filterContacts: 'جهات الاتصال',
+        filterAddresses: 'العناوين',
+      },
+      
+      // Settings
+      settings: {
+        title: 'الإعدادات',
+        language: 'اللغة',
+        theme: 'المظهر',
+        help: 'المساعدة والدعم',
+        privacy: 'سياسة الخصوصية',
+        about: 'حول PicDo',
+        version: 'الإصدار',
+        themeAuto: 'تلقائي',
+        themeLight: 'فاتح',
+        themeDark: 'داكن',
+      },
+      
+      // Types
+      types: {
+        event: 'حدث',
+        expense: 'مصروف',
+        contact: 'جهة اتصال',
+        address: 'عنوان',
+      },
+      
+      // Fields
+      fields: {
+        title: 'العنوان',
+        date: 'التاريخ',
+        time: 'الوقت',
+        location: 'الموقع',
+        url: 'الرابط',
+        amount: 'المبلغ',
+        currency: 'العملة',
+        merchant: 'التاجر',
+        name: 'الاسم',
+        phone: 'الهاتف',
+        address: 'العنوان',
+        description: 'الوصف',
+      },
+      
+      // Errors
+      errors: {
+        networkError: 'خطأ في الشبكة. يرجى التحقق من الاتصال.',
+        uploadFailed: 'فشل في الرفع. يرجى المحاولة مرة أخرى.',
+        processingFailed: 'لا يمكن معالجة هذه الصورة. جرب صورة أوضح.',
+        limitReached: 'لقد وصلت إلى الحد الشهري (50). سيتم إعادة تعيينه الشهر القادم.',
+        permissionDenied: 'تم رفض الإذن. يرجى التحقق من إعدادات التطبيق.',
+        unknownError: 'حدث خطأ ما. يرجى المحاولة مرة أخرى.',
+        noImageSelected: 'لم يتم اختيار صورة',
+        invalidImage: 'تنسيق صورة غير صالح',
+      },
+      
+      // Common
+      common: {
+        ok: 'موافق',
+        cancel: 'إلغاء',
+        retry: 'إعادة المحاولة',
+        close: 'إغلاق',
+        loading: 'جاري التحميل...',
+        error: 'خطأ',
+        success: 'نجح',
+        warning: 'تحذير',
+        info: 'معلومات',
+        yes: 'نعم',
+        no: 'لا',
+        continue: 'متابعة',
+        back: 'رجوع',
+        next: 'التالي',
+        done: 'تم',
+        save: 'حفظ',
+        delete: 'حذف',
+        edit: 'تعديل',
+        share: 'مشاركة',
+        copy: 'نسخ',
+        copied: 'تم النسخ!',
+      },
+    },
+  },
+};
+
+// Initialize i18n
+i18n
+  .use(AsyncStoragePlugin('picdo_language'))
+  .use(initReactI18next)
+  .init({
+    resources,
+    lng: Localization.locale.split('-')[0] || 'en',
+    fallbackLng: 'en',
+    debug: __DEV__,
+    
+    interpolation: {
+      escapeValue: false,
+    },
+    
+    react: {
+      useSuspense: false,
+    },
+  });
+
+export const getCurrentLanguage = () => i18n.language;
+export const isRTL = () => i18n.language === 'ar';
+
+export default i18n;

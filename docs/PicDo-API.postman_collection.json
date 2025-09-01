@@ -1,0 +1,505 @@
+{
+  "info": {
+    "name": "PicDo API",
+    "description": "Complete API collection for PicDo - Turn screenshots into actionable items",
+    "version": "1.0.0",
+    "schema": "https://schema.getpostman.com/json/collection/v2.1.0/collection.json"
+  },
+  "variable": [
+    {
+      "key": "baseUrl",
+      "value": "http://localhost:3000",
+      "type": "string"
+    },
+    {
+      "key": "userId",
+      "value": "test-user-uuid-12345",
+      "type": "string"
+    },
+    {
+      "key": "jobId",
+      "value": "",
+      "type": "string"
+    }
+  ],
+  "item": [
+    {
+      "name": "Health Check",
+      "request": {
+        "method": "GET",
+        "header": [],
+        "url": {
+          "raw": "{{baseUrl}}/health",
+          "host": ["{{baseUrl}}"],
+          "path": ["health"]
+        },
+        "description": "Check if the server is running and healthy"
+      },
+      "response": []
+    },
+    {
+      "name": "Create Job (Upload Image)",
+      "event": [
+        {
+          "listen": "test",
+          "script": {
+            "exec": [
+              "if (pm.response.code === 202) {",
+              "    const response = pm.response.json();",
+              "    pm.collectionVariables.set('jobId', response.jobId);",
+              "    console.log('Job created with ID:', response.jobId);",
+              "}"
+            ],
+            "type": "text/javascript"
+          }
+        }
+      ],
+      "request": {
+        "method": "POST",
+        "header": [
+          {
+            "key": "x-user-id",
+            "value": "{{userId}}",
+            "type": "text"
+          },
+          {
+            "key": "accept-language",
+            "value": "en",
+            "type": "text"
+          }
+        ],
+        "body": {
+          "mode": "formdata",
+          "formdata": [
+            {
+              "key": "image",
+              "type": "file",
+              "src": [],
+              "description": "Upload an image file (JPEG/PNG)"
+            },
+            {
+              "key": "wantThumb",
+              "value": "true",
+              "type": "text"
+            },
+            {
+              "key": "source",
+              "value": "picker",
+              "type": "text"
+            }
+          ]
+        },
+        "url": {
+          "raw": "{{baseUrl}}/jobs",
+          "host": ["{{baseUrl}}"],
+          "path": ["jobs"]
+        },
+        "description": "Upload an image for OCR and AI processing. Returns a job ID for polling status."
+      },
+      "response": [
+        {
+          "name": "Success",
+          "originalRequest": {
+            "method": "POST",
+            "header": [
+              {
+                "key": "x-user-id",
+                "value": "test-user-uuid-12345",
+                "type": "text"
+              },
+              {
+                "key": "accept-language",
+                "value": "en",
+                "type": "text"
+              }
+            ],
+            "body": {
+              "mode": "formdata",
+              "formdata": [
+                {
+                  "key": "image",
+                  "type": "file",
+                  "src": []
+                },
+                {
+                  "key": "wantThumb",
+                  "value": "true",
+                  "type": "text"
+                }
+              ]
+            },
+            "url": {
+              "raw": "{{baseUrl}}/jobs",
+              "host": ["{{baseUrl}}"],
+              "path": ["jobs"]
+            }
+          },
+          "status": "Accepted",
+          "code": 202,
+          "_postman_previewlanguage": "json",
+          "header": [
+            {
+              "key": "Content-Type",
+              "value": "application/json"
+            }
+          ],
+          "cookie": [],
+          "body": "{\n  \"jobId\": \"550e8400-e29b-41d4-a716-446655440000\",\n  \"status\": \"received\"\n}"
+        },
+        {
+          "name": "Rate Limited",
+          "originalRequest": {
+            "method": "POST",
+            "header": [
+              {
+                "key": "x-user-id",
+                "value": "test-user-uuid-12345",
+                "type": "text"
+              },
+              {
+                "key": "accept-language",
+                "value": "en",
+                "type": "text"
+              }
+            ],
+            "body": {
+              "mode": "formdata",
+              "formdata": [
+                {
+                  "key": "image",
+                  "type": "file",
+                  "src": []
+                }
+              ]
+            },
+            "url": {
+              "raw": "{{baseUrl}}/jobs",
+              "host": ["{{baseUrl}}"],
+              "path": ["jobs"]
+            }
+          },
+          "status": "Too Many Requests",
+          "code": 429,
+          "_postman_previewlanguage": "json",
+          "header": [
+            {
+              "key": "Content-Type",
+              "value": "application/json"
+            }
+          ],
+          "cookie": [],
+          "body": "{\n  \"error\": \"limit_reached\",\n  \"message\": \"You reached this month's limit (50). It resets next month.\"\n}"
+        }
+      ]
+    },
+    {
+      "name": "Get Job Status",
+      "request": {
+        "method": "GET",
+        "header": [
+          {
+            "key": "x-user-id",
+            "value": "{{userId}}",
+            "type": "text"
+          }
+        ],
+        "url": {
+          "raw": "{{baseUrl}}/jobs/{{jobId}}",
+          "host": ["{{baseUrl}}"],
+          "path": ["jobs", "{{jobId}}"]
+        },
+        "description": "Get the status and results of a processing job"
+      },
+      "response": [
+        {
+          "name": "Job Ready - Event",
+          "originalRequest": {
+            "method": "GET",
+            "header": [
+              {
+                "key": "x-user-id",
+                "value": "test-user-uuid-12345",
+                "type": "text"
+              }
+            ],
+            "url": {
+              "raw": "{{baseUrl}}/jobs/550e8400-e29b-41d4-a716-446655440000",
+              "host": ["{{baseUrl}}"],
+              "path": ["jobs", "550e8400-e29b-41d4-a716-446655440000"]
+            }
+          },
+          "status": "OK",
+          "code": 200,
+          "_postman_previewlanguage": "json",
+          "header": [
+            {
+              "key": "Content-Type",
+              "value": "application/json"
+            }
+          ],
+          "cookie": [],
+          "body": "{\n  \"jobId\": \"550e8400-e29b-41d4-a716-446655440000\",\n  \"status\": \"ready\",\n  \"type\": \"event\",\n  \"fields\": {\n    \"title\": \"Team Meeting\",\n    \"date\": \"2024-01-15\",\n    \"time\": \"14:00\",\n    \"location\": \"Conference Room A\",\n    \"url\": \"\"\n  },\n  \"summary\": \"Team Meeting – 2024-01-15 14:00\",\n  \"thumb\": \"base64-encoded-thumbnail-data\",\n  \"createdAt\": \"2024-01-01T12:00:00.000Z\",\n  \"updatedAt\": \"2024-01-01T12:05:00.000Z\"\n}"
+        },
+        {
+          "name": "Job Processing",
+          "originalRequest": {
+            "method": "GET",
+            "header": [
+              {
+                "key": "x-user-id",
+                "value": "test-user-uuid-12345",
+                "type": "text"
+              }
+            ],
+            "url": {
+              "raw": "{{baseUrl}}/jobs/550e8400-e29b-41d4-a716-446655440000",
+              "host": ["{{baseUrl}}"],
+              "path": ["jobs", "550e8400-e29b-41d4-a716-446655440000"]
+            }
+          },
+          "status": "OK",
+          "code": 200,
+          "_postman_previewlanguage": "json",
+          "header": [
+            {
+              "key": "Content-Type",
+              "value": "application/json"
+            }
+          ],
+          "cookie": [],
+          "body": "{\n  \"jobId\": \"550e8400-e29b-41d4-a716-446655440000\",\n  \"status\": \"ai_in_progress\",\n  \"type\": null,\n  \"fields\": null,\n  \"summary\": null,\n  \"thumb\": null,\n  \"createdAt\": \"2024-01-01T12:00:00.000Z\",\n  \"updatedAt\": \"2024-01-01T12:03:00.000Z\"\n}"
+        }
+      ]
+    },
+    {
+      "name": "Mark Action Applied",
+      "request": {
+        "method": "POST",
+        "header": [
+          {
+            "key": "x-user-id",
+            "value": "{{userId}}",
+            "type": "text"
+          },
+          {
+            "key": "Content-Type",
+            "value": "application/json",
+            "type": "text"
+          }
+        ],
+        "body": {
+          "mode": "raw",
+          "raw": "{\n  \"applied\": true,\n  \"type\": \"calendar\"\n}"
+        },
+        "url": {
+          "raw": "{{baseUrl}}/jobs/{{jobId}}/mark-action",
+          "host": ["{{baseUrl}}"],
+          "path": ["jobs", "{{jobId}}", "mark-action"]
+        },
+        "description": "Mark that the user has successfully applied the action (added to calendar, saved contact, etc.)"
+      },
+      "response": [
+        {
+          "name": "Success",
+          "originalRequest": {
+            "method": "POST",
+            "header": [
+              {
+                "key": "x-user-id",
+                "value": "test-user-uuid-12345",
+                "type": "text"
+              },
+              {
+                "key": "Content-Type",
+                "value": "application/json",
+                "type": "text"
+              }
+            ],
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"applied\": true,\n  \"type\": \"calendar\"\n}"
+            },
+            "url": {
+              "raw": "{{baseUrl}}/jobs/550e8400-e29b-41d4-a716-446655440000/mark-action",
+              "host": ["{{baseUrl}}"],
+              "path": ["jobs", "550e8400-e29b-41d4-a716-446655440000", "mark-action"]
+            }
+          },
+          "status": "OK",
+          "code": 200,
+          "_postman_previewlanguage": "json",
+          "header": [
+            {
+              "key": "Content-Type",
+              "value": "application/json"
+            }
+          ],
+          "cookie": [],
+          "body": "{\n  \"ok\": true\n}"
+        }
+      ]
+    },
+    {
+      "name": "Get History - All Items",
+      "request": {
+        "method": "GET",
+        "header": [
+          {
+            "key": "x-user-id",
+            "value": "{{userId}}",
+            "type": "text"
+          }
+        ],
+        "url": {
+          "raw": "{{baseUrl}}/history?limit=20",
+          "host": ["{{baseUrl}}"],
+          "path": ["history"],
+          "query": [
+            {
+              "key": "limit",
+              "value": "20"
+            }
+          ]
+        },
+        "description": "Get user's processing history with optional filtering"
+      },
+      "response": [
+        {
+          "name": "Success",
+          "originalRequest": {
+            "method": "GET",
+            "header": [
+              {
+                "key": "x-user-id",
+                "value": "test-user-uuid-12345",
+                "type": "text"
+              }
+            ],
+            "url": {
+              "raw": "{{baseUrl}}/history?limit=20",
+              "host": ["{{baseUrl}}"],
+              "path": ["history"],
+              "query": [
+                {
+                  "key": "limit",
+                  "value": "20"
+                }
+              ]
+            }
+          },
+          "status": "OK",
+          "code": 200,
+          "_postman_previewlanguage": "json",
+          "header": [
+            {
+              "key": "Content-Type",
+              "value": "application/json"
+            }
+          ],
+          "cookie": [],
+          "body": "{\n  \"items\": [\n    {\n      \"jobId\": \"550e8400-e29b-41d4-a716-446655440000\",\n      \"type\": \"event\",\n      \"summary\": \"Team Meeting – 2024-01-15 14:00\",\n      \"fields\": {\n        \"title\": \"Team Meeting\",\n        \"date\": \"2024-01-15\",\n        \"time\": \"14:00\",\n        \"location\": \"Conference Room A\"\n      },\n      \"thumb\": \"base64-thumbnail\",\n      \"action\": {\n        \"applied\": true,\n        \"type\": \"calendar\",\n        \"appliedAt\": \"2024-01-01T12:10:00.000Z\"\n      },\n      \"createdAt\": \"2024-01-01T12:00:00.000Z\",\n      \"updatedAt\": \"2024-01-01T12:10:00.000Z\"\n    },\n    {\n      \"jobId\": \"550e8400-e29b-41d4-a716-446655440001\",\n      \"type\": \"expense\",\n      \"summary\": \"Starbucks – 4.50 USD\",\n      \"fields\": {\n        \"title\": \"Coffee\",\n        \"amount\": 4.5,\n        \"currency\": \"USD\",\n        \"merchant\": \"Starbucks\",\n        \"date\": \"2024-01-01\"\n      },\n      \"thumb\": \"base64-thumbnail\",\n      \"action\": {\n        \"applied\": false,\n        \"type\": null,\n        \"appliedAt\": null\n      },\n      \"createdAt\": \"2024-01-01T11:00:00.000Z\",\n      \"updatedAt\": \"2024-01-01T11:05:00.000Z\"\n    }\n  ],\n  \"nextCursor\": \"2024-01-01T10:00:00.000Z\"\n}"
+        }
+      ]
+    },
+    {
+      "name": "Get History - Events Only",
+      "request": {
+        "method": "GET",
+        "header": [
+          {
+            "key": "x-user-id",
+            "value": "{{userId}}",
+            "type": "text"
+          }
+        ],
+        "url": {
+          "raw": "{{baseUrl}}/history?type=event&limit=10",
+          "host": ["{{baseUrl}}"],
+          "path": ["history"],
+          "query": [
+            {
+              "key": "type",
+              "value": "event"
+            },
+            {
+              "key": "limit",
+              "value": "10"
+            }
+          ]
+        },
+        "description": "Get only event items from history"
+      },
+      "response": []
+    },
+    {
+      "name": "Get Usage Stats",
+      "request": {
+        "method": "GET",
+        "header": [
+          {
+            "key": "x-user-id",
+            "value": "{{userId}}",
+            "type": "text"
+          }
+        ],
+        "url": {
+          "raw": "{{baseUrl}}/history/stats",
+          "host": ["{{baseUrl}}"],
+          "path": ["history", "stats"]
+        },
+        "description": "Get user's usage statistics and monthly limits"
+      },
+      "response": [
+        {
+          "name": "Success",
+          "originalRequest": {
+            "method": "GET",
+            "header": [
+              {
+                "key": "x-user-id",
+                "value": "test-user-uuid-12345",
+                "type": "text"
+              }
+            ],
+            "url": {
+              "raw": "{{baseUrl}}/history/stats",
+              "host": ["{{baseUrl}}"],
+              "path": ["history", "stats"]
+            }
+          },
+          "status": "OK",
+          "code": 200,
+          "_postman_previewlanguage": "json",
+          "header": [
+            {
+              "key": "Content-Type",
+              "value": "application/json"
+            }
+          ],
+          "cookie": [],
+          "body": "{\n  \"monthlyCount\": 15,\n  \"totalCount\": 127,\n  \"monthlyLimit\": 50,\n  \"breakdown\": {\n    \"event\": 5,\n    \"expense\": 8,\n    \"contact\": 1,\n    \"address\": 1\n  },\n  \"monthStart\": \"2024-01-01T00:00:00.000Z\",\n  \"monthEnd\": \"2024-02-01T00:00:00.000Z\"\n}"
+        }
+      ]
+    }
+  ],
+  "event": [
+    {
+      "listen": "prerequest",
+      "script": {
+        "type": "text/javascript",
+        "exec": [
+          ""
+        ]
+      }
+    },
+    {
+      "listen": "test",
+      "script": {
+        "type": "text/javascript",
+        "exec": [
+          ""
+        ]
+      }
+    }
+  ]
+}

@@ -1,0 +1,21 @@
+{
+  "name": "picdo-workspace",
+  "version": "1.0.0",
+  "description": "PicDo - Turn screenshots into actionable items",
+  "private": true,
+  "workspaces": [
+    "mobile",
+    "server"
+  ],
+  "scripts": {
+    "start:server": "cd server && npm start",
+    "dev:server": "cd server && npm run dev",
+    "start:mobile": "cd mobile && npx expo start",
+    "install:all": "npm install && cd mobile && npm install && cd ../server && npm install",
+    "dev": "concurrently \"npm run dev:server\" \"npm run start:mobile\"",
+    "setup": "npm run install:all && echo '\\n✅ Installation complete! \\n\\n📝 Next steps:\\n1. Copy server/env.example to server/.env\\n2. Add your API keys to server/.env\\n3. Run: npm run dev\\n'"
+  },
+  "devDependencies": {
+    "concurrently": "^8.2.2"
+  }
+}

@@ -1,0 +1,94 @@
+{
+  "expo": {
+    "name": "PicDo",
+    "slug": "picdo",
+    "version": "1.0.0",
+    "orientation": "portrait",
+    "icon": "./assets/icon.png",
+    "userInterfaceStyle": "automatic",
+    "splash": {
+      "image": "./assets/splash.png",
+      "resizeMode": "contain",
+      "backgroundColor": "#7C3AED"
+    },
+    "assetBundlePatterns": [
+      "**/*"
+    ],
+    "ios": {
+      "supportsTablet": true,
+      "bundleIdentifier": "com.picdo.app",
+      "infoPlist": {
+        "NSCameraUsageDescription": "PicDo needs camera access to capture screenshots for processing.",
+        "NSPhotoLibraryUsageDescription": "PicDo needs photo library access to select images for processing.",
+        "NSContactsUsageDescription": "PicDo can save extracted contact information to your contacts.",
+        "NSCalendarsUsageDescription": "PicDo can add extracted events to your calendar.",
+        "NSRemindersUsageDescription": "PicDo can create reminders from extracted information."
+      }
+    },
+    "android": {
+      "adaptiveIcon": {
+        "foregroundImage": "./assets/adaptive-icon.png",
+        "backgroundColor": "#7C3AED"
+      },
+      "package": "com.picdo.app",
+      "permissions": [
+        "android.permission.CAMERA",
+        "android.permission.READ_EXTERNAL_STORAGE",
+        "android.permission.WRITE_EXTERNAL_STORAGE",
+        "android.permission.READ_CONTACTS",
+        "android.permission.WRITE_CONTACTS",
+        "android.permission.READ_CALENDAR",
+        "android.permission.WRITE_CALENDAR"
+      ]
+    },
+    "web": {
+      "favicon": "./assets/favicon.png"
+    },
+    "plugins": [
+      "expo-router",
+      [
+        "expo-image-picker",
+        {
+          "photosPermission": "PicDo needs access to your photos to select images for processing."
+        }
+      ],
+      [
+        "expo-media-library",
+        {
+          "photosPermission": "PicDo needs access to your photo library to select images.",
+          "savePhotosPermission": "Allow PicDo to save processed results to your photo library.",
+          "isAccessMediaLocationEnabled": true
+        }
+      ],
+      [
+        "expo-contacts",
+        {
+          "contactsPermission": "PicDo can save extracted contact information to your contacts."
+        }
+      ],
+      [
+        "expo-calendar",
+        {
+          "calendarPermission": "PicDo can add extracted events to your calendar."
+        }
+      ],
+      [
+        "expo-notifications",
+        {
+          "icon": "./assets/notification-icon.png",
+          "color": "#7C3AED",
+          "defaultChannel": "default"
+        }
+      ]
+    ],
+    "scheme": "picdo",
+    "extra": {
+      "router": {
+        "origin": false
+      },
+      "eas": {
+        "projectId": "your-project-id"
+      }
+    }
+  }
+}
