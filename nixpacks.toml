@@ -2,7 +2,7 @@
 nixPkgs = ['nodejs-18_x', 'npm-9_x']
 
 [phases.install]
-cmds = ['cd server && npm ci --omit=dev']
+cmds = ['cd server && npm ci --omit=dev --ignore-workspace-root-check']
 
 [phases.build]
 cmds = ['echo "No build step required"']
@@ -12,4 +12,3 @@ cmd = 'cd server && npm start'
 
 [variables]
 NODE_ENV = 'production'
-NPM_CONFIG_WORKSPACES = 'false'
