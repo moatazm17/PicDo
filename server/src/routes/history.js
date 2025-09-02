@@ -36,7 +36,7 @@ router.get('/', async (req, res) => {
     const jobs = await Job.find(query)
       .sort({ createdAt: -1 })
       .limit(limit + 1) // Fetch one extra to determine if there's a next page
-      .select('jobId type summary fields thumb action createdAt updatedAt')
+      .select('jobId type summary fields thumb action isFavorite createdAt updatedAt')
       .lean();
 
     // Determine if there's a next page
@@ -52,6 +52,7 @@ router.get('/', async (req, res) => {
       fields: job.fields,
       thumb: job.thumb,
       action: job.action,
+      isFavorite: job.isFavorite || false,
       createdAt: job.createdAt,
       updatedAt: job.updatedAt
     }));

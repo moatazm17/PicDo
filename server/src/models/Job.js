@@ -48,6 +48,11 @@ const jobSchema = new mongoose.Schema({
     type: String,
     default: null
   },
+  isFavorite: {
+    type: Boolean,
+    default: false,
+    index: true
+  },
   action: {
     applied: {
       type: Boolean,

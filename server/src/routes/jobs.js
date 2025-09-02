@@ -134,6 +134,7 @@ router.get('/:jobId', async (req, res) => {
       fields: job.fields,
       summary: job.summary,
       thumb: job.thumb,
+      isFavorite: job.isFavorite || false,
       createdAt: job.createdAt,
       updatedAt: job.updatedAt
     };
