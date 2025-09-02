@@ -176,12 +176,16 @@ router.patch('/:jobId', async (req, res) => {
       });
     }
 
-    // Update fields
+    // Update fields and/or summary
     if (fields) {
       job.fields = { ...job.fields, ...fields };
-      job.updatedAt = new Date();
-      await job.save();
     }
+    if (req.body.summary) {
+      job.summary = req.body.summary;
+    }
+    
+    job.updatedAt = new Date();
+    await job.save();
 
     res.json({
       success: true,
@@ -229,6 +233,86 @@ router.post('/:jobId/mark-action', async (req, res) => {
     res.status(500).json({
       error: 'server_error',
       message: 'Failed to mark action'
+    });
+  }
+});
+
+// DELETE /jobs/:jobId - Delete a job
+router.delete('/:jobId', async (req, res) => {
+  try {
+    const { jobId } = req.params;
+    const userId = req.headers['x-user-id'];
+
+    if (!userId) {
+      return res.status(400).json({
+        error: 'missing_user_id',
+        message: 'x-user-id header is required'
+      });
+    }
+
+    const job = await Job.findOne({ jobId, userId });
+    
+    if (!job) {
+      return res.status(404).json({
+        error: 'job_not_found',
+        message: 'Job not found'
+      });
+    }
+
+    await Job.deleteOne({ jobId, userId });
+
+    res.json({
+      success: true,
+      message: 'Job deleted successfully'
+    });
+
+  } catch (error) {
+    console.error('Job deletion error:', error);
+    res.status(500).json({
+      error: 'server_error',
+      message: 'Failed to delete job'
+    });
+  }
+});
+
+// POST /jobs/:jobId/favorite - Toggle favorite status
+router.post('/:jobId/favorite', async (req, res) => {
+  try {
+    const { jobId } = req.params;
+    const userId = req.headers['x-user-id'];
+    const { isFavorite } = req.body;
+
+    if (!userId) {
+      return res.status(400).json({
+        error: 'missing_user_id',
+        message: 'x-user-id header is required'
+      });
+    }
+
+    const job = await Job.findOne({ jobId, userId });
+    
+    if (!job) {
+      return res.status(404).json({
+        error: 'job_not_found',
+        message: 'Job not found'
+      });
+    }
+
+    job.isFavorite = isFavorite;
+    job.updatedAt = new Date();
+    await job.save();
+
+    res.json({
+      success: true,
+      jobId: job.jobId,
+      isFavorite: job.isFavorite
+    });
+
+  } catch (error) {
+    console.error('Favorite toggle error:', error);
+    res.status(500).json({
+      error: 'server_error',
+      message: 'Failed to toggle favorite'
     });
   }
 });

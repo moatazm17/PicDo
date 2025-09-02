@@ -59,11 +59,16 @@ const resources = {
         empty: 'No items yet',
         emptySubtitle: 'Your processed items will appear here',
         filterAll: 'All',
+        filterFavorites: 'Favorites',
         filterEvents: 'Events',
         filterExpenses: 'Expenses',
         filterContacts: 'Contacts',
         filterAddresses: 'Addresses',
         filterNotes: 'Notes',
+        itemDeleted: 'Item deleted successfully',
+        favoriteAdded: 'Added to favorites',
+        favoriteRemoved: 'Removed from favorites',
+        titleUpdated: 'Title updated successfully',
       },
       
       // Settings
@@ -129,6 +134,9 @@ const resources = {
         noTextTitle: 'No Text Found',
         jobNotFound: 'Job not found or expired',
         saveFailed: 'Failed to save changes. Please try again.',
+        deleteFailed: 'Failed to delete item. Please try again.',
+        favoriteFailed: 'Failed to update favorite. Please try again.',
+        updateFailed: 'Failed to update title. Please try again.',
       },
       
       // Common
@@ -211,11 +219,16 @@ const resources = {
         empty: 'لا توجد عناصر بعد',
         emptySubtitle: 'ستظهر العناصر المعالجة هنا',
         filterAll: 'الكل',
+        filterFavorites: 'المفضلة',
         filterEvents: 'الأحداث',
         filterExpenses: 'المصروفات',
         filterContacts: 'جهات الاتصال',
         filterAddresses: 'العناوين',
         filterNotes: 'الملاحظات',
+        itemDeleted: 'تم حذف العنصر بنجاح',
+        favoriteAdded: 'تم إضافة إلى المفضلة',
+        favoriteRemoved: 'تم إزالة من المفضلة',
+        titleUpdated: 'تم تحديث العنوان بنجاح',
       },
       
       // Settings
@@ -281,6 +294,9 @@ const resources = {
         noTextTitle: 'لم يتم العثور على نص',
         jobNotFound: 'المهمة غير موجودة أو منتهية الصلاحية',
         saveFailed: 'فشل في حفظ التغييرات. يرجى المحاولة مرة أخرى.',
+        deleteFailed: 'فشل في حذف العنصر. يرجى المحاولة مرة أخرى.',
+        favoriteFailed: 'فشل في تحديث المفضلة. يرجى المحاولة مرة أخرى.',
+        updateFailed: 'فشل في تحديث العنوان. يرجى المحاولة مرة أخرى.',
       },
       
       // Common

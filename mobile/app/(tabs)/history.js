@@ -8,6 +8,8 @@ import {
   RefreshControl,
   Image,
   Dimensions,
+  Alert,
+  TextInput,
 } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
 import { Ionicons } from '@expo/vector-icons';
@@ -44,7 +46,11 @@ const FilterTab = ({ title, isActive, onPress, colors }) => (
   </TouchableOpacity>
 );
 
-const HistoryItem = ({ item, onPress, colors, isRTL }) => {
+const HistoryItem = ({ item, onPress, onDelete, onToggleFavorite, onEditTitle, colors, isRTL }) => {
+  const [showActions, setShowActions] = useState(false);
+  const [editingTitle, setEditingTitle] = useState(false);
+  const [newTitle, setNewTitle] = useState(item.summary || item.fields?.title || '');
+
   const getTypeIcon = (type) => {
     switch (type) {
       case 'event': return 'calendar';
@@ -60,13 +66,36 @@ const HistoryItem = ({ item, onPress, colors, isRTL }) => {
     return new Date(dateString).toLocaleDateString();
   };
 
+  const handleTitleSave = () => {
+    if (newTitle.trim() && newTitle !== (item.summary || item.fields?.title)) {
+      onEditTitle(item.jobId, newTitle.trim());
+    }
+    setEditingTitle(false);
+  };
+
+  const handleDelete = () => {
+    Alert.alert(
+      'Delete Item',
+      'Are you sure you want to delete this item?',
+      [
+        { text: 'Cancel', style: 'cancel' },
+        { 
+          text: 'Delete', 
+          style: 'destructive',
+          onPress: () => onDelete(item.jobId)
+        }
+      ]
+    );
+  };
+
   return (
-    <TouchableOpacity
-      style={[styles.historyItem, { backgroundColor: colors.surface, borderColor: colors.border }]}
-      onPress={() => onPress(item)}
-      activeOpacity={0.7}
-    >
-      <View style={styles.itemContent}>
+    <View style={[styles.historyItem, { backgroundColor: colors.surface, borderColor: colors.border }]}>
+      <TouchableOpacity
+        style={styles.itemContent}
+        onPress={() => onPress(item)}
+        onLongPress={() => setShowActions(!showActions)}
+        activeOpacity={0.7}
+      >
         {/* Thumbnail or Icon */}
         <View style={[styles.itemIcon, { backgroundColor: colors.primary + '20' }]}>
           {item.thumb ? (
@@ -81,14 +110,26 @@ const HistoryItem = ({ item, onPress, colors, isRTL }) => {
 
         {/* Content */}
         <View style={[styles.itemDetails, { marginLeft: SPACING.md }]}>
-          <Text style={[
-            styles.itemTitle, 
-            { 
-              color: colors.text
-            }
-          ]} numberOfLines={2}>
-            {item.summary || item.fields?.title || 'Untitled'}
-          </Text>
+          {editingTitle ? (
+            <TextInput
+              style={[styles.titleInput, { color: colors.text, borderColor: colors.primary }]}
+              value={newTitle}
+              onChangeText={setNewTitle}
+              onBlur={handleTitleSave}
+              onSubmitEditing={handleTitleSave}
+              autoFocus
+              multiline
+            />
+          ) : (
+            <Text style={[
+              styles.itemTitle, 
+              { 
+                color: colors.text
+              }
+            ]} numberOfLines={2}>
+              {item.summary || item.fields?.title || 'Untitled'}
+            </Text>
+          )}
           <Text style={[
             styles.itemSubtitle, 
             { 
@@ -99,16 +140,74 @@ const HistoryItem = ({ item, onPress, colors, isRTL }) => {
           </Text>
         </View>
 
-        {/* Action Status */}
-        <View style={styles.itemAction}>
+        {/* Status & Favorite */}
+        <View style={styles.itemActions}>
+          <TouchableOpacity
+            onPress={() => onToggleFavorite(item.jobId, !item.isFavorite)}
+            activeOpacity={0.7}
+          >
+            <Ionicons 
+              name={item.isFavorite ? "heart" : "heart-outline"} 
+              size={20} 
+              color={item.isFavorite ? colors.error : colors.textSecondary} 
+            />
+          </TouchableOpacity>
+          
           {item.action.applied ? (
             <Ionicons name="checkmark-circle" size={20} color={colors.success} />
           ) : (
             <Ionicons name="chevron-forward" size={20} color={colors.textSecondary} />
           )}
         </View>
-      </View>
-    </TouchableOpacity>
+      </TouchableOpacity>
+
+      {/* Action Menu */}
+      {showActions && (
+        <View style={[styles.actionMenu, { backgroundColor: colors.background }]}>
+          <TouchableOpacity
+            style={styles.actionButton}
+            onPress={() => {
+              setEditingTitle(true);
+              setShowActions(false);
+            }}
+            activeOpacity={0.7}
+          >
+            <Ionicons name="create" size={16} color={colors.primary} />
+            <Text style={[styles.actionText, { color: colors.primary }]}>Edit Title</Text>
+          </TouchableOpacity>
+          
+          <TouchableOpacity
+            style={styles.actionButton}
+            onPress={() => {
+              onToggleFavorite(item.jobId, !item.isFavorite);
+              setShowActions(false);
+            }}
+            activeOpacity={0.7}
+          >
+            <Ionicons 
+              name={item.isFavorite ? "heart-dislike" : "heart"} 
+              size={16} 
+              color={colors.warning} 
+            />
+            <Text style={[styles.actionText, { color: colors.warning }]}>
+              {item.isFavorite ? 'Unfavorite' : 'Favorite'}
+            </Text>
+          </TouchableOpacity>
+          
+          <TouchableOpacity
+            style={styles.actionButton}
+            onPress={() => {
+              handleDelete();
+              setShowActions(false);
+            }}
+            activeOpacity={0.7}
+          >
+            <Ionicons name="trash" size={16} color={colors.error} />
+            <Text style={[styles.actionText, { color: colors.error }]}>Delete</Text>
+          </TouchableOpacity>
+        </View>
+      )}
+    </View>
   );
 };
 
@@ -125,6 +224,7 @@ export default function LibraryScreen() {
 
   const filters = [
     { key: 'all', title: t('history.filterAll') },
+    { key: 'favorites', title: t('history.filterFavorites') },
     { key: 'event', title: t('history.filterEvents') },
     { key: 'expense', title: t('history.filterExpenses') },
     { key: 'contact', title: t('history.filterContacts') },
@@ -161,9 +261,17 @@ export default function LibraryScreen() {
   const loadHistory = async () => {
     try {
       setLoading(true);
-      const type = activeFilter === 'all' ? null : activeFilter;
+      let type = activeFilter === 'all' || activeFilter === 'favorites' ? null : activeFilter;
       const response = await apiService.getHistory(50, null, type);
-      setHistory(response.items);
+      
+      let items = response.items;
+      
+      // Filter favorites if needed
+      if (activeFilter === 'favorites') {
+        items = items.filter(item => item.isFavorite);
+      }
+      
+      setHistory(items);
     } catch (error) {
       console.error('Error loading history:', error);
       Toast.show({
@@ -173,6 +281,73 @@ export default function LibraryScreen() {
       });
     } finally {
       setLoading(false);
+    }
+  };
+
+  const handleDelete = async (jobId) => {
+    try {
+      await apiService.deleteJob(jobId);
+      setHistory(prev => prev.filter(item => item.jobId !== jobId));
+      Toast.show({
+        type: 'success',
+        text1: t('common.success'),
+        text2: t('history.itemDeleted'),
+      });
+    } catch (error) {
+      console.error('Error deleting item:', error);
+      Toast.show({
+        type: 'error',
+        text1: t('common.error'),
+        text2: t('errors.deleteFailed'),
+      });
+    }
+  };
+
+  const handleToggleFavorite = async (jobId, isFavorite) => {
+    try {
+      await apiService.toggleFavorite(jobId, isFavorite);
+      setHistory(prev => prev.map(item => 
+        item.jobId === jobId ? { ...item, isFavorite } : item
+      ));
+      Toast.show({
+        type: 'success',
+        text1: isFavorite ? t('history.favoriteAdded') : t('history.favoriteRemoved'),
+      });
+    } catch (error) {
+      console.error('Error toggling favorite:', error);
+      Toast.show({
+        type: 'error',
+        text1: t('common.error'),
+        text2: t('errors.favoriteFailed'),
+      });
+    }
+  };
+
+  const handleEditTitle = async (jobId, newTitle) => {
+    try {
+      // Update only the summary (library title), not the fields.title (result screen title)
+      await apiService.updateJob(jobId, { 
+        summary: newTitle 
+      });
+      setHistory(prev => prev.map(item => 
+        item.jobId === jobId ? { 
+          ...item, 
+          summary: newTitle
+          // Keep fields.title unchanged for result screen
+        } : item
+      ));
+      Toast.show({
+        type: 'success',
+        text1: t('common.success'),
+        text2: t('history.titleUpdated'),
+      });
+    } catch (error) {
+      console.error('Error updating title:', error);
+      Toast.show({
+        type: 'error',
+        text1: t('common.error'),
+        text2: t('errors.updateFailed'),
+      });
     }
   };
 
@@ -237,6 +412,9 @@ export default function LibraryScreen() {
           <HistoryItem
             item={item}
             onPress={handleItemPress}
+            onDelete={handleDelete}
+            onToggleFavorite={handleToggleFavorite}
+            onEditTitle={handleEditTitle}
             colors={colors}
             isRTL={isRTL}
           />
@@ -328,8 +506,38 @@ const styles = StyleSheet.create({
   itemSubtitle: {
     fontSize: 14,
   },
-  itemAction: {
-    marginLeft: SPACING.sm,
+  itemActions: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: 12,
+  },
+  titleInput: {
+    borderWidth: 1,
+    borderRadius: 8,
+    padding: 8,
+    fontSize: 16,
+    fontWeight: '600',
+    marginBottom: 4,
+  },
+  actionMenu: {
+    flexDirection: 'row',
+    justifyContent: 'space-around',
+    paddingVertical: 12,
+    paddingHorizontal: 16,
+    borderTopWidth: 1,
+    borderTopColor: 'rgba(0,0,0,0.1)',
+  },
+  actionButton: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    paddingVertical: 8,
+    paddingHorizontal: 12,
+    borderRadius: 8,
+  },
+  actionText: {
+    fontSize: 12,
+    fontWeight: '500',
+    marginLeft: 4,
   },
   emptyState: {
     flex: 1,

@@ -100,6 +100,19 @@ class APIService {
     });
   }
 
+  async deleteJob(jobId) {
+    return this.makeRequest(`/jobs/${jobId}`, {
+      method: 'DELETE',
+    });
+  }
+
+  async toggleFavorite(jobId, isFavorite) {
+    return this.makeRequest(`/jobs/${jobId}/favorite`, {
+      method: 'POST',
+      body: JSON.stringify({ isFavorite }),
+    });
+  }
+
   async getHistory(limit = 50, cursor = null, type = null) {
     const params = new URLSearchParams();
     params.append('limit', limit.toString());
