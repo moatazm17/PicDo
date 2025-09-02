@@ -1,6 +1,13 @@
 require File.join(File.dirname(`node --print "require.resolve('expo/package.json')"`), "scripts/autolinking")
 require File.join(File.dirname(`node --print "require.resolve('react-native/package.json')"`), "scripts/react_native_pods")
 
+# Force Pods project to use an object version CocoaPods supports
+begin
+  require 'xcodeproj'
+rescue LoadError
+  # ignore
+end
+
 require 'json'
 podfile_properties = JSON.parse(File.read(File.join(__dir__, 'Podfile.properties.json'))) rescue {}
 
@@ -74,6 +81,14 @@ target 'PicDo' do
           config.build_settings['CODE_SIGNING_ALLOWED'] = 'NO'
         end
       end
+    end
+
+    # Force Pods project to an older objectVersion for Cocoapods/xcodeproj compatibility
+    # 54 is a safe baseline supported by current gems
+    begin
+      installer.pods_project.object_version = 54
+    rescue => e
+      Pod::UI.warn("Skipping object_version override: #{e}")
     end
   end
 

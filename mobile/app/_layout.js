@@ -28,6 +28,32 @@ export default function RootLayout() {
   const segments = useSegments();
   
   useEffect(() => {
+    // Check for pending shared images from the share extension
+    const checkPendingShare = async () => {
+      try {
+        const sharedDefaults = await Linking.getInitialURL();
+        // Check UserDefaults for pending share (this would need native module)
+        // For now, we'll check the shared container directly
+        const sharedContainerPath = FileSystem.documentDirectory + '../Library/Application Support/group.com.picdo.app/images/';
+        const files = await FileSystem.readDirectoryAsync(sharedContainerPath).catch(() => []);
+        
+        if (files.length > 0) {
+          // Get the most recent file
+          const mostRecentFile = files[files.length - 1];
+          const filePath = sharedContainerPath + mostRecentFile;
+          
+          // Navigate to upload with this file
+          router.replace({
+            pathname: '/upload',
+            params: { imageUri: filePath, source: 'share' }
+          });
+        }
+      } catch (error) {
+        console.log('No pending shared images');
+      }
+    };
+    
+    checkPendingShare();
 
     // Set up URL listener for shared content
     const handleUrl = async ({ url }) => {
@@ -42,18 +68,24 @@ export default function RootLayout() {
           console.log('Parsed URL:', parsedUrl);
           
           // Check if it's a share action
-          if (parsedUrl.path === 'share' && parsedUrl.queryParams?.uri) {
-            const imageUri = parsedUrl.queryParams.uri;
+          const isShareAction = parsedUrl.path === 'share' || parsedUrl.hostname === 'share' || parsedUrl.host === 'share';
+          if (isShareAction && parsedUrl.queryParams?.uri) {
+            let imageUri = parsedUrl.queryParams.uri;
+            try { imageUri = decodeURIComponent(imageUri); } catch {}
             console.log('Image URI:', imageUri);
             
             // Copy the shared file to a temporary location if needed
             let finalUri = imageUri;
-            if (imageUri.startsWith('file://')) {
+            // Normalize absolute paths to file:// URIs
+            if (imageUri.startsWith('/')) {
+              finalUri = `file://${imageUri}`;
+            }
+            if (finalUri.startsWith('file://')) {
               try {
-                const fileName = imageUri.split('/').pop();
+                const fileName = finalUri.split('/').pop();
                 const tempFilePath = FileSystem.cacheDirectory + fileName;
                 await FileSystem.copyAsync({
-                  from: imageUri,
+                  from: finalUri,
                   to: tempFilePath,
                 });
                 finalUri = tempFilePath;
@@ -75,6 +107,23 @@ export default function RootLayout() {
           }
         } catch (error) {
           console.error('Error handling shared URL:', error);
+        }
+      } else if (url.startsWith('file://')) {
+        try {
+          // Direct file URL (Copy to PicDo)
+          let finalUri = url;
+          const fileName = finalUri.split('/').pop();
+          const tempFilePath = FileSystem.cacheDirectory + fileName;
+          try {
+            await FileSystem.copyAsync({ from: finalUri, to: tempFilePath });
+            finalUri = tempFilePath;
+            console.log('Copied file:// to cache:', finalUri);
+          } catch (copyError) {
+            console.warn('Copy file:// to cache failed, using original:', copyError);
+          }
+          router.replace({ pathname: '/upload', params: { imageUri: finalUri, source: 'copyto' } });
+        } catch (e) {
+          console.error('Error handling file:// URL:', e);
         }
       }
     };
