@@ -86,6 +86,13 @@ class APIService {
     return this.makeRequest(`/jobs/${jobId}`);
   }
 
+  async updateJob(jobId, updates) {
+    return this.makeRequest(`/jobs/${jobId}`, {
+      method: 'PATCH',
+      body: JSON.stringify(updates),
+    });
+  }
+
   async markAction(jobId, applied, type) {
     return this.makeRequest(`/jobs/${jobId}/mark-action`, {
       method: 'POST',

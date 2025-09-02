@@ -39,14 +39,14 @@ class ImageService {
     }
   }
 
-  static async createThumbnail(buffer, maxSize = 256) {
+  static async createThumbnail(buffer, maxSize = 512) {
     try {
       const thumbnail = await sharp(buffer)
         .resize(maxSize, maxSize, {
           fit: 'inside',
           withoutEnlargement: true
         })
-        .jpeg({ quality: 80 })
+        .jpeg({ quality: 95 })
         .toBuffer();
       
       return thumbnail.toString('base64');

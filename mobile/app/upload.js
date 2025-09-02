@@ -6,6 +6,7 @@ import {
   Dimensions,
   BackHandler,
   Alert,
+  TouchableOpacity,
 } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
 import { useRouter, useLocalSearchParams } from 'expo-router';
@@ -170,11 +171,13 @@ export default function UploadScreen() {
     console.error('Upload/Processing error:', error);
     
     let errorMessage = t('errors.unknownError');
+    let isRetryable = true;
     
     if (error instanceof APIError) {
       switch (error.code) {
         case 'limit_reached':
           errorMessage = error.message;
+          isRetryable = false;
           break;
         case 'processing_failed':
           errorMessage = t('errors.processingFailed');
@@ -182,32 +185,85 @@ export default function UploadScreen() {
         case 'network_error':
           errorMessage = t('errors.networkError');
           break;
+        case 'no_text_detected':
+          errorMessage = t('errors.noTextDetected');
+          isRetryable = false;
+          break;
+        case 'invalid_image':
+          errorMessage = t('errors.invalidImage');
+          isRetryable = false;
+          break;
         default:
           errorMessage = error.message || t('errors.uploadFailed');
       }
+    } else if (error.message && error.message.includes('No text detected')) {
+      errorMessage = t('errors.noTextDetected');
+      isRetryable = false;
     }
 
-    setError(errorMessage);
-    
-    Toast.show({
-      type: 'error',
-      text1: t('common.error'),
-      text2: errorMessage,
-      onHide: () => router.back(),
-    });
+    setError({ message: errorMessage, isRetryable });
+  };
+
+  const handleRetry = () => {
+    setError(null);
+    setJobId(null);
+    setPollCount(0);
+    setCurrentStep(0);
+    uploadImage();
   };
 
   if (error) {
+    const getErrorIcon = () => {
+      if (error.message.includes('No text detected') || error.message.includes('noTextDetected')) {
+        return 'document-text-outline';
+      }
+      if (error.message.includes('network') || error.message.includes('Network')) {
+        return 'wifi-outline';
+      }
+      if (error.message.includes('limit') || error.message.includes('Limit')) {
+        return 'warning-outline';
+      }
+      return 'alert-circle';
+    };
+
     return (
       <SafeAreaView style={[styles.container, { backgroundColor: colors.background }]}>
         <View style={styles.errorContainer}>
-          <Ionicons name="alert-circle" size={80} color={colors.error} />
-          <Text style={[styles.errorTitle, { color: colors.error }]}>
-            {t('common.error')}
-          </Text>
-          <Text style={[styles.errorMessage, { color: colors.text }]}>
-            {error}
-          </Text>
+          <Animatable.View animation="bounceIn" style={styles.errorContent}>
+            <Ionicons name={getErrorIcon()} size={80} color={colors.error} />
+            <Text style={[styles.errorTitle, { color: colors.error }]}>
+              {error.message.includes('No text detected') ? t('errors.noTextTitle') : t('common.error')}
+            </Text>
+            <Text style={[styles.errorMessage, { color: colors.text }]}>
+              {error.message}
+            </Text>
+            
+            {/* Action Buttons */}
+            <View style={styles.errorActions}>
+              {error.isRetryable && (
+                <TouchableOpacity
+                  style={[styles.retryButton, { backgroundColor: colors.primary }]}
+                  onPress={handleRetry}
+                  activeOpacity={0.8}
+                >
+                  <Ionicons name="refresh" size={20} color="white" />
+                  <Text style={styles.retryButtonText}>
+                    {t('common.retry')}
+                  </Text>
+                </TouchableOpacity>
+              )}
+              
+              <TouchableOpacity
+                style={[styles.backButton, { borderColor: colors.border }]}
+                onPress={() => router.back()}
+                activeOpacity={0.8}
+              >
+                <Text style={[styles.backButtonText, { color: colors.text }]}>
+                  {t('common.back')}
+                </Text>
+              </TouchableOpacity>
+            </View>
+          </Animatable.View>
         </View>
       </SafeAreaView>
     );
@@ -339,5 +395,43 @@ const styles = StyleSheet.create({
     fontSize: 16,
     textAlign: 'center',
     lineHeight: 24,
+    marginBottom: 32,
+  },
+  errorContent: {
+    alignItems: 'center',
+    paddingHorizontal: SPACING.xl,
+  },
+  errorActions: {
+    flexDirection: 'row',
+    gap: 16,
+    marginTop: 20,
+  },
+  retryButton: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    paddingHorizontal: 24,
+    paddingVertical: 12,
+    borderRadius: 24,
+    shadowColor: '#000',
+    shadowOffset: { width: 0, height: 2 },
+    shadowOpacity: 0.1,
+    shadowRadius: 8,
+    elevation: 4,
+  },
+  retryButtonText: {
+    color: 'white',
+    fontSize: 16,
+    fontWeight: '600',
+    marginLeft: 8,
+  },
+  backButton: {
+    paddingHorizontal: 24,
+    paddingVertical: 12,
+    borderRadius: 24,
+    borderWidth: 1,
+  },
+  backButtonText: {
+    fontSize: 16,
+    fontWeight: '500',
   },
 });

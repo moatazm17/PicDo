@@ -11,7 +11,9 @@ import {
   Alert,
   KeyboardAvoidingView,
   Platform,
+  Modal,
 } from 'react-native';
+import { LinearGradient } from 'expo-linear-gradient';
 import { SafeAreaView } from 'react-native-safe-area-context';
 import { Ionicons } from '@expo/vector-icons';
 import { useRouter, useLocalSearchParams } from 'expo-router';
@@ -27,26 +29,26 @@ import { SPACING, BORDER_RADIUS } from '../src/constants/config';
 
 const { width, height } = Dimensions.get('window');
 
-const FieldInput = ({ label, value, onChangeText, keyboardType, multiline, colors, isRTL }) => (
-  <View style={styles.fieldContainer}>
-    <Text style={[styles.fieldLabel, { color: colors.text }]}>{label}</Text>
+const FieldInput = ({ label, value, onChangeText, keyboardType, multiline, colors, isRTL, editable = true }) => (
+  <View style={[styles.fieldContainer, { backgroundColor: colors.surface }]}>
+    <Text style={[styles.fieldLabel, { color: colors.primary }]}>{label}</Text>
     <TextInput
       style={[
         styles.fieldInput,
         {
-          backgroundColor: colors.surface,
-          borderColor: colors.border,
           color: colors.text,
           textAlign: isRTL ? 'right' : 'left',
           minHeight: multiline ? 80 : 44,
+          opacity: editable ? 1 : 0.7,
         },
       ]}
       value={value}
       onChangeText={onChangeText}
       keyboardType={keyboardType || 'default'}
       multiline={multiline}
-      placeholder={label}
+      placeholder={editable ? `Enter ${label.toLowerCase()}` : ''}
       placeholderTextColor={colors.textSecondary}
+      editable={editable}
     />
   </View>
 );
@@ -63,6 +65,7 @@ export default function ResultScreen() {
   const [editing, setEditing] = useState(false);
   const [fields, setFields] = useState({});
   const [actionLoading, setActionLoading] = useState(false);
+  const [showFullImage, setShowFullImage] = useState(false);
 
   useEffect(() => {
     if (params.jobId) {
@@ -93,14 +96,27 @@ export default function ResultScreen() {
     setFields(prev => ({ ...prev, [key]: value }));
   };
 
-  const handleSave = () => {
-    setJob(prev => ({ ...prev, fields }));
-    setEditing(false);
-    Toast.show({
-      type: 'success',
-      text1: t('common.success'),
-      text2: t('result.successToast'),
-    });
+  const handleSave = async () => {
+    try {
+      // Update the job on the server with new field values
+      await apiService.updateJob(job.jobId, { fields });
+      
+      setJob(prev => ({ ...prev, fields }));
+      setEditing(false);
+      
+      Toast.show({
+        type: 'success',
+        text1: t('common.success'),
+        text2: t('result.fieldsSaved'),
+      });
+    } catch (error) {
+      console.error('Error saving fields:', error);
+      Toast.show({
+        type: 'error',
+        text1: t('common.error'),
+        text2: t('errors.saveFailed'),
+      });
+    }
   };
 
   const handleAction = async () => {
@@ -131,10 +147,7 @@ export default function ResultScreen() {
       const result = await executeAction(actionType, fields);
       
       if (result.success) {
-        // Mark action as applied on server
         await apiService.markAction(job.jobId, true, actionType);
-        
-        // Show success feedback
         await Haptics.notificationAsync(Haptics.NotificationFeedbackType.Success);
         Toast.show({
           type: 'success',
@@ -142,7 +155,6 @@ export default function ResultScreen() {
           text2: t('result.successToast'),
         });
         
-        // Navigate back to home
         setTimeout(() => {
           router.push('/(tabs)/home');
         }, 1500);
@@ -205,35 +217,35 @@ export default function ResultScreen() {
               onChangeText={(value) => handleFieldChange('title', value)}
               colors={colors}
               isRTL={isRTL}
+              editable={editing}
             />
-            <FieldInput
-              label={t('fields.date')}
-              value={fields.date || ''}
-              onChangeText={(value) => handleFieldChange('date', value)}
-              colors={colors}
-              isRTL={isRTL}
-            />
-            <FieldInput
-              label={t('fields.time')}
-              value={fields.time || ''}
-              onChangeText={(value) => handleFieldChange('time', value)}
-              colors={colors}
-              isRTL={isRTL}
-            />
+            <View style={styles.fieldRow}>
+              <View style={styles.fieldHalf}>
+                <FieldInput
+                  label={t('fields.date')}
+                  value={fields.date || ''}
+                  onChangeText={(value) => handleFieldChange('date', value)}
+                  colors={colors}
+                  isRTL={isRTL}
+                />
+              </View>
+              <View style={styles.fieldHalf}>
+                <FieldInput
+                  label={t('fields.time')}
+                  value={fields.time || ''}
+                  onChangeText={(value) => handleFieldChange('time', value)}
+                  colors={colors}
+                  isRTL={isRTL}
+                />
+              </View>
+            </View>
             <FieldInput
               label={t('fields.location')}
               value={fields.location || ''}
               onChangeText={(value) => handleFieldChange('location', value)}
               colors={colors}
               isRTL={isRTL}
-            />
-            <FieldInput
-              label={t('fields.url')}
-              value={fields.url || ''}
-              onChangeText={(value) => handleFieldChange('url', value)}
-              keyboardType="url"
-              colors={colors}
-              isRTL={isRTL}
+              editable={editing}
             />
           </>
         );
@@ -242,40 +254,41 @@ export default function ResultScreen() {
         return (
           <>
             <FieldInput
-              label={t('fields.title')}
-              value={fields.title || ''}
-              onChangeText={(value) => handleFieldChange('title', value)}
-              colors={colors}
-              isRTL={isRTL}
-            />
-            <FieldInput
-              label={t('fields.amount')}
-              value={fields.amount?.toString() || ''}
-              onChangeText={(value) => handleFieldChange('amount', parseFloat(value) || 0)}
-              keyboardType="numeric"
-              colors={colors}
-              isRTL={isRTL}
-            />
-            <FieldInput
-              label={t('fields.currency')}
-              value={fields.currency || ''}
-              onChangeText={(value) => handleFieldChange('currency', value)}
-              colors={colors}
-              isRTL={isRTL}
-            />
-            <FieldInput
               label={t('fields.merchant')}
               value={fields.merchant || ''}
               onChangeText={(value) => handleFieldChange('merchant', value)}
               colors={colors}
               isRTL={isRTL}
+              editable={editing}
             />
+            <View style={styles.fieldRow}>
+              <View style={styles.fieldHalf}>
+                <FieldInput
+                  label={t('fields.amount')}
+                  value={fields.amount?.toString() || ''}
+                  onChangeText={(value) => handleFieldChange('amount', parseFloat(value) || 0)}
+                  keyboardType="numeric"
+                  colors={colors}
+                  isRTL={isRTL}
+                />
+              </View>
+              <View style={styles.fieldHalf}>
+                <FieldInput
+                  label={t('fields.currency')}
+                  value={fields.currency || ''}
+                  onChangeText={(value) => handleFieldChange('currency', value)}
+                  colors={colors}
+                  isRTL={isRTL}
+                />
+              </View>
+            </View>
             <FieldInput
               label={t('fields.date')}
               value={fields.date || ''}
               onChangeText={(value) => handleFieldChange('date', value)}
               colors={colors}
               isRTL={isRTL}
+              editable={editing}
             />
           </>
         );
@@ -289,6 +302,7 @@ export default function ResultScreen() {
               onChangeText={(value) => handleFieldChange('name', value)}
               colors={colors}
               isRTL={isRTL}
+              editable={editing}
             />
             <FieldInput
               label={t('fields.phone')}
@@ -297,6 +311,7 @@ export default function ResultScreen() {
               keyboardType="phone-pad"
               colors={colors}
               isRTL={isRTL}
+              editable={editing}
             />
           </>
         );
@@ -310,6 +325,7 @@ export default function ResultScreen() {
               onChangeText={(value) => handleFieldChange('title', value)}
               colors={colors}
               isRTL={isRTL}
+              editable={editing}
             />
             <FieldInput
               label={t('fields.address')}
@@ -318,6 +334,7 @@ export default function ResultScreen() {
               multiline
               colors={colors}
               isRTL={isRTL}
+              editable={editing}
             />
           </>
         );
@@ -331,6 +348,7 @@ export default function ResultScreen() {
               onChangeText={(value) => handleFieldChange('title', value)}
               colors={colors}
               isRTL={isRTL}
+              editable={editing}
             />
             <FieldInput
               label={t('fields.category')}
@@ -338,6 +356,7 @@ export default function ResultScreen() {
               onChangeText={(value) => handleFieldChange('category', value)}
               colors={colors}
               isRTL={isRTL}
+              editable={editing}
             />
             <FieldInput
               label={t('fields.content')}
@@ -346,6 +365,7 @@ export default function ResultScreen() {
               multiline
               colors={colors}
               isRTL={isRTL}
+              editable={editing}
             />
           </>
         );
@@ -371,8 +391,8 @@ export default function ResultScreen() {
     return (
       <SafeAreaView style={[styles.container, { backgroundColor: colors.background }]}>
         <View style={styles.errorContainer}>
-          <Text style={[styles.errorText, { color: colors.error }]}>
-            {t('errors.unknownError')}
+          <Text style={[styles.errorText, { color: colors.text }]}>
+            {t('errors.jobNotFound')}
           </Text>
         </View>
       </SafeAreaView>
@@ -381,64 +401,108 @@ export default function ResultScreen() {
 
   return (
     <SafeAreaView style={[styles.container, { backgroundColor: colors.background }]}>
-      <KeyboardAvoidingView 
-        style={{ flex: 1 }} 
+      {/* Clean Header */}
+      <View style={[
+        styles.header, 
+        { 
+          backgroundColor: colors.surface, 
+          borderBottomColor: colors.border
+        }
+      ]}>
+        <TouchableOpacity
+          style={styles.headerButton}
+          onPress={() => router.back()}
+          activeOpacity={0.7}
+        >
+          <Ionicons
+            name="arrow-back"
+            size={24}
+            color={colors.text}
+          />
+        </TouchableOpacity>
+        
+        <Text style={[
+          styles.headerTitle, 
+          { 
+            color: colors.text
+          }
+        ]} numberOfLines={1}>
+          {fields.title || job?.summary || t('result.title')}
+        </Text>
+        
+        <TouchableOpacity
+          style={styles.headerButton}
+          onPress={() => setEditing(!editing)}
+          activeOpacity={0.7}
+        >
+          <Ionicons
+            name={editing ? "checkmark" : "create"}
+            size={24}
+            color={colors.primary}
+          />
+        </TouchableOpacity>
+      </View>
+
+      <KeyboardAvoidingView
         behavior={Platform.OS === 'ios' ? 'padding' : 'height'}
+        style={styles.keyboardView}
       >
-        {/* Header with thumbnail */}
-        <View style={[styles.header, { backgroundColor: colors.surface }]}>
+        <ScrollView
+          style={styles.scrollView}
+          contentContainerStyle={styles.scrollContent}
+          showsVerticalScrollIndicator={false}
+        >
+          {/* Image Card */}
           {job.thumb && (
-            <Image
-              source={{ uri: `data:image/jpeg;base64,${job.thumb}` }}
-              style={styles.headerImage}
-              blurRadius={2}
-            />
-          )}
-          <View style={styles.headerOverlay}>
-            <TouchableOpacity
-              style={[styles.backButton, { backgroundColor: 'rgba(0,0,0,0.5)' }]}
-              onPress={() => router.back()}
+            <View style={[styles.imageCard, { backgroundColor: colors.surface }]}>
+                          <TouchableOpacity 
+              style={styles.imageContainer}
+              onPress={() => setShowFullImage(true)}
+              activeOpacity={0.95}
             >
-              <Ionicons name={isRTL ? "chevron-forward" : "chevron-back"} size={24} color="white" />
+              <Image
+                source={{ uri: `data:image/jpeg;base64,${job.thumb}` }}
+                style={styles.image}
+                resizeMode="contain"
+              />
+              <View style={styles.imageOverlay}>
+                <View style={[styles.expandIcon, { backgroundColor: 'rgba(0,0,0,0.6)' }]}>
+                  <Ionicons name="expand" size={16} color="white" />
+                </View>
+              </View>
             </TouchableOpacity>
-            <TouchableOpacity
-              style={[styles.editButton, { backgroundColor: 'rgba(0,0,0,0.5)' }]}
-              onPress={() => setEditing(!editing)}
-            >
-              <Ionicons name={editing ? "checkmark" : "create"} size={20} color="white" />
-              <Text style={styles.editButtonText}>
-                {editing ? t('common.save') : t('common.edit')}
-              </Text>
-            </TouchableOpacity>
-          </View>
-        </View>
-
-        <ScrollView style={styles.content} showsVerticalScrollIndicator={false}>
-          {/* Type and Title */}
-          <View style={styles.titleContainer}>
-            <View style={[styles.typeIcon, { backgroundColor: colors.primary + '20' }]}>
-              <Ionicons name={getTypeIcon(job.type)} size={32} color={colors.primary} />
+              
+              {/* Type Badge */}
+              <View style={[styles.typeBadge, { backgroundColor: colors.primary }]}>
+                <Ionicons name={getTypeIcon(job.type)} size={14} color="white" />
+                <Text style={styles.typeBadgeText}>{t(`types.${job.type}`)}</Text>
+              </View>
             </View>
-            <Text style={[styles.typeText, { color: colors.textSecondary }]}>
-              {t(`types.${job.type}`)}
-            </Text>
-            <Text style={[styles.jobTitle, { color: colors.text }]}>
-              {fields.title || job.summary || 'Untitled'}
-            </Text>
+          )}
+
+          {/* Data Card */}
+          <View style={[styles.dataCard, { backgroundColor: colors.surface }]}>
+            <View style={styles.cardHeader}>
+              <Text style={[styles.cardTitle, { color: colors.text }]}>Information</Text>
+              <View style={[styles.editBadge, { backgroundColor: editing ? colors.success + '20' : colors.primary + '20' }]}>
+                <Ionicons 
+                  name={editing ? "create" : "eye"} 
+                  size={14} 
+                  color={editing ? colors.success : colors.primary} 
+                />
+                <Text style={[styles.editBadgeText, { color: editing ? colors.success : colors.primary }]}>
+                  {editing ? 'Editing' : 'View Only'}
+                </Text>
+              </View>
+            </View>
+            
+            <View style={styles.fieldsContainer}>
+              {renderFields()}
+            </View>
           </View>
 
-          {/* Fields */}
-          <View style={styles.fieldsContainer}>
-            {renderFields()}
-          </View>
-
-          {/* Auto-extracted note */}
-          <View style={styles.noteContainer}>
-            <Ionicons name="information-circle" size={16} color={colors.info} />
-            <Text style={[styles.noteText, { color: colors.textSecondary }]}>
-              {t('result.autoExtracted')}
-            </Text>
-          </View>
+          {/* Bottom Spacing */}
+          <View style={{ height: 100 }} />
         </ScrollView>
 
         {/* Action Button */}
@@ -455,25 +519,62 @@ export default function ResultScreen() {
             disabled={actionLoading}
             activeOpacity={0.9}
           >
-            {actionLoading ? (
-              <Text style={styles.actionButtonText}>
-                {t('common.loading')}
-              </Text>
-            ) : (
-              <>
-                <Ionicons
-                  name={editing ? "checkmark" : getTypeIcon(job.type)}
-                  size={24}
-                  color="white"
-                />
-                <Text style={styles.actionButtonText}>
-                  {editing ? t('common.save') : getActionText(job.type)}
-                </Text>
-              </>
-            )}
+            <LinearGradient
+              colors={[colors.primary, colors.primary + 'DD']}
+              style={styles.actionGradient}
+            >
+              {actionLoading ? (
+                <Text style={styles.actionText}>{t('common.loading')}</Text>
+              ) : (
+                <View style={styles.actionContent}>
+                  <Ionicons
+                    name={editing ? "checkmark-circle" : getTypeIcon(job.type)}
+                    size={24}
+                    color="white"
+                  />
+                  <Text style={styles.actionText}>
+                    {editing ? t('common.save') : getActionText(job.type)}
+                  </Text>
+                </View>
+              )}
+            </LinearGradient>
           </TouchableOpacity>
         </View>
       </KeyboardAvoidingView>
+
+      {/* Full Screen Image Modal */}
+      <Modal
+        visible={showFullImage}
+        transparent={true}
+        animationType="fade"
+        onRequestClose={() => setShowFullImage(false)}
+      >
+        <View style={styles.fullScreenModal}>
+          <TouchableOpacity
+            style={styles.modalCloseButton}
+            onPress={() => setShowFullImage(false)}
+            activeOpacity={0.8}
+          >
+            <View style={[styles.closeButton, { backgroundColor: 'rgba(0,0,0,0.7)' }]}>
+              <Ionicons name="close" size={24} color="white" />
+            </View>
+          </TouchableOpacity>
+          
+          <Image
+            source={{ uri: `data:image/jpeg;base64,${job.thumb}` }}
+            style={styles.fullScreenImage}
+            resizeMode="contain"
+          />
+          
+          <View style={styles.modalInfo}>
+            <View style={[styles.modalInfoContainer, { backgroundColor: 'rgba(0,0,0,0.7)' }]}>
+              <Text style={styles.modalInfoText}>
+                {fields.title || job?.summary || 'Scanned Image'}
+              </Text>
+            </View>
+          </View>
+        </View>
+      </Modal>
     </SafeAreaView>
   );
 }
@@ -482,155 +583,246 @@ const styles = StyleSheet.create({
   container: {
     flex: 1,
   },
+  
+  // Header
   header: {
-    height: 200,
-    position: 'relative',
-  },
-  headerImage: {
-    width: '100%',
-    height: '100%',
-  },
-  headerOverlay: {
-    position: 'absolute',
-    top: 0,
-    left: 0,
-    right: 0,
-    bottom: 0,
     flexDirection: 'row',
+    alignItems: 'center',
     justifyContent: 'space-between',
-    alignItems: 'flex-start',
-    padding: SPACING.md,
-    paddingTop: 50,
+    paddingHorizontal: 20,
+    paddingVertical: 16,
+    borderBottomWidth: 1,
   },
-  backButton: {
+  headerButton: {
     width: 40,
     height: 40,
     borderRadius: 20,
     justifyContent: 'center',
     alignItems: 'center',
   },
-  editButton: {
+  headerTitle: {
+    fontSize: 18,
+    fontWeight: '700',
+  },
+
+  // Layout
+  keyboardView: {
+    flex: 1,
+  },
+  scrollView: {
+    flex: 1,
+  },
+  scrollContent: {
+    padding: 20,
+  },
+
+  // Image Card
+  imageCard: {
+    borderRadius: 16,
+    padding: 16,
+    marginBottom: 20,
+    shadowColor: '#000',
+    shadowOffset: { width: 0, height: 4 },
+    shadowOpacity: 0.1,
+    shadowRadius: 12,
+    elevation: 6,
+  },
+  imageContainer: {
+    height: 200,
+    borderRadius: 12,
+    overflow: 'hidden',
+    position: 'relative',
+  },
+  image: {
+    width: '100%',
+    height: '100%',
+  },
+  imageOverlay: {
+    position: 'absolute',
+    top: 12,
+    right: 12,
+  },
+  expandIcon: {
+    width: 32,
+    height: 32,
+    borderRadius: 16,
+    justifyContent: 'center',
+    alignItems: 'center',
+  },
+  typeBadge: {
+    position: 'absolute',
+    top: 12,
+    left: 12,
+    paddingHorizontal: 8,
+    paddingVertical: 4,
+    borderRadius: 12,
     flexDirection: 'row',
     alignItems: 'center',
-    paddingHorizontal: SPACING.md,
-    paddingVertical: SPACING.sm,
-    borderRadius: BORDER_RADIUS.md,
   },
-  editButtonText: {
+  typeBadgeText: {
     color: 'white',
-    fontSize: 14,
+    fontSize: 11,
     fontWeight: '600',
     marginLeft: 4,
   },
-  content: {
-    flex: 1,
-    paddingHorizontal: SPACING.md,
-  },
-  titleContainer: {
-    alignItems: 'center',
-    paddingVertical: SPACING.xl,
-    marginTop: -50,
-  },
-  typeIcon: {
-    width: 80,
-    height: 80,
-    borderRadius: 40,
-    justifyContent: 'center',
-    alignItems: 'center',
-    marginBottom: SPACING.md,
+
+  // Data Card
+  dataCard: {
+    borderRadius: 16,
+    padding: 20,
     shadowColor: '#000',
-    shadowOffset: {
-      width: 0,
-      height: 4,
-    },
+    shadowOffset: { width: 0, height: 4 },
     shadowOpacity: 0.1,
-    shadowRadius: 8,
-    elevation: 4,
+    shadowRadius: 12,
+    elevation: 6,
   },
-  typeText: {
-    fontSize: 14,
-    fontWeight: '500',
-    textTransform: 'uppercase',
-    letterSpacing: 1,
-    marginBottom: SPACING.sm,
+  cardHeader: {
+    flexDirection: 'row',
+    justifyContent: 'space-between',
+    alignItems: 'center',
+    marginBottom: 20,
   },
-  jobTitle: {
-    fontSize: 24,
-    fontWeight: 'bold',
-    textAlign: 'center',
-    maxWidth: width * 0.8,
+  cardTitle: {
+    fontSize: 20,
+    fontWeight: '700',
   },
+  editBadge: {
+    paddingHorizontal: 8,
+    paddingVertical: 4,
+    borderRadius: 12,
+    flexDirection: 'row',
+    alignItems: 'center',
+  },
+  editBadgeText: {
+    fontSize: 12,
+    fontWeight: '600',
+    marginLeft: 4,
+  },
+
+  // Fields
   fieldsContainer: {
-    marginBottom: SPACING.xl,
+    gap: 16,
+  },
+  fieldRow: {
+    flexDirection: 'row',
+    gap: 12,
+  },
+  fieldHalf: {
+    flex: 1,
   },
   fieldContainer: {
-    marginBottom: SPACING.md,
+    borderRadius: 12,
+    padding: 16,
+    shadowColor: '#000',
+    shadowOffset: { width: 0, height: 2 },
+    shadowOpacity: 0.05,
+    shadowRadius: 8,
+    elevation: 2,
   },
   fieldLabel: {
     fontSize: 14,
     fontWeight: '600',
-    marginBottom: SPACING.sm,
+    marginBottom: 8,
+    textTransform: 'uppercase',
+    letterSpacing: 0.5,
   },
   fieldInput: {
-    borderWidth: 1,
-    borderRadius: BORDER_RADIUS.md,
-    paddingHorizontal: SPACING.md,
-    paddingVertical: SPACING.sm,
     fontSize: 16,
+    fontWeight: '500',
   },
-  noteContainer: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    backgroundColor: 'rgba(59, 130, 246, 0.1)',
-    paddingHorizontal: SPACING.md,
-    paddingVertical: SPACING.sm,
-    borderRadius: BORDER_RADIUS.md,
-    marginBottom: SPACING.xl,
-  },
-  noteText: {
-    fontSize: 14,
-    marginLeft: SPACING.sm,
-    flex: 1,
-  },
+
+  // Action Button
   actionContainer: {
-    padding: SPACING.md,
-    paddingBottom: SPACING.xl,
+    paddingHorizontal: 20,
+    paddingBottom: 20,
   },
   actionButton: {
+    borderRadius: 28,
+    shadowColor: '#000',
+    shadowOffset: { width: 0, height: 8 },
+    shadowOpacity: 0.3,
+    shadowRadius: 16,
+    elevation: 8,
+  },
+  actionGradient: {
+    paddingVertical: 18,
+    paddingHorizontal: 32,
+    borderRadius: 28,
+    flexDirection: 'row',
+    justifyContent: 'center',
+    alignItems: 'center',
+  },
+  actionContent: {
     flexDirection: 'row',
     alignItems: 'center',
-    justifyContent: 'center',
-    paddingVertical: SPACING.md,
-    borderRadius: BORDER_RADIUS.lg,
-    shadowColor: '#000',
-    shadowOffset: {
-      width: 0,
-      height: 4,
-    },
-    shadowOpacity: 0.2,
-    shadowRadius: 8,
-    elevation: 4,
   },
-  actionButtonText: {
+  actionText: {
     color: 'white',
     fontSize: 18,
-    fontWeight: '600',
-    marginLeft: SPACING.sm,
+    fontWeight: '700',
+    marginLeft: 8,
   },
+
+  // Loading & Error States
   loadingContainer: {
     flex: 1,
     justifyContent: 'center',
     alignItems: 'center',
   },
   loadingText: {
-    fontSize: 18,
+    fontSize: 16,
+    fontWeight: '500',
   },
   errorContainer: {
     flex: 1,
     justifyContent: 'center',
     alignItems: 'center',
+    padding: 32,
   },
   errorText: {
-    fontSize: 18,
+    fontSize: 16,
+    textAlign: 'center',
+  },
+
+  // Full Screen Modal
+  fullScreenModal: {
+    flex: 1,
+    backgroundColor: 'rgba(0,0,0,0.9)',
+    justifyContent: 'center',
+    alignItems: 'center',
+  },
+  modalCloseButton: {
+    position: 'absolute',
+    top: 60,
+    right: 20,
+    zIndex: 10,
+  },
+  closeButton: {
+    width: 44,
+    height: 44,
+    borderRadius: 22,
+    justifyContent: 'center',
+    alignItems: 'center',
+  },
+  fullScreenImage: {
+    width: width - 40,
+    height: height - 200,
+  },
+  modalInfo: {
+    position: 'absolute',
+    bottom: 60,
+    left: 20,
+    right: 20,
+  },
+  modalInfoContainer: {
+    paddingHorizontal: 16,
+    paddingVertical: 12,
+    borderRadius: 12,
+  },
+  modalInfoText: {
+    color: 'white',
+    fontSize: 16,
+    fontWeight: '600',
+    textAlign: 'center',
   },
 });

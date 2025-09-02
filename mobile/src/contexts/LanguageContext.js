@@ -1,5 +1,5 @@
 import React, { createContext, useContext, useEffect, useState } from 'react';
-import { I18nManager } from 'react-native';
+import { I18nManager, Alert, Platform } from 'react-native';
 import { useTranslation } from 'react-i18next';
 import { getLanguage, setLanguage as storeLanguage } from '../utils/storage';
 import { isRTL } from '../utils/i18n';
@@ -36,12 +36,9 @@ export const LanguageProvider = ({ children }) => {
     const rtl = isRTL();
     setIsRTLLayout(rtl);
     
-    // Force RTL layout if needed
-    if (I18nManager.isRTL !== rtl) {
-      I18nManager.forceRTL(rtl);
-      // Note: In a real app, you might want to restart the app here
-      // for the RTL change to take full effect
-    }
+    // Keep interface layout consistent - no RTL flipping
+    I18nManager.allowRTL(false);
+    I18nManager.forceRTL(false);
   }, [currentLanguage]);
 
   const loadLanguage = async () => {
@@ -56,9 +53,24 @@ export const LanguageProvider = ({ children }) => {
 
   const changeLanguage = async (language) => {
     try {
+      const previousLanguage = currentLanguage;
       setCurrentLanguage(language);
       await i18n.changeLanguage(language);
       await storeLanguage(language);
+      
+      // Show restart prompt if language actually changed
+      if (previousLanguage !== language) {
+        Alert.alert(
+          'Language Changed',
+          'Please close and reopen the app to apply all language changes properly.',
+          [
+            {
+              text: 'OK',
+              style: 'default'
+            }
+          ]
+        );
+      }
     } catch (error) {
       console.error('Error changing language:', error);
     }

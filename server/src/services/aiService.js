@@ -138,9 +138,18 @@ General Rules:
 
     if (language === 'ar') {
       return basePrompt + `
-- The OCR text may be in Arabic
-- Extract information appropriately while maintaining English field names in JSON
-- Understand Arabic date/time formats and convert to ISO`;
+
+ARABIC LANGUAGE HANDLING:
+- The OCR text may be in Arabic, English, or mixed languages
+- DETECT the primary language of the content automatically
+- If content is primarily Arabic: respond with Arabic titles/summaries for better UX
+- If content is primarily English: respond with English titles/summaries
+- For mixed content: use the language that appears most prominently
+- Always maintain English field names in JSON structure
+- Understand Arabic date/time formats (e.g., ٢٠٢٤/١٢/٢٥) and convert to ISO format
+- For Arabic numbers: convert Eastern Arabic numerals (٠١٢٣٤٥٦٧٨٩) to standard digits (0123456789)
+- EXAMPLE: If Arabic business card → Arabic title: "د. أحمد محمد - طبيب أسنان" not "Dr. Ahmed Mohamed - Dentist"
+- This provides better user experience for Arabic speakers`;
     }
 
     return basePrompt;

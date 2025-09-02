@@ -25,7 +25,7 @@ const SettingItem = ({ icon, title, value, onPress, colors, isRTL, showChevron =
       <View style={[styles.settingIcon, { backgroundColor: colors.primary + '20' }]}>
         <Ionicons name={icon} size={20} color={colors.primary} />
       </View>
-      <View style={[styles.settingText, { marginLeft: isRTL ? 0 : SPACING.md, marginRight: isRTL ? SPACING.md : 0 }]}>
+      <View style={[styles.settingText, { marginLeft: SPACING.md }]}>
         <Text style={[styles.settingTitle, { color: colors.text }]}>{title}</Text>
         {value && (
           <Text style={[styles.settingValue, { color: colors.textSecondary }]}>{value}</Text>
@@ -33,7 +33,7 @@ const SettingItem = ({ icon, title, value, onPress, colors, isRTL, showChevron =
       </View>
       {showChevron && (
         <Ionicons 
-          name={isRTL ? "chevron-back" : "chevron-forward"} 
+          name="chevron-forward"
           size={20} 
           color={colors.textSecondary} 
         />

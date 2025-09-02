@@ -47,6 +47,7 @@ const resources = {
         openInMaps: 'Open in Maps',
         saveNote: 'Save Note',
         successToast: 'Action completed successfully!',
+        fieldsSaved: 'Fields updated successfully!',
         edit: 'Edit',
         save: 'Save',
         cancel: 'Cancel',
@@ -124,6 +125,10 @@ const resources = {
         unknownError: 'Something went wrong. Please try again.',
         noImageSelected: 'No image selected',
         invalidImage: 'Invalid image format',
+        noTextDetected: 'No text found in this image. Try a clearer photo with visible text.',
+        noTextTitle: 'No Text Found',
+        jobNotFound: 'Job not found or expired',
+        saveFailed: 'Failed to save changes. Please try again.',
       },
       
       // Common
@@ -194,6 +199,7 @@ const resources = {
         openInMaps: 'افتح في الخرائط',
         saveNote: 'احفظ الملاحظة',
         successToast: 'تم تنفيذ الإجراء بنجاح!',
+        fieldsSaved: 'تم تحديث الحقول بنجاح!',
         edit: 'تعديل',
         save: 'حفظ',
         cancel: 'إلغاء',
@@ -271,6 +277,10 @@ const resources = {
         unknownError: 'حدث خطأ ما. يرجى المحاولة مرة أخرى.',
         noImageSelected: 'لم يتم اختيار صورة',
         invalidImage: 'تنسيق صورة غير صالح',
+        noTextDetected: 'لم يتم العثور على نص في هذه الصورة. جرب صورة أوضح تحتوي على نص مرئي.',
+        noTextTitle: 'لم يتم العثور على نص',
+        jobNotFound: 'المهمة غير موجودة أو منتهية الصلاحية',
+        saveFailed: 'فشل في حفظ التغييرات. يرجى المحاولة مرة أخرى.',
       },
       
       // Common

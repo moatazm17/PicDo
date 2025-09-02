@@ -2,6 +2,7 @@ import React from 'react';
 import { Tabs } from 'expo-router';
 import { Ionicons } from '@expo/vector-icons';
 import { useTranslation } from 'react-i18next';
+import { Platform } from 'react-native';
 
 import { useTheme } from '../../src/contexts/ThemeContext';
 
@@ -30,8 +31,9 @@ export default function TabLayout() {
         tabBarStyle: {
           backgroundColor: colors.surface,
           borderTopColor: colors.border,
-          paddingBottom: 5,
-          height: 60,
+          paddingBottom: Platform.OS === 'ios' ? 20 : 5,
+          paddingTop: 5,
+          height: Platform.OS === 'ios' ? 85 : 60,
         },
         tabBarLabelStyle: {
           fontSize: 12,

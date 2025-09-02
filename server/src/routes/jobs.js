@@ -153,6 +153,51 @@ router.get('/:jobId', async (req, res) => {
   }
 });
 
+// PATCH /jobs/:jobId - Update job fields
+router.patch('/:jobId', async (req, res) => {
+  try {
+    const { jobId } = req.params;
+    const userId = req.headers['x-user-id'];
+    const { fields } = req.body;
+
+    if (!userId) {
+      return res.status(400).json({
+        error: 'missing_user_id',
+        message: 'x-user-id header is required'
+      });
+    }
+
+    const job = await Job.findOne({ jobId, userId });
+    
+    if (!job) {
+      return res.status(404).json({
+        error: 'job_not_found',
+        message: 'Job not found'
+      });
+    }
+
+    // Update fields
+    if (fields) {
+      job.fields = { ...job.fields, ...fields };
+      job.updatedAt = new Date();
+      await job.save();
+    }
+
+    res.json({
+      success: true,
+      jobId: job.jobId,
+      fields: job.fields
+    });
+
+  } catch (error) {
+    console.error('Job update error:', error);
+    res.status(500).json({
+      error: 'server_error',
+      message: 'Failed to update job'
+    });
+  }
+});
+
 // POST /jobs/:jobId/mark-action - Mark action as applied
 router.post('/:jobId/mark-action', async (req, res) => {
   try {

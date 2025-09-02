@@ -4,6 +4,7 @@ import { StatusBar } from 'expo-status-bar';
 import { I18nextProvider } from 'react-i18next';
 import { SafeAreaProvider } from 'react-native-safe-area-context';
 import { GestureHandlerRootView } from 'react-native-gesture-handler';
+import { I18nManager } from 'react-native';
 import Toast from 'react-native-toast-message';
 // import * as SplashScreen from 'expo-splash-screen';
 import * as Linking from 'expo-linking';
@@ -28,6 +29,10 @@ export default function RootLayout() {
   const segments = useSegments();
   
   useEffect(() => {
+    // Keep interface consistent - no global RTL flipping
+    I18nManager.allowRTL(false);
+    I18nManager.forceRTL(false);
+
     // Check for pending shared images from the share extension
     const checkPendingShare = async () => {
       try {

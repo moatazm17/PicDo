@@ -80,11 +80,21 @@ const HistoryItem = ({ item, onPress, colors, isRTL }) => {
         </View>
 
         {/* Content */}
-        <View style={[styles.itemDetails, { marginLeft: isRTL ? 0 : SPACING.md, marginRight: isRTL ? SPACING.md : 0 }]}>
-          <Text style={[styles.itemTitle, { color: colors.text }]} numberOfLines={1}>
+        <View style={[styles.itemDetails, { marginLeft: SPACING.md }]}>
+          <Text style={[
+            styles.itemTitle, 
+            { 
+              color: colors.text
+            }
+          ]} numberOfLines={2}>
             {item.summary || item.fields?.title || 'Untitled'}
           </Text>
-          <Text style={[styles.itemSubtitle, { color: colors.textSecondary }]} numberOfLines={1}>
+          <Text style={[
+            styles.itemSubtitle, 
+            { 
+              color: colors.textSecondary
+            }
+          ]} numberOfLines={1}>
             {formatDate(item.createdAt)}
           </Text>
         </View>
@@ -125,6 +135,28 @@ export default function LibraryScreen() {
   useEffect(() => {
     loadHistory();
   }, [activeFilter]);
+
+  // Auto-refresh when screen comes into focus
+  useEffect(() => {
+    const unsubscribe = router.events?.on?.('routeChangeComplete', (url) => {
+      if (url.includes('history')) {
+        loadHistory();
+      }
+    });
+    
+    return () => unsubscribe?.();
+  }, []);
+
+  // Listen for new items from navigation state
+  useEffect(() => {
+    const interval = setInterval(() => {
+      if (!loading && !refreshing) {
+        loadHistory();
+      }
+    }, 10000); // Auto-refresh every 10 seconds
+    
+    return () => clearInterval(interval);
+  }, [loading, refreshing]);
 
   const loadHistory = async () => {
     try {
