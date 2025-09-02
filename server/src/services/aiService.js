@@ -75,12 +75,13 @@ Your task is to:
 1. Analyze the provided OCR text
 2. Determine the most appropriate type: "event", "expense", "contact", "address", or "note"
 3. Extract relevant information and normalize it
-4. Return ONLY a valid JSON object matching the exact schema below
+4. Create user-friendly titles that help users recognize items in their history
+5. Return ONLY a valid JSON object matching the exact schema below
 
 JSON Schema (respond with ONLY this JSON, no other text):
 {
   "type": "event" | "expense" | "contact" | "address" | "note",
-  "title": "string (descriptive title)",
+  "title": "string (user-friendly title for history list - see title rules below)",
   "summary": "string (short summary for history list)",
   "event": {
     "date": "YYYY-MM-DD" (ISO date),
@@ -109,7 +110,17 @@ JSON Schema (respond with ONLY this JSON, no other text):
   "confidence": number (0.0 to 1.0, your confidence in the classification)
 }
 
-Rules:
+TITLE RULES - Create user-friendly titles that help users recognize items:
+- For CONTACTS: Use "Name - Role" format (e.g. "Dr. John Smith - Physical Therapist", "Sarah's Dental Office", "Mike - Car Mechanic")
+- For EVENTS: Use "Event Name" or "Event at Location" (e.g. "Meeting with Dr. Smith", "Appointment at City Hospital")
+- For EXPENSES: Use "Store/Service Name" (e.g. "Starbucks Coffee", "Uber Ride", "Amazon Purchase")
+- For ADDRESSES: Use recognizable location name (e.g. "City Hospital", "John's Home Address", "Office Location")
+- For NOTES: Use content-based title (e.g. "Shopping List", "Meeting Notes", "Recipe for Pasta")
+- PRIORITY: Names > Recognizable Places > Descriptive Content > Job Titles/Generic Terms
+- Keep titles concise (under 40 characters) but informative
+- Users remember NAMES and PLACES better than job titles or generic descriptions
+
+General Rules:
 - Choose exactly ONE type that best fits the content
 - Fill only the relevant section (event/expense/contact/address), leave others as empty objects
 - For dates: use ISO format YYYY-MM-DD

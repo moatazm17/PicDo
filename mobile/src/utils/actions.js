@@ -53,17 +53,31 @@ export const addEventToCalendar = async (eventData) => {
 
 export const saveContact = async (contactData) => {
   try {
+    console.log('saveContact called with:', JSON.stringify(contactData));
+    
     const hasPermission = await requestContactsPermission();
     if (!hasPermission) {
       throw new Error('Contacts permission denied');
     }
 
+    // Ensure we have both name and phone
+    const contactName = contactData.name || 'Unknown Contact';
+    const contactPhone = contactData.phone || '';
+    
+    console.log('Creating contact with name:', contactName, 'phone:', contactPhone);
+
     const contact = {
-      name: contactData.name,
-      phoneNumbers: contactData.phone ? [{ label: 'mobile', number: contactData.phone }] : [],
+      name: contactName,
+      firstName: contactName.split(' ')[0] || contactName,
+      lastName: contactName.split(' ').slice(1).join(' ') || '',
+      phoneNumbers: contactPhone ? [{ label: 'mobile', number: contactPhone }] : [],
     };
 
+    console.log('Final contact object:', JSON.stringify(contact));
+
     const contactId = await Contacts.addContactAsync(contact);
+    console.log('Contact saved successfully with ID:', contactId);
+    
     return { success: true, contactId };
 
   } catch (error) {
