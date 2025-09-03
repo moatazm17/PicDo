@@ -307,9 +307,9 @@ const styles = StyleSheet.create({
     opacity: 0.3,
   },
   logoContainer: {
-    width: 117, // 130 - 10% = 117px (smaller circle)
-    height: 117,
-    borderRadius: 58.5,
+    width: 114, // Custom size as requested
+    height: 114,
+    borderRadius: 57,
     justifyContent: 'center',
     alignItems: 'center',
     shadowColor: '#000',
