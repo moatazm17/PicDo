@@ -85,10 +85,11 @@ LANGUAGE RULES:
 - "summary" = SHORT browsing title in ${uiLang === 'ar' ? 'Arabic' : 'English'}
 - All other fields = Keep original document language
 
-EXAMPLES:
-News article → summary: "خبر عن القطار" (short), content: "full article text"
-Recipe → summary: "وصفة طبخ" (short), content: "ingredients and steps"
-Social post → summary: "منشور فيسبوك" (short), content: "full post text"
+EXAMPLES (${uiLang === 'ar' ? 'Arabic UI' : 'English UI'}):
+${uiLang === 'ar' ? 
+  'News article → summary: "خبر عن القطار" (short), content: "full article text"\nRecipe → summary: "وصفة طبخ" (short), content: "ingredients and steps"\nSocial post → summary: "منشور فيسبوك" (short), content: "full post text"' :
+  'News article → summary: "Train News" (short), content: "full article text"\nRecipe → summary: "Pasta Recipe" (short), content: "ingredients and steps"\nSocial post → summary: "Facebook Post" (short), content: "full post text"'
+}
 
 Return exactly this JSON (no nulls for main content):
 {
