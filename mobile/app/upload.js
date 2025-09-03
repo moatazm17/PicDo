@@ -188,12 +188,10 @@ export default function UploadScreen() {
     // Handle back button
     const backHandler = BackHandler.addEventListener('hardwareBackPress', handleBackPress);
     
-    // AppState monitoring removed - using API-level retry instead
-    
     return () => {
       backHandler.remove();
     };
-  }, [isUploading, jobId, uploadRetryCount]);
+  }, [params.imageUri]); // Only run when imageUri changes
 
   useEffect(() => {
     if (jobId && pollCount < maxPollAttempts) {
