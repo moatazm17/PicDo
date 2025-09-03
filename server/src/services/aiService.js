@@ -40,8 +40,8 @@ class AIService {
       // Validate the response structure
       this.validateClassification(classification);
       
-      // Ensure summary is in correct UI language
-      classification = await ensureSummaryInUiLang(classification, uiLang, this.openai);
+      // Post-process to ensure summary is short
+      classification = this.enforceSummaryLength(classification, uiLang);
       
       return classification;
     } catch (error) {
@@ -73,45 +73,127 @@ class AIService {
   }
 
   getSystemPrompt(uiLang) {
-    return `You extract structured data from OCR text and return **JSON only**.
+    return `You are a smart document classifier that extracts actionable data from OCR text. Return **JSON only**.
 
-CRITICAL FIELD RULES:
-- "summary": MUST be 2-4 words maximum in ${uiLang === 'ar' ? 'Arabic' : 'English'} (like a folder name)
-- "fields.title": Original document title/headline (keep original language)  
-- "fields.content": Full main text content (keep original language)
-- "fields.category": Content category (e.g. "news", "social media", "recipe", "instructions")
+STEP 1: NOISE FILTERING
+First, identify and IGNORE these UI elements:
+- Browser UI: "Chrome", "Safari", "tabs", navigation bars, "Home | Profile | Settings"
+- Social media UI: "Like | Comment | Share", "Sponsored Ad", usernames, timestamps
+- Website navigation: menus, headers, footers, "Login", "Sign up"
+- Advertisements: "Ad", "Sponsored", promotional content
+- Generic UI: buttons, form labels, "Submit", "Cancel"
 
-SUMMARY REQUIREMENTS:
-- Maximum 40 characters total
-- 2-4 words only (like "Train News", "Coffee Bill", "خبر القطار", "فاتورة قهوة")
-- Think like naming a file or folder
-- NOT full sentences or descriptions
+FOCUS ONLY on the main document content - the actual information a human would care about.
 
-EXAMPLES (${uiLang === 'ar' ? 'Arabic UI' : 'English UI'}):
+STEP 2: SMART TYPE DETECTION
+Classify using these priority rules:
+
+CONTACT (highest priority if present):
+- Contains: Dr./Mr./Ms. + name, phone numbers, email addresses
+- Keywords: "Phone:", "Email:", "Contact", "Office Hours"
+
+EXPENSE (high priority):
+- Contains: currency symbols ($, £, €, ج.م), "Total:", "Amount:", receipts
+- Keywords: "Receipt", "Invoice", "Bill", "Payment", "Tax"
+
+EVENT (medium priority):
+- Contains: specific dates + times, "Meeting", "Appointment", "Event"
+- Keywords: "at", location names, "will take place", calendar-like format
+
+ADDRESS (medium priority):
+- Contains: street numbers, city names, postal codes
+- Keywords: "Street", "Avenue", "City", map-like format
+
+DOCUMENT (for formal content):
+- Contains: official language, procedures, instructions, news articles
+- Keywords: formal tone, publication names, article structure
+
+NOTE (fallback):
+- Everything else: social posts, personal notes, lists, informal content
+
+STEP 3: SUMMARY GENERATION
+Create a ${uiLang === 'ar' ? 'Arabic' : 'English'} summary that is:
+- EXACTLY 2-4 words maximum
+- Like naming a file or folder
+- Focus on the main subject/entity
+
+${uiLang === 'ar' ? 'Arabic' : 'English'} Summary Examples:
 ${uiLang === 'ar' ? 
-  'News article → summary: "خبر عن القطار" (short), content: "full article text"\nRecipe → summary: "وصفة طبخ" (short), content: "ingredients and steps"\nSocial post → summary: "منشور فيسبوك" (short), content: "full post text"' :
-  'News article → summary: "Train News" (short), content: "full article text"\nRecipe → summary: "Pasta Recipe" (short), content: "ingredients and steps"\nSocial post → summary: "Facebook Post" (short), content: "full post text"'
+  '- News: "خبر القطار" (not "خبر عن تصرف رئيس قطار")\n- Receipt: "فاتورة ستاربكس" (not "فاتورة شراء قهوة من ستاربكس")\n- Contact: "د. أحمد" (not "معلومات الاتصال بالدكتور أحمد")\n- Social: "منشور فيسبوك" (not "منشور على فيسبوك عن الجري")' :
+  '- News: "Train News" (not "News about train conductor behavior")\n- Receipt: "Starbucks Bill" (not "Coffee purchase receipt from Starbucks")\n- Contact: "Dr. Sarah" (not "Contact information for Dr. Sarah Johnson")\n- Social: "Facebook Post" (not "Facebook post about morning run")'
 }
 
-Return exactly this JSON (no nulls for main content):
+STEP 4: FIELD EXTRACTION
+Extract fields based on type:
+
+FOR ALL TYPES:
+- title: Original headline/title from document (preserve exact language)
+- content: Main text content (cleaned, no UI noise)
+- category: Specific category (e.g., "news", "medical", "coffee shop", "social media")
+
+TYPE-SPECIFIC FIELDS:
+- contact: name (full name), phone (all numbers), email
+- expense: amount (final total only), currency, merchant (business name), date
+- event: date (ISO format), time (24h), location, url
+- address: full (complete address), mapsQuery (search-optimized)
+
+STEP 5: DATA ACCURACY
+- NEVER modify numbers, dates, or specific details from OCR
+- If OCR shows "015", keep "015" (don't change to "+20115")
+- Preserve exact formatting and spelling from original
+- Extract multiple phone/email if present
+- For amounts, use the final "Total" not individual items
+
+Return this exact JSON structure:
 {
-  "type": "event|expense|contact|address|note|document",
-  "summary": "SHORT title in UI language (max 40 chars)",
+  "type": "contact|expense|event|address|note|document",
+  "summary": "2-4 words in ${uiLang === 'ar' ? 'Arabic' : 'English'}",
   "fields": {
     "title": "original document title/headline",
-    "content": "full main text content",
-    "category": "content type category",
-    "date": "date if present or null",
-    "amount": "amount if present or null",
-    "location": "location if present or null",
-    "name": "name if present or null",
-    "phone": "phone if present or null",
-    "email": "email if present or null"
+    "content": "cleaned main content (no UI noise)",
+    "category": "specific category",
+    "date": "YYYY-MM-DD or null",
+    "time": "HH:mm or null", 
+    "amount": "numeric value or null",
+    "currency": "USD|EUR|EGP|SAR|AED or null",
+    "location": "location or null",
+    "name": "full name or null",
+    "phone": "phone number or null",
+    "email": "email or null"
   },
-  "confidence": 0.8
+  "confidence": 0.9
 }
 
-NO prose. JSON only.`;
+NO explanations. JSON only.`;
+  }
+
+  enforceSummaryLength(classification, uiLang) {
+    if (!classification.summary) return classification;
+    
+    const words = classification.summary.trim().split(/\s+/);
+    
+    // If summary is too long, truncate intelligently
+    if (words.length > 4 || classification.summary.length > 40) {
+      console.log(`Summary too long (${words.length} words, ${classification.summary.length} chars), truncating:`, classification.summary);
+      
+      // Take first 2-3 most important words
+      let shortSummary;
+      if (words.length >= 3) {
+        shortSummary = words.slice(0, 3).join(' ');
+      } else {
+        shortSummary = words.slice(0, 2).join(' ');
+      }
+      
+      // Ensure it's still under 40 chars
+      if (shortSummary.length > 40) {
+        shortSummary = shortSummary.substring(0, 37) + '...';
+      }
+      
+      classification.summary = shortSummary;
+      console.log(`Truncated to:`, classification.summary);
+    }
+    
+    return classification;
   }
 
   validateClassification(classification) {
