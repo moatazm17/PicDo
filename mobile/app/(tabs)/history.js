@@ -11,6 +11,7 @@ import {
   Alert,
   TextInput,
   Keyboard,
+  Modal,
 } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
 import { Ionicons } from '@expo/vector-icons';
@@ -47,7 +48,7 @@ const FilterTab = ({ title, isActive, onPress, colors }) => (
   </TouchableOpacity>
 );
 
-const HistoryItem = ({ item, onPress, onDelete, onToggleFavorite, onEditTitle, colors, isRTL }) => {
+const HistoryItem = ({ item, onPress, onDelete, onToggleFavorite, onEditTitle, onViewOriginal, colors, isRTL }) => {
   const [showActions, setShowActions] = useState(false);
   const [editingTitle, setEditingTitle] = useState(false);
   const [newTitle, setNewTitle] = useState(item.summary || '');
@@ -99,7 +100,11 @@ const HistoryItem = ({ item, onPress, onDelete, onToggleFavorite, onEditTitle, c
         activeOpacity={0.7}
       >
         {/* Thumbnail or Icon */}
-        <View style={[styles.itemIcon, { backgroundColor: colors.primary + '20' }]}>
+        <TouchableOpacity 
+          style={[styles.itemIcon, { backgroundColor: colors.primary + '20' }]}
+          onPress={() => item.thumb && onViewOriginal(item)}
+          disabled={!item.thumb}
+        >
           {item.thumb ? (
             <Image
               source={{ uri: `data:image/jpeg;base64,${item.thumb}` }}
@@ -108,7 +113,7 @@ const HistoryItem = ({ item, onPress, onDelete, onToggleFavorite, onEditTitle, c
           ) : (
             <Ionicons name={getTypeIcon(item.type)} size={24} color={colors.primary} />
           )}
-        </View>
+        </TouchableOpacity>
 
         {/* Content */}
         <View style={[styles.itemDetails, { marginLeft: SPACING.md }]}>
@@ -227,6 +232,7 @@ export default function LibraryScreen() {
   const [sortBy, setSortBy] = useState('date_desc'); // date_desc, date_asc, favorites
   const [searchQuery, setSearchQuery] = useState('');
   const [showSearch, setShowSearch] = useState(false);
+  const [viewingImage, setViewingImage] = useState(null);
 
   const filters = [
     { key: 'all', title: t('history.filterAll') },
@@ -455,6 +461,10 @@ export default function LibraryScreen() {
     setRefreshing(false);
   }, [activeFilter]);
 
+  const handleViewOriginal = (item) => {
+    setViewingImage(item);
+  };
+
   const handleItemPress = (item) => {
     router.push({
       pathname: '/result',
@@ -557,6 +567,7 @@ export default function LibraryScreen() {
             onDelete={handleDelete}
             onToggleFavorite={handleToggleFavorite}
             onEditTitle={handleEditTitle}
+            onViewOriginal={handleViewOriginal}
             colors={colors}
             isRTL={isRTL}
           />
@@ -572,6 +583,52 @@ export default function LibraryScreen() {
         }
         ListEmptyComponent={renderEmpty}
       />
+
+      {/* Image Viewing Modal */}
+      <Modal
+        visible={!!viewingImage}
+        transparent={true}
+        animationType="fade"
+        onRequestClose={() => setViewingImage(null)}
+      >
+        <View style={styles.modalOverlay}>
+          <SafeAreaView style={styles.modalContainer}>
+            {/* Header */}
+            <View style={styles.modalHeader}>
+              <Text style={[styles.modalTitle, { color: 'white' }]} numberOfLines={1}>
+                {viewingImage?.summary || 'Original Image'}
+              </Text>
+              <TouchableOpacity
+                style={styles.modalCloseButton}
+                onPress={() => setViewingImage(null)}
+              >
+                <Ionicons name="close" size={24} color="white" />
+              </TouchableOpacity>
+            </View>
+
+            {/* Full Size Image */}
+            <View style={styles.modalImageContainer}>
+              {viewingImage?.thumb && (
+                <Image
+                  source={{ uri: `data:image/jpeg;base64,${viewingImage.thumb}` }}
+                  style={styles.modalImage}
+                  resizeMode="contain"
+                />
+              )}
+            </View>
+
+            {/* Info */}
+            <View style={styles.modalInfo}>
+              <Text style={styles.modalInfoText}>
+                {t('history.originalImage')}
+              </Text>
+              <Text style={styles.modalInfoSubtext}>
+                {new Date(viewingImage?.createdAt).toLocaleDateString()}
+              </Text>
+            </View>
+          </SafeAreaView>
+        </View>
+      </Modal>
     </SafeAreaView>
   );
 }
@@ -733,5 +790,57 @@ const styles = StyleSheet.create({
     fontSize: 16,
     textAlign: 'center',
     lineHeight: 24,
+  },
+  modalOverlay: {
+    flex: 1,
+    backgroundColor: 'rgba(0, 0, 0, 0.9)',
+  },
+  modalContainer: {
+    flex: 1,
+  },
+  modalHeader: {
+    flexDirection: 'row',
+    justifyContent: 'space-between',
+    alignItems: 'center',
+    padding: SPACING.lg,
+    paddingTop: SPACING.xl,
+  },
+  modalTitle: {
+    fontSize: 18,
+    fontWeight: '600',
+    flex: 1,
+    marginRight: SPACING.md,
+  },
+  modalCloseButton: {
+    width: 40,
+    height: 40,
+    borderRadius: 20,
+    backgroundColor: 'rgba(255, 255, 255, 0.2)',
+    justifyContent: 'center',
+    alignItems: 'center',
+  },
+  modalImageContainer: {
+    flex: 1,
+    justifyContent: 'center',
+    alignItems: 'center',
+    padding: SPACING.lg,
+  },
+  modalImage: {
+    width: width - SPACING.xl * 2,
+    height: height * 0.7,
+  },
+  modalInfo: {
+    padding: SPACING.lg,
+    alignItems: 'center',
+  },
+  modalInfoText: {
+    color: 'white',
+    fontSize: 16,
+    fontWeight: '600',
+    marginBottom: SPACING.sm,
+  },
+  modalInfoSubtext: {
+    color: 'rgba(255, 255, 255, 0.7)',
+    fontSize: 14,
   },
 });
