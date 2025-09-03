@@ -224,8 +224,8 @@ export default function LibraryScreen() {
   const { isRTL } = useLanguage();
   const router = useRouter();
 
-  const [history, setHistory] = useState([]);
-  const [filteredHistory, setFilteredHistory] = useState([]);
+  const [allHistory, setAllHistory] = useState([]); // Cache all data
+  const [displayHistory, setDisplayHistory] = useState([]); // What user sees
   const [loading, setLoading] = useState(true);
   const [refreshing, setRefreshing] = useState(false);
   const [activeFilter, setActiveFilter] = useState('all');
@@ -246,18 +246,18 @@ export default function LibraryScreen() {
   ];
 
   useEffect(() => {
-    loadHistory();
-  }, [activeFilter, sortBy]);
+    loadAllHistory(); // Load all data once
+  }, []); // Only on mount
 
   useEffect(() => {
-    filterAndSearchHistory();
-  }, [history, searchQuery]);
+    filterAndDisplayHistory(); // Filter locally when filter/sort/search changes
+  }, [allHistory, activeFilter, sortBy, searchQuery]);
 
   // Auto-refresh when screen comes into focus
   useEffect(() => {
     const unsubscribe = router.events?.on?.('routeChangeComplete', (url) => {
       if (url.includes('history')) {
-        loadHistory();
+        loadAllHistory();
       }
     });
     
@@ -266,8 +266,17 @@ export default function LibraryScreen() {
 
   // Auto-refresh removed to prevent infinite API calls
 
-  const filterAndSearchHistory = () => {
-    let filtered = [...history];
+  const filterAndDisplayHistory = () => {
+    let filtered = [...allHistory];
+    
+    // Apply type filter (instant - no API call)
+    if (activeFilter !== 'all') {
+      if (activeFilter === 'favorites') {
+        filtered = filtered.filter(item => item.isFavorite);
+      } else {
+        filtered = filtered.filter(item => item.type === activeFilter);
+      }
+    }
     
     // Apply search filter
     if (searchQuery.trim()) {
@@ -279,7 +288,10 @@ export default function LibraryScreen() {
       });
     }
     
-    setFilteredHistory(filtered);
+    // Apply sorting
+    filtered = sortItems(filtered, sortBy);
+    
+    setDisplayHistory(filtered);
   };
 
   const handleSearch = (query) => {
@@ -335,23 +347,12 @@ export default function LibraryScreen() {
     );
   };
 
-  const loadHistory = async () => {
+  const loadAllHistory = async () => {
     try {
       setLoading(true);
-      let type = activeFilter === 'all' || activeFilter === 'favorites' ? null : activeFilter;
-      const response = await apiService.getHistory(50, null, type);
-      
-      let items = response.items;
-      
-      // Filter favorites if needed
-      if (activeFilter === 'favorites') {
-        items = items.filter(item => item.isFavorite);
-      }
-      
-      // Sort items
-      items = sortItems(items, sortBy);
-      
-      setHistory(items);
+      // Load ALL data without type filter for caching
+      const response = await apiService.getHistory(100, null, null); // Increased limit, no type filter
+      setAllHistory(response.items);
     } catch (error) {
       console.error('Error loading history:', error);
       Toast.show({
@@ -362,7 +363,7 @@ export default function LibraryScreen() {
         topOffset: 60,
         onPress: () => {
           Toast.hide();
-          loadHistory(); // Retry on toast tap
+          loadAllHistory(); // Retry on toast tap
         },
       });
     } finally {
@@ -373,7 +374,7 @@ export default function LibraryScreen() {
   const handleDelete = async (jobId) => {
     try {
       await apiService.deleteJob(jobId);
-      setHistory(prev => prev.filter(item => item.jobId !== jobId));
+      setAllHistory(prev => prev.filter(item => item.jobId !== jobId));
       Toast.show({
         type: 'success',
         text1: t('common.success'),
@@ -398,7 +399,7 @@ export default function LibraryScreen() {
   const handleToggleFavorite = async (jobId, isFavorite) => {
     try {
       await apiService.toggleFavorite(jobId, isFavorite);
-      setHistory(prev => prev.map(item => 
+      setAllHistory(prev => prev.map(item => 
         item.jobId === jobId ? { ...item, isFavorite } : item
       ));
       Toast.show({
@@ -427,7 +428,7 @@ export default function LibraryScreen() {
       await apiService.updateJob(jobId, { 
         summary: newTitle 
       });
-      setHistory(prev => prev.map(item => 
+      setAllHistory(prev => prev.map(item => 
         item.jobId === jobId ? { 
           ...item, 
           summary: newTitle
@@ -457,9 +458,9 @@ export default function LibraryScreen() {
 
   const onRefresh = useCallback(async () => {
     setRefreshing(true);
-    await loadHistory();
+    await loadAllHistory(); // Refresh all cached data
     setRefreshing(false);
-  }, [activeFilter]);
+  }, []);
 
   const handleViewOriginal = (item) => {
     setViewingImage(item);
@@ -558,7 +559,7 @@ export default function LibraryScreen() {
 
       {/* History List */}
       <FlatList
-        data={searchQuery.trim() ? filteredHistory : history}
+        data={displayHistory}
         keyExtractor={(item) => item.jobId}
         renderItem={({ item }) => (
           <HistoryItem
