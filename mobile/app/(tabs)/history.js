@@ -50,7 +50,7 @@ const FilterTab = ({ title, isActive, onPress, colors }) => (
 const HistoryItem = ({ item, onPress, onDelete, onToggleFavorite, onEditTitle, colors, isRTL }) => {
   const [showActions, setShowActions] = useState(false);
   const [editingTitle, setEditingTitle] = useState(false);
-  const [newTitle, setNewTitle] = useState(item.summary || item.fields?.title || '');
+  const [newTitle, setNewTitle] = useState(item.summary || '');
 
   const getTypeIcon = (type) => {
     switch (type) {
@@ -69,7 +69,7 @@ const HistoryItem = ({ item, onPress, onDelete, onToggleFavorite, onEditTitle, c
   };
 
   const handleTitleSave = () => {
-    if (newTitle.trim() && newTitle !== (item.summary || item.fields?.title)) {
+    if (newTitle.trim() && newTitle !== item.summary) {
       onEditTitle(item.jobId, newTitle.trim());
     }
     setEditingTitle(false);
@@ -129,7 +129,7 @@ const HistoryItem = ({ item, onPress, onDelete, onToggleFavorite, onEditTitle, c
                 color: colors.text
               }
             ]} numberOfLines={2}>
-              {item.summary || item.fields?.title || 'Untitled'}
+              {item.summary || 'Untitled'}
             </Text>
           )}
           <Text style={[
@@ -276,7 +276,7 @@ export default function LibraryScreen() {
     if (searchQuery.trim()) {
       const query = searchQuery.toLowerCase().trim();
       filtered = filtered.filter(item => {
-        const title = (item.summary || item.fields?.title || '').toLowerCase();
+        const title = (item.summary || '').toLowerCase();
         const content = Object.values(item.fields || {}).join(' ').toLowerCase();
         return title.includes(query) || content.includes(query);
       });

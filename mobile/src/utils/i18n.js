@@ -18,7 +18,7 @@ const resources = {
         title: 'Any screenshot → instant action.',
         subtitle: 'Turn any screenshot into actionable items with AI',
         getStarted: 'Get started',
-        privacyNote: 'We don\'t store your photos—only text.',
+        privacyNote: 'Your photos stay private - we only extract text.',
       },
       
       // Home
@@ -192,7 +192,7 @@ const resources = {
         title: 'أي سكرينشوت ← فعل فوري.',
         subtitle: 'حوّل أي سكرينشوت إلى عناصر قابلة للتنفيذ بالذكاء الاصطناعي',
         getStarted: 'ابدأ الآن',
-        privacyNote: 'لا نحتفظ بصورك - النص فقط.',
+        privacyNote: 'صورك تبقى خاصة - نستخرج النص فقط.',
       },
       
       // Home
@@ -374,7 +374,11 @@ i18n
     },
   });
 
-export const getCurrentLanguage = () => i18n.language;
+export const getCurrentLanguage = () => {
+  const lang = i18n.language;
+  console.log(`🌍 getCurrentLanguage() -> "${lang}"`);
+  return lang;
+};
 export const isRTL = () => i18n.language === 'ar';
 
 export default i18n;

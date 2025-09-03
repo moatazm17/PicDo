@@ -1,4 +1,4 @@
-import React, { useEffect, useState } from 'react';
+import React, { useEffect, useState, useRef } from 'react';
 import {
   View,
   Text,
@@ -7,6 +7,8 @@ import {
   BackHandler,
   Alert,
   TouchableOpacity,
+  Animated,
+  Easing,
 } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
 import { useRouter, useLocalSearchParams } from 'expo-router';
@@ -14,6 +16,7 @@ import { useTranslation } from 'react-i18next';
 import * as Animatable from 'react-native-animatable';
 import { Ionicons } from '@expo/vector-icons';
 import Toast from 'react-native-toast-message';
+import { LinearGradient } from 'expo-linear-gradient';
 
 import { useTheme } from '../src/contexts/ThemeContext';
 import apiService, { APIError } from '../src/services/api';
@@ -21,39 +24,139 @@ import { SPACING, ANIMATION } from '../src/constants/config';
 
 const { width } = Dimensions.get('window');
 
-const ProgressStep = ({ icon, title, isActive, isCompleted, colors }) => (
-  <View style={styles.progressStep}>
-    <View
-      style={[
-        styles.progressIcon,
-        {
-          backgroundColor: isCompleted
-            ? colors.success
-            : isActive
-            ? colors.primary
-            : colors.border,
-        },
-      ]}
+const AnimatedProgressStep = ({ icon, title, isActive, isCompleted, colors, index }) => {
+  const pulseAnim = useRef(new Animated.Value(1)).current;
+  const rotateAnim = useRef(new Animated.Value(0)).current;
+  const scaleAnim = useRef(new Animated.Value(0.8)).current;
+
+  useEffect(() => {
+    if (isActive) {
+      // Pulsing animation for active step
+      Animated.loop(
+        Animated.sequence([
+          Animated.timing(pulseAnim, {
+            toValue: 1.2,
+            duration: 1000,
+            easing: Easing.inOut(Easing.ease),
+            useNativeDriver: true,
+          }),
+          Animated.timing(pulseAnim, {
+            toValue: 1,
+            duration: 1000,
+            easing: Easing.inOut(Easing.ease),
+            useNativeDriver: true,
+          }),
+        ])
+      ).start();
+
+      // Gentle rotation for active step
+      Animated.loop(
+        Animated.timing(rotateAnim, {
+          toValue: 1,
+          duration: 3000,
+          easing: Easing.linear,
+          useNativeDriver: true,
+        })
+      ).start();
+
+      // Scale up when becoming active
+      Animated.spring(scaleAnim, {
+        toValue: 1,
+        friction: 4,
+        tension: 100,
+        useNativeDriver: true,
+      }).start();
+    } else if (isCompleted) {
+      // Scale up when completed
+      Animated.spring(scaleAnim, {
+        toValue: 1,
+        friction: 4,
+        tension: 100,
+        useNativeDriver: true,
+      }).start();
+    } else {
+      // Reset animations for inactive steps
+      pulseAnim.stopAnimation();
+      rotateAnim.stopAnimation();
+      Animated.spring(scaleAnim, {
+        toValue: 0.8,
+        friction: 4,
+        tension: 100,
+        useNativeDriver: true,
+      }).start();
+    }
+  }, [isActive, isCompleted]);
+
+  const rotateInterpolate = rotateAnim.interpolate({
+    inputRange: [0, 1],
+    outputRange: ['0deg', '360deg'],
+  });
+
+  return (
+    <Animatable.View
+      animation="fadeInUp"
+      delay={index * 150}
+      style={styles.progressStep}
     >
-      <Ionicons
-        name={isCompleted ? 'checkmark' : icon}
-        size={24}
-        color={isCompleted || isActive ? 'white' : colors.textSecondary}
-      />
-    </View>
-    <Text
-      style={[
-        styles.progressTitle,
-        {
-          color: isCompleted || isActive ? colors.text : colors.textSecondary,
-          fontWeight: isCompleted || isActive ? '600' : '400',
-        },
-      ]}
-    >
-      {title}
-    </Text>
-  </View>
-);
+      <Animated.View
+        style={[
+          styles.progressIconContainer,
+          {
+            transform: [
+              { scale: scaleAnim },
+              { scale: pulseAnim },
+            ],
+          },
+        ]}
+      >
+        <LinearGradient
+          colors={
+            isCompleted
+              ? [colors.success, colors.success + 'DD']
+              : isActive
+              ? [colors.primary, colors.primary + 'DD']
+              : [colors.border, colors.border]
+          }
+          style={styles.progressIcon}
+        >
+          <Animated.View
+            style={{
+              transform: isActive ? [{ rotate: rotateInterpolate }] : [],
+            }}
+          >
+            <Ionicons
+              name={isCompleted ? 'checkmark-circle' : isActive ? 'sync' : icon}
+              size={28}
+              color={isCompleted || isActive ? 'white' : colors.textSecondary}
+            />
+          </Animated.View>
+        </LinearGradient>
+      </Animated.View>
+      
+      <Text
+        style={[
+          styles.progressTitle,
+          {
+            color: isCompleted || isActive ? colors.text : colors.textSecondary,
+            fontWeight: isCompleted || isActive ? '700' : '500',
+          },
+        ]}
+      >
+        {title}
+      </Text>
+      
+      {isActive && (
+        <Animatable.View animation="fadeIn" delay={500}>
+          <View style={[styles.activeIndicator, { backgroundColor: colors.primary + '30' }]}>
+            <Text style={[styles.activeText, { color: colors.primary }]}>
+              Processing...
+            </Text>
+          </View>
+        </Animatable.View>
+      )}
+    </Animatable.View>
+  );
+};
 
 export default function UploadScreen() {
   const { t } = useTranslation();
@@ -297,24 +400,40 @@ export default function UploadScreen() {
           </Text>
         </Animatable.View>
 
-        {/* Progress Steps */}
+        {/* Animated Progress Steps */}
         <View style={styles.progressContainer}>
           {steps.map((step, index) => (
-            <Animatable.View
+            <AnimatedProgressStep
               key={index}
-              animation={index <= currentStep ? 'fadeInUp' : 'fadeIn'}
-              delay={index * 200}
-            >
-              <ProgressStep
-                icon={step.icon}
-                title={step.title}
-                isActive={index === currentStep}
-                isCompleted={index < currentStep}
-                colors={colors}
-              />
-            </Animatable.View>
+              icon={step.icon}
+              title={step.title}
+              isActive={index === currentStep}
+              isCompleted={index < currentStep}
+              colors={colors}
+              index={index}
+            />
           ))}
         </View>
+
+        {/* Progress Bar */}
+        <Animatable.View animation="fadeInUp" delay={800} style={styles.progressBarContainer}>
+          <View style={[styles.progressBarTrack, { backgroundColor: colors.border }]}>
+            <Animatable.View
+              animation="slideInLeft"
+              duration={1000}
+              style={[
+                styles.progressBarFill,
+                {
+                  backgroundColor: colors.primary,
+                  width: `${((currentStep + 1) / steps.length) * 100}%`,
+                },
+              ]}
+            />
+          </View>
+          <Text style={[styles.progressPercentage, { color: colors.primary }]}>
+            {Math.round(((currentStep + 1) / steps.length) * 100)}%
+          </Text>
+        </Animatable.View>
 
         {/* Background Note */}
         <Animatable.View
@@ -358,28 +477,64 @@ const styles = StyleSheet.create({
   progressStep: {
     alignItems: 'center',
     marginBottom: SPACING.xl,
-    minHeight: 80,
+    paddingHorizontal: SPACING.md,
+    minHeight: 120,
   },
-  progressIcon: {
-    width: 60,
-    height: 60,
-    borderRadius: 30,
-    justifyContent: 'center',
-    alignItems: 'center',
-    marginBottom: SPACING.md,
+  progressIconContainer: {
     shadowColor: '#000',
     shadowOffset: {
       width: 0,
-      height: 4,
+      height: 8,
     },
-    shadowOpacity: 0.2,
-    shadowRadius: 8,
-    elevation: 4,
+    shadowOpacity: 0.3,
+    shadowRadius: 16,
+    elevation: 12,
+  },
+  progressIcon: {
+    width: 80,
+    height: 80,
+    borderRadius: 40,
+    justifyContent: 'center',
+    alignItems: 'center',
+    marginBottom: SPACING.md,
   },
   progressTitle: {
-    fontSize: 16,
+    fontSize: 18,
     textAlign: 'center',
+    marginBottom: SPACING.sm,
+    fontWeight: '600',
     maxWidth: width * 0.7,
+  },
+  activeIndicator: {
+    paddingHorizontal: 12,
+    paddingVertical: 6,
+    borderRadius: 16,
+    alignItems: 'center',
+  },
+  activeText: {
+    fontSize: 12,
+    fontWeight: '600',
+  },
+  progressBarContainer: {
+    alignItems: 'center',
+    marginVertical: SPACING.xl,
+    paddingHorizontal: SPACING.xl,
+    width: '100%',
+  },
+  progressBarTrack: {
+    width: '100%',
+    height: 8,
+    borderRadius: 4,
+    marginBottom: SPACING.sm,
+    overflow: 'hidden',
+  },
+  progressBarFill: {
+    height: '100%',
+    borderRadius: 4,
+  },
+  progressPercentage: {
+    fontSize: 16,
+    fontWeight: '700',
   },
   noteContainer: {
     flexDirection: 'row',
