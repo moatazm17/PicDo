@@ -3,7 +3,7 @@
  * @param {string} header - Accept-Language header value
  * @returns {'ar' | 'en'} - Detected UI language
  */
-export function detectUiLang(header) {
+function detectUiLang(header) {
   if (!header) return 'en';
   
   const lower = header.toLowerCase();
@@ -18,3 +18,5 @@ export function detectUiLang(header) {
   
   return 'en';
 }
+
+module.exports = { detectUiLang };
