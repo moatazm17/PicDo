@@ -307,8 +307,8 @@ const styles = StyleSheet.create({
     opacity: 0.3,
   },
   logoContainer: {
-    width: 114, // Custom size as requested
-    height: 114,
+    width: 10, // Custom size as requested
+    height: 108,
     borderRadius: 57,
     justifyContent: 'center',
     alignItems: 'center',
@@ -323,6 +323,7 @@ const styles = StyleSheet.create({
   logoImage: {
     width: 108, // Keep logo size the same (fixed)
     height: 108,
+    marginLeft: 2, // Move image 2px to the right
     // Logo size stays the same, circle gets smaller
   },
   accentDot: {
