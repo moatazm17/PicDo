@@ -493,6 +493,7 @@ function extractFieldsByType(classification) {
         date: extractedFields.date,
         time: extractedFields.time,
         location: extractedFields.location,
+        category: extractedFields.category,
         content: extractedFields.content
       };
     
@@ -514,6 +515,7 @@ function extractFieldsByType(classification) {
         phone: extractedFields.phone,
         email: extractedFields.email,
         location: extractedFields.location,
+        category: extractedFields.category,
         content: extractedFields.content
       };
     
@@ -522,6 +524,7 @@ function extractFieldsByType(classification) {
         title: extractedFields.title,
         full: extractedFields.full || extractedFields.content,
         location: extractedFields.location,
+        category: extractedFields.category,
         content: extractedFields.content
       };
       
