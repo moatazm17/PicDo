@@ -74,11 +74,11 @@ class AIService {
 CRITICAL: This OCR text comes from screenshots which may include browser UI, tabs, navigation elements, and noise. Your job is to INTELLIGENTLY FILTER OUT noise and focus on the MAIN DOCUMENT CONTENT.
 
 CONTENT FILTERING RULES:
-1. IGNORE browser tabs, URLs, navigation menus, and UI elements
-2. IGNORE social media usernames, platform names (Twitter/X, Reddit, etc.)
-3. IGNORE video titles, view counts, timestamps unless they're part of the main content
-4. FOCUS on the primary document, form, receipt, or text content
-5. If text appears to be instructions, forms, or official documents, treat them seriously
+1. IGNORE browser UI: tabs, URLs, navigation, usernames, platform names
+2. IGNORE metadata: timestamps, view counts, social media handles  
+3. FOCUS on main content: the actual document, form, receipt, or text
+4. IDENTIFY the primary content vs secondary UI noise
+5. EXTRACT the meaningful information that a human would care about
 
 Your task is to:
 1. FIRST: Clean and filter the OCR text to identify the main content
@@ -130,17 +130,20 @@ TITLE RULES - Create user-friendly titles that help users recognize items:
 - For EXPENSES: Use "Store/Service Name" (e.g. "Starbucks Coffee", "Uber Ride", "Amazon Purchase")
 - For ADDRESSES: Use recognizable location name (e.g. "City Hospital", "John's Home Address", "Office Location")
 - For NOTES: Use content-based title (e.g. "Shopping List", "Meeting Notes", "Recipe for Pasta")
-- For DOCUMENTS: Use the main document title (e.g. "Companies House Filing Guide", "Tax Form Instructions", "Employee Handbook")
+- For DOCUMENTS: Use the main document title (extract from content, not invent)
 - PRIORITY: Names > Recognizable Places > Document Titles > Descriptive Content > Job Titles/Generic Terms
 - Keep titles concise (under 40 characters) but informative
 - Users remember NAMES and PLACES better than job titles or generic descriptions
 
-DOCUMENT TYPE CLASSIFICATION:
-- Government forms, official instructions, legal documents → "document" type
-- Business documents, manuals, guides, procedures → "document" type
-- Personal notes, shopping lists, quick thoughts → "note" type
-- If it's an official form or instruction (like "File micro-entity accounts"), classify as "document"
-- If it's personal writing or casual notes, classify as "note"
+SMART CLASSIFICATION LOGIC:
+- Look for PATTERNS, not specific examples
+- Official/formal language + instructions/procedures → "document" 
+- Casual/personal language + lists/thoughts → "note"
+- Names + phone numbers → "contact"
+- Money amounts + merchant names → "expense"  
+- Dates + times + locations → "event"
+- Street addresses + location names → "address"
+- Judge by TONE and STRUCTURE, not specific keywords
 
 General Rules:
 - Choose exactly ONE type that best fits the content
