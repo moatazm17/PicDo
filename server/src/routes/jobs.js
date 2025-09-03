@@ -51,6 +51,14 @@ router.post('/', upload.single('image'), async (req, res) => {
       });
     }
 
+    // Check maintenance mode
+    if (process.env.MAINTENANCE_MODE === 'true') {
+      return res.status(503).json({
+        error: 'maintenance_mode',
+        message: 'Service temporarily unavailable for maintenance. Please try again later.'
+      });
+    }
+
     // Check monthly limit
     const limitCheck = await RateLimiter.checkMonthlyLimit(
       userId, 

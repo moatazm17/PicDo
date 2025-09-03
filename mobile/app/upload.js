@@ -137,7 +137,11 @@ export default function UploadScreen() {
       }
 
       if (response.status === 'failed') {
-        handleError(new Error(response.error?.message || 'Processing failed'));
+        // Create proper APIError with code for better error handling
+        const errorCode = response.error?.code || 'processing_failed';
+        const errorMessage = response.error?.message || 'Processing failed';
+        const apiError = new APIError(errorCode, errorMessage);
+        handleError(apiError);
         return;
       }
 
@@ -197,11 +201,18 @@ export default function UploadScreen() {
           errorMessage = t('errors.inappropriateContent');
           isRetryable = false;
           break;
+        case 'maintenance_mode':
+          errorMessage = t('errors.maintenanceMode');
+          isRetryable = true; // Users can retry after maintenance
+          break;
         default:
           errorMessage = error.message || t('errors.uploadFailed');
       }
     } else if (error.message && error.message.includes('No text detected')) {
       errorMessage = t('errors.noTextDetected');
+      isRetryable = false;
+    } else if (error.message && error.message.includes('Content not suitable for processing')) {
+      errorMessage = t('errors.inappropriateContent');
       isRetryable = false;
     }
 
@@ -226,6 +237,9 @@ export default function UploadScreen() {
       }
       if (error.message.includes('limit') || error.message.includes('Limit')) {
         return 'warning-outline';
+      }
+      if (error.message.includes('cannot be processed') || error.message.includes('inappropriate')) {
+        return 'shield-outline';
       }
       return 'alert-circle';
     };
