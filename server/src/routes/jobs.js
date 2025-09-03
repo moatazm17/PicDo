@@ -81,7 +81,7 @@ router.post('/', upload.single('image'), async (req, res) => {
     if (limitCheck.isLimitReached) {
       return res.status(429).json({
         error: 'limit_reached',
-        message: RateLimiter.getLimitMessage(language)
+        message: RateLimiter.getLimitMessage(uiLang)
       });
     }
 
