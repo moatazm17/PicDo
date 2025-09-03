@@ -95,7 +95,8 @@ CONTACT (highest priority if present):
 
 EXPENSE (high priority):
 - Contains: currency symbols ($, £, €, ج.م), "Total:", "Amount:", receipts
-- Keywords: "Receipt", "Invoice", "Bill", "Payment", "Tax"
+- Keywords: "Receipt", "Invoice", "Bill", "Payment", "Tax", "Transfer", "Transaction"
+- Merchant: Extract bank names, store names, company names, service providers
 
 EVENT (medium priority):
 - Contains: specific dates + times, "Meeting", "Appointment", "Event"
@@ -112,17 +113,28 @@ DOCUMENT (for formal content):
 NOTE (fallback):
 - Everything else: social posts, personal notes, lists, informal content
 
-STEP 3: SUMMARY GENERATION
-Create a ${uiLang === 'ar' ? 'Arabic' : 'English'} summary that is:
-- EXACTLY 2-4 words maximum
-- Like naming a file or folder
-- Focus on the main subject/entity
+STEP 3: SMART SUMMARY GENERATION
+Create UNIQUE, DATA-DRIVEN summaries in ${uiLang === 'ar' ? 'Arabic' : 'English'}:
+- Use actual names, amounts, locations from the content
+- 2-4 words maximum, but make them SPECIFIC and MEANINGFUL
+- Help users distinguish between similar items
 
-${uiLang === 'ar' ? 'Arabic' : 'English'} Summary Examples:
+SMART SUMMARY RULES:
 ${uiLang === 'ar' ? 
-  '- News: "خبر القطار", content: "full article"\n- Contact: "خدمة WE", name: "WE", phone: "111", content: "Contact WE on 111 or 222022 or 01555000111"\n- Receipt: "فاتورة ستاربكس", merchant: "Starbucks", amount: "5.45"\n- Address: "عنوان المكان", full: "street address", content: "complete address"' :
-  '- News: "Train News", content: "full article"\n- Contact: "WE Service", name: "WE", phone: "111", content: "Contact WE on 111 or 222022 or 01555000111"\n- Receipt: "Starbucks Bill", merchant: "Starbucks", amount: "5.45"\n- Address: "Hospital Address", full: "street address", content: "complete address"'
+  '- Bank transfers: "تحويل محمد 560" (to person + amount)\n- Store receipts: "ستاربكس 45 جنيه" (merchant + amount)\n- Contacts: "د. أحمد طبيب" (name + role)\n- Events: "اجتماع مع سارة" (event + person)\n- News: "خبر القطار مصر" (topic + context)' :
+  '- Bank transfers: "Transfer Mohamed 560" (to person + amount)\n- Store receipts: "Starbucks 45 EGP" (merchant + amount)\n- Contacts: "Dr. Ahmed Medical" (name + role)\n- Events: "Meeting Sarah" (event + person)\n- News: "Train Egypt News" (topic + context)'
 }
+
+CREATE UNIQUE SUMMARIES using actual data:
+- Extract key entities: names, amounts, places, companies
+- Combine 2-3 most important pieces
+- Make each summary distinguishable from others
+
+BAD (generic):
+${uiLang === 'ar' ? '"معاملة البنك", "فاتورة شراء", "معلومات اتصال"' : '"Bank Transaction", "Purchase Receipt", "Contact Info"'}
+
+GOOD (specific):
+${uiLang === 'ar' ? '"تحويل محمد 560", "ستاربكس 45", "د. أحمد"' : '"Transfer Mohamed 560", "Starbucks 45", "Dr. Ahmed"'}
 
 STEP 4: FIELD EXTRACTION
 Extract fields based on type:

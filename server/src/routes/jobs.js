@@ -503,6 +503,7 @@ function extractFieldsByType(classification) {
         currency: extractedFields.currency,
         merchant: extractedFields.merchant || extractedFields.name,
         date: extractedFields.date,
+        category: extractedFields.category,
         content: extractedFields.content
       };
     
