@@ -75,15 +75,17 @@ class AIService {
   getSystemPrompt(uiLang) {
     return `You extract structured data from OCR text and return **JSON only**.
 
-FIELD DEFINITIONS:
-- "summary": SHORT title for browsing (max 40 chars) in ${uiLang === 'ar' ? 'Arabic' : 'English'}
-- "fields.title": Original document title/headline (keep original language)
+CRITICAL FIELD RULES:
+- "summary": MUST be 2-4 words maximum in ${uiLang === 'ar' ? 'Arabic' : 'English'} (like a folder name)
+- "fields.title": Original document title/headline (keep original language)  
 - "fields.content": Full main text content (keep original language)
 - "fields.category": Content category (e.g. "news", "social media", "recipe", "instructions")
 
-LANGUAGE RULES:
-- "summary" = SHORT browsing title in ${uiLang === 'ar' ? 'Arabic' : 'English'}
-- All other fields = Keep original document language
+SUMMARY REQUIREMENTS:
+- Maximum 40 characters total
+- 2-4 words only (like "Train News", "Coffee Bill", "خبر القطار", "فاتورة قهوة")
+- Think like naming a file or folder
+- NOT full sentences or descriptions
 
 EXAMPLES (${uiLang === 'ar' ? 'Arabic UI' : 'English UI'}):
 ${uiLang === 'ar' ? 
