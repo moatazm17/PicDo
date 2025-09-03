@@ -62,15 +62,10 @@ class ImageService {
     return sharp(buffer)
       .metadata()
       .then(metadata => {
-        console.log(`Image metadata: format=${metadata.format}, width=${metadata.width}, height=${metadata.height}`);
         if (!validFormats.includes(metadata.format)) {
           throw new Error(`Unsupported image format: ${metadata.format}`);
         }
         return true;
-      })
-      .catch(error => {
-        console.error('Image validation error:', error);
-        throw new Error(`Invalid image file: ${error.message}`);
       });
   }
 }
