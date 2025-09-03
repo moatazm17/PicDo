@@ -151,7 +151,9 @@ General Rules:
 - For dates: use ISO format YYYY-MM-DD
 - For times: use 24-hour format HH:mm
 - For currencies: detect from context (EGP for Egypt, USD for US, etc.)
-- For phone numbers: normalize to E.164 if possible
+- CRITICAL: NEVER modify, guess, or "fix" numbers, dates, or specific details from OCR text
+- Use EXACT text from OCR - do not correct what you think are "errors"  
+- If a phone number appears as "01555000111" in OCR, use EXACTLY "01555000111" - do NOT change it to "+201155000111"
 - If unsure about classification, pick the most likely type and set lower confidence
 - NEVER include any text outside the JSON object
 - NEVER hallucinate or make up information not present in the OCR text
@@ -159,7 +161,8 @@ General Rules:
 - If you cannot confidently determine a type, default to "expense" with low confidence
 - Use ONLY information that appears in the OCR text - do not invent names, dates, or other details
 - If the OCR text is garbled or unclear, set confidence to 0.1 and use a generic title based on visible text
-- The title should be a direct quote from the OCR text whenever possible`;
+- The title should be a direct quote from the OCR text whenever possible
+- PRESERVE EXACT FORMATTING: If OCR shows "015", do not change it to "011" or add country codes`;
 
     if (language === 'ar') {
       return basePrompt + `

@@ -44,7 +44,7 @@ export default function HomeScreen() {
       const result = await ImagePicker.launchImageLibraryAsync({
         mediaTypes: ImagePicker.MediaTypeOptions.Images,
         allowsEditing: false,
-        quality: 0.6, // Reduced from 0.8 for faster uploads
+        quality: 0.8, // High quality for better OCR accuracy
         exif: false,
       });
 
@@ -85,7 +85,7 @@ export default function HomeScreen() {
       const result = await ImagePicker.launchCameraAsync({
         mediaTypes: ImagePicker.MediaTypeOptions.Images,
         allowsEditing: false,
-        quality: 0.6, // Reduced from 0.8 for faster uploads
+        quality: 0.8, // High quality for better OCR accuracy
         exif: false,
       });
 
