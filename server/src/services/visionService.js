@@ -49,8 +49,8 @@ class VisionService {
       const fullText = detections[0].description;
       console.log('Vision API: Text detected:', fullText.substring(0, 100) + (fullText.length > 100 ? '...' : ''));
       
-      // Check text content for inappropriate material
-      this.validateTextContent(fullText);
+      // Check text content for inappropriate material (temporarily disabled)
+      // this.validateTextContent(fullText);
       
       return {
         text: fullText,
