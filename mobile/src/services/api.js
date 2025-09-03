@@ -42,10 +42,7 @@ class APIService {
     }
   }
 
-  async uploadImage(imageUri, wantThumb = true, source = 'picker', retryCount = 0) {
-    const maxRetries = 3;
-    const timeout = 30000; // 30 seconds
-
+  async uploadImage(imageUri, wantThumb = true, source = 'picker') {
     try {
       const userId = await getUserId();
       const language = getCurrentLanguage();
@@ -62,10 +59,6 @@ class APIService {
       formData.append('source', source);
       
       console.log(`🚀 Uploading to ${this.baseURL}/jobs with userId: ${userId}`);
-      
-      // Create AbortController for timeout
-      const controller = new AbortController();
-      const timeoutId = setTimeout(() => controller.abort(), timeout);
 
       const response = await fetch(`${this.baseURL}/jobs`, {
         method: 'POST',
@@ -74,10 +67,7 @@ class APIService {
           'accept-language': language,
         },
         body: formData,
-        signal: controller.signal,
       });
-
-      clearTimeout(timeoutId);
 
       const data = await response.json();
       console.log(`📦 Upload response (${response.status}):`, JSON.stringify(data).substring(0, 300));
@@ -94,18 +84,6 @@ class APIService {
       }
       
       console.error('API Upload Error:', error);
-      
-      // Retry logic for network errors
-      if (retryCount < maxRetries && (
-        error.name === 'AbortError' || 
-        error.message.includes('Network request failed') ||
-        error.message.includes('timeout')
-      )) {
-        console.log(`🔄 Retrying upload (attempt ${retryCount + 1}/${maxRetries})`);
-        await new Promise(resolve => setTimeout(resolve, 1000 * (retryCount + 1))); // Exponential backoff
-        return this.uploadImage(imageUri, wantThumb, source, retryCount + 1);
-      }
-      
       throw new APIError('network_error', 'Upload failed');
     }
   }
