@@ -572,7 +572,7 @@ export default function ResultScreen() {
             color: colors.text
           }
         ]} numberOfLines={1}>
-          {fields.title || job?.summary || t('result.title')}
+          {job?.summary || fields.title || t('result.title')}
         </Text>
         
         <TouchableOpacity
@@ -714,7 +714,7 @@ export default function ResultScreen() {
           <View style={styles.modalInfo}>
             <View style={[styles.modalInfoContainer, { backgroundColor: 'rgba(0,0,0,0.7)' }]}>
               <Text style={styles.modalInfoText}>
-                {fields.title || job?.summary || 'Scanned Image'}
+                {job?.summary || fields.title || 'Scanned Image'}
               </Text>
             </View>
           </View>
