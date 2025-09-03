@@ -258,16 +258,7 @@ export default function LibraryScreen() {
     return () => unsubscribe?.();
   }, []);
 
-  // Listen for new items from navigation state
-  useEffect(() => {
-    const interval = setInterval(() => {
-      if (!loading && !refreshing) {
-        loadHistory();
-      }
-    }, 10000); // Auto-refresh every 10 seconds
-    
-    return () => clearInterval(interval);
-  }, [loading, refreshing]);
+  // Auto-refresh removed to prevent infinite API calls
 
   const filterAndSearchHistory = () => {
     let filtered = [...history];
