@@ -101,13 +101,18 @@ NO prose. NO markdown. JSON only.`;
   }
 
   validateClassification(classification) {
-    const requiredFields = ['type', 'title', 'summary', 'confidence'];
+    const requiredFields = ['type', 'summary', 'confidence'];
     const validTypes = ['event', 'expense', 'contact', 'address', 'note', 'document'];
     
     for (const field of requiredFields) {
       if (!(field in classification)) {
         throw new Error(`Missing required field: ${field}`);
       }
+    }
+    
+    // Check for title - accept either top-level title OR fields.title
+    if (!classification.title && !classification.fields?.title) {
+      throw new Error(`Missing required field: title (either top-level or in fields)`);
     }
     
     if (!validTypes.includes(classification.type)) {
