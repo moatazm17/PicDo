@@ -195,14 +195,12 @@ export default function HomeScreen() {
           style={styles.emptyState}
         >
           {/* Illustration */}
-          <View style={[styles.illustrationContainer, { backgroundColor: colors.surface }]}>
-            <View style={[styles.logoCircle, { backgroundColor: colors.primary }]}>
-              <Image
-                source={require('../../assets/icon.png')}
-                style={styles.logoImage}
-                resizeMode="contain"
-              />
-            </View>
+          <View style={[styles.illustrationContainer, { backgroundColor: colors.primary }]}>
+            <Image
+              source={require('../../assets/icon.png')}
+              style={styles.logoImage}
+              resizeMode="contain"
+            />
           </View>
 
           {/* Title */}
@@ -298,16 +296,9 @@ const styles = StyleSheet.create({
     shadowRadius: 8,
     elevation: 4,
   },
-  logoCircle: {
-    width: 100,
-    height: 100,
-    borderRadius: 50,
-    justifyContent: 'center',
-    alignItems: 'center',
-  },
   logoImage: {
-    width: 60,
-    height: 60,
+    width: 80,
+    height: 80,
     tintColor: 'white',
   },
   emptyTitle: {
