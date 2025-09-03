@@ -11,7 +11,6 @@ class APIService {
     try {
       const userId = await getUserId();
       const language = getCurrentLanguage();
-      console.log(`🌍 API Request - Language: "${language}"`);
 
       const url = `${this.baseURL}${endpoint}`;
       const config = {
@@ -47,7 +46,6 @@ class APIService {
     try {
       const userId = await getUserId();
       const language = getCurrentLanguage();
-      console.log(`🌍 Image Upload - Language: "${language}"`);
 
       console.log(`📸 Uploading image from ${source}:`, imageUri);
 
