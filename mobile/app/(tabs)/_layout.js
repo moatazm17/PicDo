@@ -2,7 +2,7 @@ import React from 'react';
 import { Tabs } from 'expo-router';
 import { Ionicons } from '@expo/vector-icons';
 import { useTranslation } from 'react-i18next';
-import { Platform } from 'react-native';
+import { Platform, View, Image } from 'react-native';
 
 import { useTheme } from '../../src/contexts/ThemeContext';
 
@@ -14,11 +14,34 @@ export default function TabLayout() {
     <Tabs
       screenOptions={({ route }) => ({
         tabBarIcon: ({ focused, color, size }) => {
-          let iconName;
-
           if (route.name === 'home') {
-            iconName = focused ? 'home' : 'home-outline';
-          } else if (route.name === 'history') {
+            // Custom PicDo icon for home tab with circle frame
+            return (
+              <View style={{
+                width: size,
+                height: size,
+                borderRadius: size / 2,
+                backgroundColor: focused ? colors.primary : colors.surface,
+                justifyContent: 'center',
+                alignItems: 'center',
+                borderWidth: focused ? 0 : 1,
+                borderColor: colors.border,
+              }}>
+                <Image
+                  source={require('../../assets/icon.png')}
+                  style={{
+                    width: size * 0.6,
+                    height: size * 0.6,
+                    tintColor: focused ? 'white' : color,
+                  }}
+                  resizeMode="contain"
+                />
+              </View>
+            );
+          }
+
+          let iconName;
+          if (route.name === 'history') {
             iconName = focused ? 'library' : 'library-outline';
           } else if (route.name === 'settings') {
             iconName = focused ? 'settings' : 'settings-outline';
