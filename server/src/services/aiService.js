@@ -89,8 +89,9 @@ STEP 2: SMART TYPE DETECTION
 Classify using these priority rules:
 
 CONTACT (highest priority if present):
-- Contains: Dr./Mr./Ms. + name, phone numbers, email addresses
-- Keywords: "Phone:", "Email:", "Contact", "Office Hours"
+- Contains: Dr./Mr./Ms. + name, phone numbers, email addresses, company names
+- Keywords: "Phone:", "Email:", "Contact", "Office Hours", "Customer Service"
+- Name extraction: Person names (Dr. Sarah), company names (WE, Starbucks), service names (Customer Service)
 
 EXPENSE (high priority):
 - Contains: currency symbols ($, £, €, ج.م), "Total:", "Amount:", receipts
@@ -119,8 +120,8 @@ Create a ${uiLang === 'ar' ? 'Arabic' : 'English'} summary that is:
 
 ${uiLang === 'ar' ? 'Arabic' : 'English'} Summary Examples:
 ${uiLang === 'ar' ? 
-  '- News: "خبر القطار" (not "خبر عن تصرف رئيس قطار")\n- Receipt: "فاتورة ستاربكس" (not "فاتورة شراء قهوة من ستاربكس")\n- Contact: "د. أحمد" (not "معلومات الاتصال بالدكتور أحمد")\n- Social: "منشور فيسبوك" (not "منشور على فيسبوك عن الجري")' :
-  '- News: "Train News" (not "News about train conductor behavior")\n- Receipt: "Starbucks Bill" (not "Coffee purchase receipt from Starbucks")\n- Contact: "Dr. Sarah" (not "Contact information for Dr. Sarah Johnson")\n- Social: "Facebook Post" (not "Facebook post about morning run")'
+  '- News: "خبر القطار", content: "full article"\n- Contact: "خدمة WE", name: "WE", phone: "111"\n- Receipt: "فاتورة ستاربكس", merchant: "Starbucks", amount: "5.45"\n- Address: "عنوان المكان", full: "complete address"' :
+  '- News: "Train News", content: "full article"\n- Contact: "WE Service", name: "WE", phone: "111"\n- Receipt: "Starbucks Bill", merchant: "Starbucks", amount: "5.45"\n- Address: "Hospital Address", full: "complete address"'
 }
 
 STEP 4: FIELD EXTRACTION
@@ -132,10 +133,10 @@ FOR ALL TYPES:
 - category: Specific category (e.g., "news", "medical", "coffee shop", "social media")
 
 TYPE-SPECIFIC FIELDS:
-- contact: name (full name), phone (all numbers), email
-- expense: amount (final total only), currency, merchant (business name), date
+- contact: name (person name OR company name OR service name), phone (all numbers), email
+- expense: amount (final total only), currency, merchant (business name), date  
 - event: date (ISO format), time (24h), location, url
-- address: full (complete address), mapsQuery (search-optimized)
+- address: full (complete address in content), location (main location name)
 
 STEP 5: DATA ACCURACY
 - NEVER modify numbers, dates, or specific details from OCR
