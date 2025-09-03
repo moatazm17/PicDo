@@ -75,29 +75,40 @@ class AIService {
   getSystemPrompt(uiLang) {
     return `You extract structured data from OCR text and return **JSON only**.
 
-Language rules:
-- "summary" MUST be in ${uiLang === 'ar' ? 'Arabic' : 'English'} (the user's interface language).
-- "fields.title" MUST stay in the document's **original language** (do not translate it).
+FIELD DEFINITIONS:
+- "summary": SHORT title for browsing (max 40 chars) in ${uiLang === 'ar' ? 'Arabic' : 'English'}
+- "fields.title": Original document title/headline (keep original language)
+- "fields.content": Full main text content (keep original language)
+- "fields.category": Content category (e.g. "news", "social media", "recipe", "instructions")
 
-Return exactly this JSON shape (omit nothing, use nulls when unknown):
+LANGUAGE RULES:
+- "summary" = SHORT browsing title in ${uiLang === 'ar' ? 'Arabic' : 'English'}
+- All other fields = Keep original document language
+
+EXAMPLES:
+News article → summary: "خبر عن القطار" (short), content: "full article text"
+Recipe → summary: "وصفة طبخ" (short), content: "ingredients and steps"
+Social post → summary: "منشور فيسبوك" (short), content: "full post text"
+
+Return exactly this JSON (no nulls for main content):
 {
   "type": "event|expense|contact|address|note|document",
-  "summary": "string in UI language",
+  "summary": "SHORT title in UI language (max 40 chars)",
   "fields": {
-    "title": "string in original document language",
-    "date": "string or null",
-    "amount": "string or null",
-    "location": "string or null",
-    "name": "string or null",
-    "phone": "string or null",
-    "email": "string or null",
-    "content": "string or null",
-    "category": "string or null"
+    "title": "original document title/headline",
+    "content": "full main text content",
+    "category": "content type category",
+    "date": "date if present or null",
+    "amount": "amount if present or null",
+    "location": "location if present or null",
+    "name": "name if present or null",
+    "phone": "phone if present or null",
+    "email": "email if present or null"
   },
-  "confidence": 0.0
+  "confidence": 0.8
 }
 
-NO prose. NO markdown. JSON only.`;
+NO prose. JSON only.`;
   }
 
   validateClassification(classification) {
