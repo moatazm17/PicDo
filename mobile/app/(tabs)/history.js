@@ -582,9 +582,17 @@ export default function LibraryScreen() {
       </View>
 
       {/* History List */}
-      <FlatList
-        data={displayHistory}
-        keyExtractor={(item) => item.jobId}
+      {loading && allHistory.length === 0 ? (
+        <View style={styles.loadingContainer}>
+          <Ionicons name="hourglass-outline" size={48} color={colors.textSecondary} />
+          <Text style={[styles.loadingText, { color: colors.textSecondary }]}>
+            {t('common.loading')}...
+          </Text>
+        </View>
+      ) : (
+        <FlatList
+          data={displayHistory}
+          keyExtractor={(item) => item.jobId}
         renderItem={({ item }) => (
           <HistoryItem
             item={item}
@@ -608,6 +616,7 @@ export default function LibraryScreen() {
         }
         ListEmptyComponent={renderEmpty}
       />
+      )}
 
       {/* Image Viewing Modal */}
       <Modal
@@ -867,5 +876,16 @@ const styles = StyleSheet.create({
   modalInfoSubtext: {
     color: 'rgba(255, 255, 255, 0.7)',
     fontSize: 14,
+  },
+  loadingContainer: {
+    flex: 1,
+    justifyContent: 'center',
+    alignItems: 'center',
+    paddingVertical: SPACING.xl * 2,
+  },
+  loadingText: {
+    fontSize: 16,
+    marginTop: SPACING.md,
+    fontWeight: '500',
   },
 });
