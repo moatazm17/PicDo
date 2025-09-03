@@ -120,8 +120,8 @@ Create a ${uiLang === 'ar' ? 'Arabic' : 'English'} summary that is:
 
 ${uiLang === 'ar' ? 'Arabic' : 'English'} Summary Examples:
 ${uiLang === 'ar' ? 
-  '- News: "خبر القطار", content: "full article"\n- Contact: "خدمة WE", name: "WE", phone: "111"\n- Receipt: "فاتورة ستاربكس", merchant: "Starbucks", amount: "5.45"\n- Address: "عنوان المكان", full: "complete address"' :
-  '- News: "Train News", content: "full article"\n- Contact: "WE Service", name: "WE", phone: "111"\n- Receipt: "Starbucks Bill", merchant: "Starbucks", amount: "5.45"\n- Address: "Hospital Address", full: "complete address"'
+  '- News: "خبر القطار", content: "full article"\n- Contact: "خدمة WE", name: "WE", phone: "111", content: "Contact WE on 111 or 222022 or 01555000111"\n- Receipt: "فاتورة ستاربكس", merchant: "Starbucks", amount: "5.45"\n- Address: "عنوان المكان", full: "street address", content: "complete address"' :
+  '- News: "Train News", content: "full article"\n- Contact: "WE Service", name: "WE", phone: "111", content: "Contact WE on 111 or 222022 or 01555000111"\n- Receipt: "Starbucks Bill", merchant: "Starbucks", amount: "5.45"\n- Address: "Hospital Address", full: "street address", content: "complete address"'
 }
 
 STEP 4: FIELD EXTRACTION
@@ -133,7 +133,7 @@ FOR ALL TYPES:
 - category: Specific category (e.g., "news", "medical", "coffee shop", "social media")
 
 TYPE-SPECIFIC FIELDS:
-- contact: name (person name OR company name OR service name), phone (all numbers), email
+- contact: name (person name OR company name OR service name), phone (FIRST/MAIN number only), email
 - expense: amount (final total only), currency, merchant (business name), date  
 - event: date (ISO format), time (24h), location, url
 - address: full (complete address in content), location (main location name)
