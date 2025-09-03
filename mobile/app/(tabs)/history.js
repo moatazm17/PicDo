@@ -15,7 +15,7 @@ import {
 } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
 import { Ionicons } from '@expo/vector-icons';
-import { useRouter } from 'expo-router';
+import { useRouter, useFocusEffect } from 'expo-router';
 import { useTranslation } from 'react-i18next';
 import Toast from 'react-native-toast-message';
 
@@ -264,6 +264,29 @@ export default function LibraryScreen() {
     
     return () => unsubscribe?.();
   }, []);
+
+  // Refresh when screen gets focus (coming from upload screen)
+  useFocusEffect(
+    useCallback(() => {
+      // Refresh data when user navigates to this screen
+      if (allHistory.length > 0) {
+        // If we have cached data, do a background refresh
+        loadAllHistory();
+      }
+    }, [])
+  );
+
+  // Gentle periodic refresh for new items
+  useEffect(() => {
+    const interval = setInterval(() => {
+      // Only refresh if we have cached data and app is likely active
+      if (allHistory.length > 0 && !loading && !refreshing) {
+        loadAllHistory();
+      }
+    }, 20000); // Every 20 seconds (gentle refresh)
+    
+    return () => clearInterval(interval);
+  }, [allHistory.length, loading, refreshing]);
 
   // Auto-refresh removed to prevent infinite API calls
 
