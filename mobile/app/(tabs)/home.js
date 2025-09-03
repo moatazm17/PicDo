@@ -195,7 +195,7 @@ export default function HomeScreen() {
           style={styles.emptyState}
         >
           {/* Illustration */}
-          <View style={[styles.illustrationContainer, { backgroundColor: colors.primary }]}>
+          <View style={[styles.illustrationContainer, { backgroundColor: 'transparent' }]}>
             <Image
               source={require('../../assets/icon.png')}
               style={styles.logoImage}
@@ -299,7 +299,7 @@ const styles = StyleSheet.create({
   logoImage: {
     width: 80,
     height: 80,
-    tintColor: 'white',
+    // No tintColor - use original logo colors
   },
   emptyTitle: {
     fontSize: 24,
