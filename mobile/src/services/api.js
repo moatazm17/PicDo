@@ -64,7 +64,7 @@ class APIService {
         method: 'POST',
         headers: {
           'x-user-id': userId,
-          'accept-language': language,
+          'Accept-Language': language === 'ar' ? 'ar-EG,ar;q=0.9' : 'en-US,en;q=0.9',
         },
         body: formData,
       });

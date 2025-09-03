@@ -129,7 +129,7 @@ const HistoryItem = ({ item, onPress, onDelete, onToggleFavorite, onEditTitle, c
                 color: colors.text
               }
             ]} numberOfLines={2}>
-              {item.summary || 'Untitled'}
+              {item.summary || item.fields?.title || (i18n.language === 'ar' ? 'بدون عنوان' : 'Untitled')}
             </Text>
           )}
           <Text style={[

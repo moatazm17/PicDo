@@ -7,6 +7,7 @@ const VisionService = require('../services/visionService');
 const AIService = require('../services/aiService');
 const ImageService = require('../services/imageService');
 const RateLimiter = require('../middleware/rateLimiter');
+const { detectUiLang } = require('../utils/lang');
 
 const router = express.Router();
 
@@ -34,14 +35,14 @@ router.post('/', upload.single('image'), async (req, res) => {
   try {
     console.log('=== JOB CREATION START ===');
     const userId = req.headers['x-user-id'];
-    const language = req.headers['accept-language']?.startsWith('ar') ? 'ar' : 'en';
-    console.log(`Language detection: accept-language="${req.headers['accept-language']}" -> detected="${language}"`);
+    const uiLang = detectUiLang(req.headers['accept-language']);
+    console.log('Lang detect', { header: req.headers['accept-language'], uiLang });
     const wantThumb = req.body.wantThumb === 'true';
     const source = req.body.source || 'picker';
     
     console.log('Request details:', {
       userId,
-      language,
+      uiLang,
       wantThumb,
       source,
       hasFile: !!req.file,
@@ -115,13 +116,13 @@ router.post('/', upload.single('image'), async (req, res) => {
 
     // Process in background
     console.log('Starting background processing...');
-    processJobAsync(job, req.file.buffer, wantThumb, language);
+    processJobAsync(job, req.file.buffer, wantThumb, uiLang);
 
     // Ensure user exists
     console.log('Updating user record...');
     await User.findOneAndUpdate(
       { userId },
-      { userId, lang: language },
+      { userId, lang: uiLang },
       { upsert: true, new: true }
     );
     console.log('User record updated');
@@ -352,7 +353,7 @@ router.post('/:jobId/favorite', async (req, res) => {
 });
 
 // Background job processing
-async function processJobAsync(job, imageBuffer, wantThumb, language) {
+async function processJobAsync(job, imageBuffer, wantThumb, uiLang) {
   try {
     console.log(`Processing job ${job.jobId} for user ${job.userId}`);
     
@@ -385,7 +386,7 @@ async function processJobAsync(job, imageBuffer, wantThumb, language) {
 
     // Classify with AI
     console.log(`Job ${job.jobId}: Starting OpenAI classification`);
-    const classification = await aiService.classifyText(ocrResult.text, language);
+    const classification = await aiService.classifyText(ocrResult.text, uiLang);
     console.log(`Job ${job.jobId}: Classification completed, type: ${classification.type}`);
     
     job.type = classification.type;
@@ -395,6 +396,8 @@ async function processJobAsync(job, imageBuffer, wantThumb, language) {
     job.status = 'ready';
     
     console.log(`Job ${job.jobId}: Extracted fields:`, JSON.stringify(job.fields));
+    console.log(`Job ${job.jobId}: Summary (UI lang):`, job.summary);
+    console.log(`Job ${job.jobId}: Fields title (original):`, job.fields?.title);
     console.log(`Job ${job.jobId}: Status updated to ready`);
     await job.save();
 

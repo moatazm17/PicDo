@@ -1,4 +1,5 @@
 const OpenAI = require('openai');
+const { ensureSummaryInUiLang } = require('./summaryLang');
 
 class AIService {
   constructor() {
@@ -11,8 +12,8 @@ class AIService {
     });
   }
 
-  async classifyText(ocrText, language = 'en') {
-    const systemPrompt = this.getSystemPrompt(language);
+  async classifyText(ocrText, uiLang = 'en') {
+    const systemPrompt = this.getSystemPrompt(uiLang);
     
     try {
       console.log('OpenAI API: Starting text classification');
@@ -34,10 +35,13 @@ class AIService {
       console.log('OpenAI API: Response received, length:', content.length);
       console.log('OpenAI API: Response sample:', content.substring(0, 200) + (content.length > 200 ? '...' : ''));
       
-      const classification = JSON.parse(content);
+      let classification = JSON.parse(content);
       
       // Validate the response structure
       this.validateClassification(classification);
+      
+      // Ensure summary is in correct UI language
+      classification = await ensureSummaryInUiLang(classification, uiLang, this.openai);
       
       return classification;
     } catch (error) {
@@ -68,145 +72,32 @@ class AIService {
     }
   }
 
-  getSystemPrompt(language) {
-    const basePrompt = `You are an AI that analyzes OCR text from screenshots and classifies them into actionable items.
+  getSystemPrompt(uiLang) {
+    return `You extract structured data from OCR text and return **JSON only**.
 
-CRITICAL: This OCR text comes from screenshots which may include browser UI, tabs, navigation elements, and noise. Your job is to INTELLIGENTLY FILTER OUT noise and focus on the MAIN DOCUMENT CONTENT.
+Language rules:
+- "summary" MUST be in ${uiLang === 'ar' ? 'Arabic' : 'English'} (the user's interface language).
+- "fields.title" MUST stay in the document's **original language** (do not translate it).
 
-CONTENT FILTERING RULES:
-1. IGNORE browser UI: tabs, URLs, navigation, usernames, platform names
-2. IGNORE metadata: timestamps, view counts, social media handles  
-3. FOCUS on main content: the actual document, form, receipt, or text
-4. IDENTIFY the primary content vs secondary UI noise
-5. EXTRACT the meaningful information that a human would care about
-
-Your task is to:
-1. FIRST: Clean and filter the OCR text to identify the main content
-2. SECOND: Determine the most appropriate type: "event", "expense", "contact", "address", "note", or "document"
-3. THIRD: Extract relevant information and normalize it
-4. FOURTH: Create user-friendly titles that help users recognize items
-5. Return ONLY a valid JSON object matching the exact schema below
-
-JSON Schema (respond with ONLY this JSON, no other text):
+Return exactly this JSON shape (omit nothing, use nulls when unknown):
 {
-  "type": "event" | "expense" | "contact" | "address" | "note" | "document",
-  "title": "string (user-friendly title for history list - see title rules below)",
-  "summary": "string (short summary for history list)",
-  "event": {
-    "date": "YYYY-MM-DD" (ISO date),
-    "time": "HH:mm" (24-hour format),
-    "location": "string",
-    "url": "string or empty"
+  "type": "event|expense|contact|address|note|document",
+  "summary": "string in UI language",
+  "fields": {
+    "title": "string in original document language",
+    "date": "string or null",
+    "amount": "string or null",
+    "location": "string or null",
+    "name": "string or null",
+    "phone": "string or null",
+    "email": "string or null",
+    "content": "string or null",
+    "category": "string or null"
   },
-  "expense": {
-    "amount": number (numeric value only),
-    "currency": "EGP" | "USD" | "EUR" | "SAR" | "AED" (detect from context),
-    "merchant": "string",
-    "date": "YYYY-MM-DD"
-  },
-  "contact": {
-    "name": "string",
-    "phone": "string (E.164 format if possible, e.g. +201234567890)"
-  },
-  "address": {
-    "full": "string (complete address)",
-    "mapsQuery": "string (optimized for maps search)"
-  },
-  "note": {
-    "content": "string (cleaned main content only - NO browser UI noise)",
-    "category": "string (like 'todo list', 'lyrics', 'quote', 'recipe', 'personal note')"
-  },
-  "document": {
-    "title": "string (document title)",
-    "content": "string (cleaned main content only - NO browser UI noise)",
-    "category": "string (like 'government form', 'business document', 'instruction', 'reference', 'legal', 'medical')"
-  },
-  "confidence": number (0.0 to 1.0, your confidence in the classification)
+  "confidence": 0.0
 }
 
-TITLE RULES - Create user-friendly titles that help users recognize items:
-- For CONTACTS: Use "Name - Role" format (e.g. "Dr. John Smith - Physical Therapist", "Sarah's Dental Office", "Mike - Car Mechanic")
-- For EVENTS: Use "Event Name" or "Event at Location" (e.g. "Meeting with Dr. Smith", "Appointment at City Hospital")
-- For EXPENSES: Use "Store/Service Name" (e.g. "Starbucks Coffee", "Uber Ride", "Amazon Purchase")
-- For ADDRESSES: Use recognizable location name (e.g. "City Hospital", "John's Home Address", "Office Location")
-- For NOTES: Use content-based title (e.g. "Shopping List", "Meeting Notes", "Recipe for Pasta")
-- For DOCUMENTS: Use the main document title (extract from content, not invent)
-- PRIORITY: Names > Recognizable Places > Document Titles > Descriptive Content > Job Titles/Generic Terms
-- Keep titles concise (under 40 characters) but informative
-- Users remember NAMES and PLACES better than job titles or generic descriptions
-
-SMART CLASSIFICATION LOGIC:
-- Look for PATTERNS, not specific examples
-- Official/formal language + instructions/procedures → "document" 
-- Casual/personal language + lists/thoughts → "note"
-- Names + phone numbers → "contact"
-- Money amounts + merchant names → "expense"  
-- Dates + times + locations → "event"
-- Street addresses + location names → "address"
-- Judge by TONE and STRUCTURE, not specific keywords
-
-General Rules:
-- Choose exactly ONE type that best fits the content
-- Fill only the relevant section (event/expense/contact/address), leave others as empty objects
-- For dates: use ISO format YYYY-MM-DD
-- For times: use 24-hour format HH:mm
-- For currencies: detect from context (EGP for Egypt, USD for US, etc.)
-- CRITICAL: NEVER modify, guess, or "fix" numbers, dates, or specific details from OCR text
-- Use EXACT text from OCR - do not correct what you think are "errors"  
-- If a phone number appears as "01555000111" in OCR, use EXACTLY "01555000111" - do NOT change it to "+201155000111"
-- If unsure about classification, pick the most likely type and set lower confidence
-- NEVER include any text outside the JSON object
-- NEVER hallucinate or make up information not present in the OCR text
-- If the text appears to be a to-do list, classify it as a note with category "todo list"
-- If you cannot confidently determine a type, default to "expense" with low confidence
-- Use ONLY information that appears in the OCR text - do not invent names, dates, or other details
-- If the OCR text is garbled or unclear, set confidence to 0.1 and use a generic title based on visible text
-- The title should be a direct quote from the OCR text whenever possible
-- PRESERVE EXACT FORMATTING: If OCR shows "015", do not change it to "011" or add country codes`;
-
-    if (language === 'ar') {
-      return basePrompt + `
-
-DUAL-TITLE LANGUAGE HANDLING:
-- You must create TWO different titles for better UX:
-  1. "summary" = Library title (user's interface language for browsing)
-  2. "title" in fields = Result screen title (original language for accuracy)
-
-LANGUAGE RULES:
-- If user language is Arabic (ar): "summary" should be in Arabic, "fields.title" in original language
-- If user language is English (en): "summary" should be in English, "fields.title" in original language
-- For brand names: Keep original in fields.title, translate context in summary
-- EXAMPLE for Arabic user scanning English business:
-  - "summary": "خدمة عملاء WE" (Arabic context + original brand)
-  - "fields.title": "WE Customer Service" (exact original for saving)
-- EXAMPLE for English user scanning Arabic business:
-  - "summary": "Ahmed's Restaurant" (English context)
-  - "fields.title": "مطعم أحمد" (exact original for saving)
-- Always maintain English field names in JSON structure
-- Understand Arabic date/time formats and convert to ISO format
-- For Arabic numbers: convert Eastern Arabic numerals to standard digits
-- This provides familiar browsing + accurate data for actions`;
-    } else {
-      return basePrompt + `
-
-DUAL-TITLE LANGUAGE HANDLING:
-- You must create TWO different titles for better UX:
-  1. "summary" = Library title (English for browsing)
-  2. "title" in fields = Result screen title (original language for accuracy)
-
-LANGUAGE RULES:
-- User language is English: "summary" should be in English, "fields.title" in original language
-- For brand names: Keep original in fields.title, translate context in summary
-- EXAMPLE for English user scanning Arabic business:
-  - "summary": "Ahmed's Restaurant" (English context)
-  - "fields.title": "مطعم أحمد" (exact original for saving)
-- EXAMPLE for English user scanning English business:
-  - "summary": "Apple Customer Service" (English)
-  - "fields.title": "Apple Customer Service" (same, exact original)
-- This provides familiar browsing + accurate data for actions`;
-    }
-
-    return basePrompt;
+NO prose. NO markdown. JSON only.`;
   }
 
   validateClassification(classification) {
