@@ -422,6 +422,13 @@ function extractFieldsByType(classification) {
         category: classification.note.category
       };
     
+    case 'document':
+      return {
+        title: classification.title,
+        content: classification.document.content,
+        category: classification.document.category
+      };
+    
     default:
       return { title: classification.title };
   }

@@ -53,6 +53,102 @@ const FieldInput = ({ label, value, onChangeText, keyboardType, multiline, color
   </View>
 );
 
+const StructuredContent = ({ content, colors, isRTL, editable, onChangeText }) => {
+  // Split content into structured sections
+  const formatContent = (text) => {
+    if (!text) return [];
+    
+    // Split by common patterns and clean up
+    let sections = [];
+    const lines = text.split('\n').filter(line => line.trim());
+    
+    let currentSection = '';
+    
+    lines.forEach(line => {
+      const trimmed = line.trim();
+      
+      // Check if it's a header (contains colon or is all caps)
+      if (trimmed.includes(':') && trimmed.length < 100) {
+        if (currentSection) {
+          sections.push({ text: currentSection, type: 'content' });
+          currentSection = '';
+        }
+        sections.push({ text: trimmed, type: 'header' });
+      }
+      // Check if it's a bullet point
+      else if (trimmed.startsWith('•') || trimmed.startsWith('-') || /^\d+\./.test(trimmed)) {
+        if (currentSection) {
+          sections.push({ text: currentSection, type: 'content' });
+          currentSection = '';
+        }
+        sections.push({ text: trimmed, type: 'bullet' });
+      }
+      // Regular content
+      else {
+        if (currentSection) currentSection += ' ';
+        currentSection += trimmed;
+      }
+    });
+    
+    if (currentSection) {
+      sections.push({ text: currentSection, type: 'content' });
+    }
+    
+    return sections.map((section, index) => ({ ...section, id: index }));
+  };
+
+  const sections = formatContent(content);
+
+  if (editable) {
+    // When editing, show as regular text input
+    return (
+      <View style={[styles.fieldContainer, { backgroundColor: colors.surface }]}>
+        <Text style={[styles.fieldLabel, { color: colors.primary }]}>Content</Text>
+        <TextInput
+          style={[
+            styles.fieldInput,
+            {
+              color: colors.text,
+              textAlign: isRTL ? 'right' : 'left',
+              minHeight: 120,
+            },
+          ]}
+          value={content}
+          onChangeText={onChangeText}
+          multiline
+          placeholder="Enter content"
+          placeholderTextColor={colors.textSecondary}
+        />
+      </View>
+    );
+  }
+
+  // When viewing, show structured format
+  return (
+    <View style={[styles.fieldContainer, { backgroundColor: colors.surface }]}>
+      <Text style={[styles.fieldLabel, { color: colors.primary }]}>Content</Text>
+      <View style={styles.structuredContent}>
+        {sections.map((section) => (
+          <View key={section.id} style={styles.contentSection}>
+            <Text
+              style={[
+                section.type === 'header' ? styles.contentHeader : 
+                section.type === 'bullet' ? styles.contentBullet : styles.contentText,
+                {
+                  color: section.type === 'header' ? colors.primary : colors.text,
+                  textAlign: isRTL ? 'right' : 'left',
+                },
+              ]}
+            >
+              {section.text}
+            </Text>
+          </View>
+        ))}
+      </View>
+    </View>
+  );
+};
+
 export default function ResultScreen() {
   const { t } = useTranslation();
   const { colors } = useTheme();
@@ -380,11 +476,9 @@ export default function ResultScreen() {
               isRTL={isRTL}
               editable={editing}
             />
-            <FieldInput
-              label={t('fields.content')}
-              value={fields.content || ''}
+            <StructuredContent
+              content={fields.content || ''}
               onChangeText={(value) => handleFieldChange('content', value)}
-              multiline
               colors={colors}
               isRTL={isRTL}
               editable={editing}
@@ -411,11 +505,9 @@ export default function ResultScreen() {
               isRTL={isRTL}
               editable={editing}
             />
-            <FieldInput
-              label={t('fields.content')}
-              value={fields.content || ''}
+            <StructuredContent
+              content={fields.content || ''}
               onChangeText={(value) => handleFieldChange('content', value)}
-              multiline
               colors={colors}
               isRTL={isRTL}
               editable={editing}
@@ -782,6 +874,32 @@ const styles = StyleSheet.create({
   fieldInput: {
     fontSize: 16,
     fontWeight: '500',
+  },
+
+  // Structured Content Styles
+  structuredContent: {
+    paddingTop: 8,
+  },
+  contentSection: {
+    marginBottom: 12,
+  },
+  contentHeader: {
+    fontSize: 16,
+    fontWeight: '600',
+    lineHeight: 22,
+    marginBottom: 4,
+  },
+  contentText: {
+    fontSize: 15,
+    fontWeight: '400',
+    lineHeight: 20,
+    paddingLeft: 8,
+  },
+  contentBullet: {
+    fontSize: 15,
+    fontWeight: '400',
+    lineHeight: 20,
+    paddingLeft: 4,
   },
 
   // Action Button
