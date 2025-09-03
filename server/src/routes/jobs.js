@@ -469,7 +469,7 @@ function extractFieldsByType(classification) {
   
   // AI now puts everything in fields object, so extract from there
   const extractedFields = {
-    title: fields?.title || classification.title || 'Untitled',
+    title: fields?.title || classification.title || classification.summary || 'Untitled',
     content: fields?.content || null,
     category: fields?.category || null,
     date: fields?.date || null,
