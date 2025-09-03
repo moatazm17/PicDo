@@ -167,17 +167,43 @@ General Rules:
     if (language === 'ar') {
       return basePrompt + `
 
-ARABIC LANGUAGE HANDLING:
-- The OCR text may be in Arabic, English, or mixed languages
-- DETECT the primary language of the content automatically
-- If content is primarily Arabic: respond with Arabic titles/summaries for better UX
-- If content is primarily English: respond with English titles/summaries
-- For mixed content: use the language that appears most prominently
+DUAL-TITLE LANGUAGE HANDLING:
+- You must create TWO different titles for better UX:
+  1. "summary" = Library title (user's interface language for browsing)
+  2. "title" in fields = Result screen title (original language for accuracy)
+
+LANGUAGE RULES:
+- If user language is Arabic (ar): "summary" should be in Arabic, "fields.title" in original language
+- If user language is English (en): "summary" should be in English, "fields.title" in original language
+- For brand names: Keep original in fields.title, translate context in summary
+- EXAMPLE for Arabic user scanning English business:
+  - "summary": "خدمة عملاء WE" (Arabic context + original brand)
+  - "fields.title": "WE Customer Service" (exact original for saving)
+- EXAMPLE for English user scanning Arabic business:
+  - "summary": "Ahmed's Restaurant" (English context)
+  - "fields.title": "مطعم أحمد" (exact original for saving)
 - Always maintain English field names in JSON structure
-- Understand Arabic date/time formats (e.g., ٢٠٢٤/١٢/٢٥) and convert to ISO format
-- For Arabic numbers: convert Eastern Arabic numerals (٠١٢٣٤٥٦٧٨٩) to standard digits (0123456789)
-- EXAMPLE: If Arabic business card → Arabic title: "د. أحمد محمد - طبيب أسنان" not "Dr. Ahmed Mohamed - Dentist"
-- This provides better user experience for Arabic speakers`;
+- Understand Arabic date/time formats and convert to ISO format
+- For Arabic numbers: convert Eastern Arabic numerals to standard digits
+- This provides familiar browsing + accurate data for actions`;
+    } else {
+      return basePrompt + `
+
+DUAL-TITLE LANGUAGE HANDLING:
+- You must create TWO different titles for better UX:
+  1. "summary" = Library title (English for browsing)
+  2. "title" in fields = Result screen title (original language for accuracy)
+
+LANGUAGE RULES:
+- User language is English: "summary" should be in English, "fields.title" in original language
+- For brand names: Keep original in fields.title, translate context in summary
+- EXAMPLE for English user scanning Arabic business:
+  - "summary": "Ahmed's Restaurant" (English context)
+  - "fields.title": "مطعم أحمد" (exact original for saving)
+- EXAMPLE for English user scanning English business:
+  - "summary": "Apple Customer Service" (English)
+  - "fields.title": "Apple Customer Service" (same, exact original)
+- This provides familiar browsing + accurate data for actions`;
     }
 
     return basePrompt;
