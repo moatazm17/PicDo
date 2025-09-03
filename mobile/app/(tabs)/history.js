@@ -226,6 +226,7 @@ export default function LibraryScreen() {
 
   const [allHistory, setAllHistory] = useState([]); // Cache all data
   const [displayHistory, setDisplayHistory] = useState([]); // What user sees
+  const [history, setHistory] = useState([]); // Legacy compatibility (temporary)
   const [loading, setLoading] = useState(true);
   const [refreshing, setRefreshing] = useState(false);
   const [activeFilter, setActiveFilter] = useState('all');
