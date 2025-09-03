@@ -21,6 +21,7 @@ import { LinearGradient } from 'expo-linear-gradient';
 import { useTheme } from '../src/contexts/ThemeContext';
 import apiService, { APIError } from '../src/services/api';
 import { SPACING, ANIMATION } from '../src/constants/config';
+import UploadModal from '../src/components/UploadModal';
 
 const { width } = Dimensions.get('window');
 
@@ -170,6 +171,7 @@ export default function UploadScreen() {
   const [pollCount, setPollCount] = useState(0);
   const [isUploading, setIsUploading] = useState(false);
   const [uploadRetryCount, setUploadRetryCount] = useState(0);
+  const [showUploadModal, setShowUploadModal] = useState(false);
 
   const steps = [
     { icon: 'cloud-upload', title: t('upload.extractingText') },
@@ -182,7 +184,7 @@ export default function UploadScreen() {
 
   useEffect(() => {
     if (params.imageUri) {
-      uploadImage();
+      setShowUploadModal(true);
     }
 
     // Handle back button
@@ -343,7 +345,20 @@ export default function UploadScreen() {
     setJobId(null);
     setPollCount(0);
     setCurrentStep(0);
-    uploadImage();
+    setShowUploadModal(true);
+  };
+
+  const handleUploadComplete = (response) => {
+    setShowUploadModal(false);
+    setJobId(response.jobId);
+    setIsUploading(false);
+    setCurrentStep(0);
+  };
+
+  const handleUploadError = (error) => {
+    setShowUploadModal(false);
+    setError(error);
+    setIsUploading(false);
   };
 
   if (error) {
@@ -408,6 +423,14 @@ export default function UploadScreen() {
 
   return (
     <SafeAreaView style={[styles.container, { backgroundColor: colors.background }]}>
+      {/* Upload Modal */}
+      <UploadModal
+        visible={showUploadModal}
+        onUploadComplete={handleUploadComplete}
+        onUploadError={handleUploadError}
+        imageUri={params.imageUri}
+      />
+      
       <View style={styles.content}>
         {/* Header */}
         <Animatable.View animation="fadeInDown" style={styles.header}>

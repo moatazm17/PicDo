@@ -34,11 +34,20 @@ const resources = {
       
       // Upload/Progress
       upload: {
+        title: 'Uploading Image',
+        subtitle: 'Processing your image...',
         processing: 'Processing your image...',
         extractingText: 'Extracting text',
         analyzingContent: 'Analyzing content',
         almostDone: 'Almost done',
         backgroundNote: 'You can leave the app - we\'ll finish in the background',
+        preparing: 'Preparing image...',
+        uploading: 'Uploading to server...',
+        completed: 'Upload completed!',
+        failed: 'Upload failed',
+        instruction: 'Please keep the app open during upload',
+        error: 'Upload failed',
+        retry: 'Try Again',
       },
       
       // Result
@@ -208,11 +217,20 @@ const resources = {
       
       // Upload/Progress
       upload: {
+        title: 'رفع الصورة',
+        subtitle: 'جاري معالجة الصورة...',
         processing: 'جاري معالجة الصورة...',
         extractingText: 'استخراج النص',
         analyzingContent: 'تحليل المحتوى',
         almostDone: 'تقريباً انتهينا',
         backgroundNote: 'يمكنك ترك التطبيق - سننتهي في الخلفية',
+        preparing: 'جاري تحضير الصورة...',
+        uploading: 'جاري الرفع إلى الخادم...',
+        completed: 'تم الرفع بنجاح!',
+        failed: 'فشل الرفع',
+        instruction: 'يرجى إبقاء التطبيق مفتوحاً أثناء الرفع',
+        error: 'فشل الرفع',
+        retry: 'حاول مرة أخرى',
       },
       
       // Result
