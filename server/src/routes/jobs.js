@@ -32,11 +32,22 @@ const aiService = new AIService();
 // POST /jobs - Create new job
 router.post('/', upload.single('image'), async (req, res) => {
   try {
+    console.log('=== JOB CREATION START ===');
     const userId = req.headers['x-user-id'];
     const language = req.headers['accept-language']?.startsWith('ar') ? 'ar' : 'en';
     console.log(`Language detection: accept-language="${req.headers['accept-language']}" -> detected="${language}"`);
     const wantThumb = req.body.wantThumb === 'true';
     const source = req.body.source || 'picker';
+    
+    console.log('Request details:', {
+      userId,
+      language,
+      wantThumb,
+      source,
+      hasFile: !!req.file,
+      fileSize: req.file?.size,
+      fileType: req.file?.mimetype
+    });
 
     if (!userId) {
       return res.status(400).json({
@@ -74,7 +85,14 @@ router.post('/', upload.single('image'), async (req, res) => {
     }
 
     // Validate image format
-    await ImageService.validateImageFormat(req.file.buffer);
+    try {
+      console.log('Validating image format...');
+      await ImageService.validateImageFormat(req.file.buffer);
+      console.log('Image validation passed');
+    } catch (error) {
+      console.error('Image validation failed:', error);
+      throw error;
+    }
 
     // Create job record
     const jobId = uuidv4();
@@ -91,18 +109,24 @@ router.post('/', upload.single('image'), async (req, res) => {
       }
     });
 
+    console.log('Saving job to database...');
     await job.save();
+    console.log('Job saved successfully');
 
     // Process in background
+    console.log('Starting background processing...');
     processJobAsync(job, req.file.buffer, wantThumb, language);
 
     // Ensure user exists
+    console.log('Updating user record...');
     await User.findOneAndUpdate(
       { userId },
       { userId, lang: language },
       { upsert: true, new: true }
     );
+    console.log('User record updated');
 
+    console.log('=== JOB CREATION SUCCESS ===');
     res.status(202).json({
       jobId,
       status: 'received'
