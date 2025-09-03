@@ -6,6 +6,7 @@ import {
   TouchableOpacity,
   Dimensions,
   Alert,
+  Image,
 } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
 import { Ionicons } from '@expo/vector-icons';
@@ -195,7 +196,13 @@ export default function HomeScreen() {
         >
           {/* Illustration */}
           <View style={[styles.illustrationContainer, { backgroundColor: colors.surface }]}>
-            <Ionicons name="image-outline" size={80} color={colors.textSecondary} />
+            <View style={[styles.logoCircle, { backgroundColor: colors.primary }]}>
+              <Image
+                source={require('../../assets/icon.png')}
+                style={styles.logoImage}
+                resizeMode="contain"
+              />
+            </View>
           </View>
 
           {/* Title */}
@@ -290,6 +297,18 @@ const styles = StyleSheet.create({
     shadowOpacity: 0.1,
     shadowRadius: 8,
     elevation: 4,
+  },
+  logoCircle: {
+    width: 100,
+    height: 100,
+    borderRadius: 50,
+    justifyContent: 'center',
+    alignItems: 'center',
+  },
+  logoImage: {
+    width: 60,
+    height: 60,
+    tintColor: 'white',
   },
   emptyTitle: {
     fontSize: 24,
