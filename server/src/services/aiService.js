@@ -71,16 +71,25 @@ class AIService {
   getSystemPrompt(language) {
     const basePrompt = `You are an AI that analyzes OCR text from screenshots and classifies them into actionable items.
 
+CRITICAL: This OCR text comes from screenshots which may include browser UI, tabs, navigation elements, and noise. Your job is to INTELLIGENTLY FILTER OUT noise and focus on the MAIN DOCUMENT CONTENT.
+
+CONTENT FILTERING RULES:
+1. IGNORE browser tabs, URLs, navigation menus, and UI elements
+2. IGNORE social media usernames, platform names (Twitter/X, Reddit, etc.)
+3. IGNORE video titles, view counts, timestamps unless they're part of the main content
+4. FOCUS on the primary document, form, receipt, or text content
+5. If text appears to be instructions, forms, or official documents, treat them seriously
+
 Your task is to:
-1. Analyze the provided OCR text
-2. Determine the most appropriate type: "event", "expense", "contact", "address", or "note"
-3. Extract relevant information and normalize it
-4. Create user-friendly titles that help users recognize items in their history
+1. FIRST: Clean and filter the OCR text to identify the main content
+2. SECOND: Determine the most appropriate type: "event", "expense", "contact", "address", "note", or "document"
+3. THIRD: Extract relevant information and normalize it
+4. FOURTH: Create user-friendly titles that help users recognize items
 5. Return ONLY a valid JSON object matching the exact schema below
 
 JSON Schema (respond with ONLY this JSON, no other text):
 {
-  "type": "event" | "expense" | "contact" | "address" | "note",
+  "type": "event" | "expense" | "contact" | "address" | "note" | "document",
   "title": "string (user-friendly title for history list - see title rules below)",
   "summary": "string (short summary for history list)",
   "event": {
@@ -104,8 +113,13 @@ JSON Schema (respond with ONLY this JSON, no other text):
     "mapsQuery": "string (optimized for maps search)"
   },
   "note": {
-    "content": "string (full text content)",
-    "category": "string (optional category like 'todo list', 'lyrics', 'quote', 'recipe', etc.)"
+    "content": "string (cleaned main content only - NO browser UI noise)",
+    "category": "string (like 'todo list', 'lyrics', 'quote', 'recipe', 'personal note')"
+  },
+  "document": {
+    "title": "string (document title)",
+    "content": "string (cleaned main content only - NO browser UI noise)",
+    "category": "string (like 'government form', 'business document', 'instruction', 'reference', 'legal', 'medical')"
   },
   "confidence": number (0.0 to 1.0, your confidence in the classification)
 }
@@ -116,9 +130,17 @@ TITLE RULES - Create user-friendly titles that help users recognize items:
 - For EXPENSES: Use "Store/Service Name" (e.g. "Starbucks Coffee", "Uber Ride", "Amazon Purchase")
 - For ADDRESSES: Use recognizable location name (e.g. "City Hospital", "John's Home Address", "Office Location")
 - For NOTES: Use content-based title (e.g. "Shopping List", "Meeting Notes", "Recipe for Pasta")
-- PRIORITY: Names > Recognizable Places > Descriptive Content > Job Titles/Generic Terms
+- For DOCUMENTS: Use the main document title (e.g. "Companies House Filing Guide", "Tax Form Instructions", "Employee Handbook")
+- PRIORITY: Names > Recognizable Places > Document Titles > Descriptive Content > Job Titles/Generic Terms
 - Keep titles concise (under 40 characters) but informative
 - Users remember NAMES and PLACES better than job titles or generic descriptions
+
+DOCUMENT TYPE CLASSIFICATION:
+- Government forms, official instructions, legal documents → "document" type
+- Business documents, manuals, guides, procedures → "document" type
+- Personal notes, shopping lists, quick thoughts → "note" type
+- If it's an official form or instruction (like "File micro-entity accounts"), classify as "document"
+- If it's personal writing or casual notes, classify as "note"
 
 General Rules:
 - Choose exactly ONE type that best fits the content
@@ -157,7 +179,7 @@ ARABIC LANGUAGE HANDLING:
 
   validateClassification(classification) {
     const requiredFields = ['type', 'title', 'summary', 'confidence'];
-    const validTypes = ['event', 'expense', 'contact', 'address', 'note'];
+    const validTypes = ['event', 'expense', 'contact', 'address', 'note', 'document'];
     
     for (const field of requiredFields) {
       if (!(field in classification)) {
@@ -170,7 +192,7 @@ ARABIC LANGUAGE HANDLING:
     }
     
     // Ensure all type sections exist
-    const typeSections = ['event', 'expense', 'contact', 'address', 'note'];
+    const typeSections = ['event', 'expense', 'contact', 'address', 'note', 'document'];
     for (const section of typeSections) {
       if (!(section in classification)) {
         classification[section] = {};
@@ -200,6 +222,10 @@ ARABIC LANGUAGE HANDLING:
       case 'note':
         const { category } = classification.note;
         return `${title}${category ? ` – ${category}` : ''}`;
+      
+      case 'document':
+        const { category: docCategory } = classification.document;
+        return `${title}${docCategory ? ` – ${docCategory}` : ''}`;
       
       default:
         return title;

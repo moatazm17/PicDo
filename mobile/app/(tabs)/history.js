@@ -10,6 +10,7 @@ import {
   Dimensions,
   Alert,
   TextInput,
+  Keyboard,
 } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
 import { Ionicons } from '@expo/vector-icons';
@@ -58,6 +59,7 @@ const HistoryItem = ({ item, onPress, onDelete, onToggleFavorite, onEditTitle, c
       case 'contact': return 'person';
       case 'address': return 'location';
       case 'note': return 'document-text';
+      case 'document': return 'document-attach';
       default: return 'document';
     }
   };
@@ -218,9 +220,13 @@ export default function LibraryScreen() {
   const router = useRouter();
 
   const [history, setHistory] = useState([]);
+  const [filteredHistory, setFilteredHistory] = useState([]);
   const [loading, setLoading] = useState(true);
   const [refreshing, setRefreshing] = useState(false);
   const [activeFilter, setActiveFilter] = useState('all');
+  const [sortBy, setSortBy] = useState('date_desc'); // date_desc, date_asc, favorites
+  const [searchQuery, setSearchQuery] = useState('');
+  const [showSearch, setShowSearch] = useState(false);
 
   const filters = [
     { key: 'all', title: t('history.filterAll') },
@@ -230,11 +236,16 @@ export default function LibraryScreen() {
     { key: 'contact', title: t('history.filterContacts') },
     { key: 'address', title: t('history.filterAddresses') },
     { key: 'note', title: t('history.filterNotes') },
+    { key: 'document', title: t('history.filterDocuments') },
   ];
 
   useEffect(() => {
     loadHistory();
-  }, [activeFilter]);
+  }, [activeFilter, sortBy]);
+
+  useEffect(() => {
+    filterAndSearchHistory();
+  }, [history, searchQuery]);
 
   // Auto-refresh when screen comes into focus
   useEffect(() => {
@@ -258,6 +269,75 @@ export default function LibraryScreen() {
     return () => clearInterval(interval);
   }, [loading, refreshing]);
 
+  const filterAndSearchHistory = () => {
+    let filtered = [...history];
+    
+    // Apply search filter
+    if (searchQuery.trim()) {
+      const query = searchQuery.toLowerCase().trim();
+      filtered = filtered.filter(item => {
+        const title = (item.summary || item.fields?.title || '').toLowerCase();
+        const content = Object.values(item.fields || {}).join(' ').toLowerCase();
+        return title.includes(query) || content.includes(query);
+      });
+    }
+    
+    setFilteredHistory(filtered);
+  };
+
+  const handleSearch = (query) => {
+    setSearchQuery(query);
+  };
+
+  const clearSearch = () => {
+    setSearchQuery('');
+    setShowSearch(false);
+    Keyboard.dismiss();
+  };
+
+  const sortItems = (items, sortType) => {
+    const sorted = [...items];
+    
+    switch (sortType) {
+      case 'date_desc':
+        return sorted.sort((a, b) => new Date(b.createdAt) - new Date(a.createdAt));
+      case 'date_asc':
+        return sorted.sort((a, b) => new Date(a.createdAt) - new Date(b.createdAt));
+      case 'favorites':
+        return sorted.sort((a, b) => {
+          if (a.isFavorite && !b.isFavorite) return -1;
+          if (!a.isFavorite && b.isFavorite) return 1;
+          return new Date(b.createdAt) - new Date(a.createdAt); // Then by date
+        });
+      default:
+        return sorted;
+    }
+  };
+
+  const showSortOptions = () => {
+    const sortOptions = [
+      { key: 'date_desc', title: t('history.sortNewest') },
+      { key: 'date_asc', title: t('history.sortOldest') },
+      { key: 'favorites', title: t('history.sortFavorites') },
+    ];
+
+    Alert.alert(
+      t('history.sortBy'),
+      '',
+      [
+        ...sortOptions.map(option => ({
+          text: option.title,
+          onPress: () => setSortBy(option.key),
+          style: sortBy === option.key ? 'default' : 'cancel',
+        })),
+        {
+          text: t('common.cancel'),
+          style: 'cancel',
+        },
+      ]
+    );
+  };
+
   const loadHistory = async () => {
     try {
       setLoading(true);
@@ -271,13 +351,22 @@ export default function LibraryScreen() {
         items = items.filter(item => item.isFavorite);
       }
       
+      // Sort items
+      items = sortItems(items, sortBy);
+      
       setHistory(items);
     } catch (error) {
       console.error('Error loading history:', error);
       Toast.show({
         type: 'error',
         text1: t('common.error'),
-        text2: error.message || t('errors.unknownError'),
+        text2: error.message || t('errors.networkError'),
+        visibilityTime: 4000,
+        topOffset: 60,
+        onPress: () => {
+          Toast.hide();
+          loadHistory(); // Retry on toast tap
+        },
       });
     } finally {
       setLoading(false);
@@ -299,6 +388,12 @@ export default function LibraryScreen() {
         type: 'error',
         text1: t('common.error'),
         text2: t('errors.deleteFailed'),
+        visibilityTime: 4000,
+        topOffset: 60,
+        onPress: () => {
+          Toast.hide();
+          handleDelete(jobId); // Retry on toast tap
+        },
       });
     }
   };
@@ -319,6 +414,12 @@ export default function LibraryScreen() {
         type: 'error',
         text1: t('common.error'),
         text2: t('errors.favoriteFailed'),
+        visibilityTime: 4000,
+        topOffset: 60,
+        onPress: () => {
+          Toast.hide();
+          handleToggleFavorite(jobId, isFavorite); // Retry on toast tap
+        },
       });
     }
   };
@@ -347,6 +448,12 @@ export default function LibraryScreen() {
         type: 'error',
         text1: t('common.error'),
         text2: t('errors.updateFailed'),
+        visibilityTime: 4000,
+        topOffset: 60,
+        onPress: () => {
+          Toast.hide();
+          handleEditTitle(jobId, newTitle); // Retry on toast tap
+        },
       });
     }
   };
@@ -380,9 +487,53 @@ export default function LibraryScreen() {
     <SafeAreaView style={[styles.container, { backgroundColor: colors.background }]}>
       {/* Header */}
       <View style={styles.header}>
-        <Text style={[styles.headerTitle, { color: colors.text }]}>
-          {t('history.title')}
-        </Text>
+        {showSearch ? (
+          <View style={styles.searchContainer}>
+            <TextInput
+              style={[styles.searchInput, { 
+                color: colors.text, 
+                backgroundColor: colors.surface,
+                borderColor: colors.border,
+              }]}
+              placeholder={t('history.searchPlaceholder')}
+              placeholderTextColor={colors.textSecondary}
+              value={searchQuery}
+              onChangeText={handleSearch}
+              autoFocus
+              returnKeyType="search"
+              onSubmitEditing={() => Keyboard.dismiss()}
+            />
+            <TouchableOpacity
+              style={styles.searchButton}
+              onPress={clearSearch}
+              activeOpacity={0.7}
+            >
+              <Ionicons name="close" size={20} color={colors.textSecondary} />
+            </TouchableOpacity>
+          </View>
+        ) : (
+          <>
+            <Text style={[styles.headerTitle, { color: colors.text }]}>
+              {t('history.title')}
+            </Text>
+            <View style={styles.headerActions}>
+              <TouchableOpacity
+                style={styles.headerButton}
+                onPress={() => setShowSearch(true)}
+                activeOpacity={0.7}
+              >
+                <Ionicons name="search" size={20} color={colors.primary} />
+              </TouchableOpacity>
+              <TouchableOpacity
+                style={styles.headerButton}
+                onPress={showSortOptions}
+                activeOpacity={0.7}
+              >
+                <Ionicons name="funnel" size={20} color={colors.primary} />
+              </TouchableOpacity>
+            </View>
+          </>
+        )}
       </View>
 
       {/* Filters */}
@@ -406,7 +557,7 @@ export default function LibraryScreen() {
 
       {/* History List */}
       <FlatList
-        data={history}
+        data={searchQuery.trim() ? filteredHistory : history}
         keyExtractor={(item) => item.jobId}
         renderItem={({ item }) => (
           <HistoryItem
@@ -439,13 +590,48 @@ const styles = StyleSheet.create({
     flex: 1,
   },
   header: {
+    flexDirection: 'row',
+    justifyContent: 'space-between',
+    alignItems: 'center',
     paddingHorizontal: SPACING.xl,
     paddingVertical: SPACING.md,
-    alignItems: 'center',
   },
   headerTitle: {
     fontSize: 28,
     fontWeight: 'bold',
+  },
+  headerActions: {
+    flexDirection: 'row',
+    alignItems: 'center',
+  },
+  headerButton: {
+    width: 40,
+    height: 40,
+    borderRadius: 20,
+    justifyContent: 'center',
+    alignItems: 'center',
+    marginLeft: 8,
+  },
+  searchContainer: {
+    flex: 1,
+    flexDirection: 'row',
+    alignItems: 'center',
+  },
+  searchInput: {
+    flex: 1,
+    height: 40,
+    paddingHorizontal: 16,
+    borderRadius: 20,
+    borderWidth: 1,
+    fontSize: 16,
+  },
+  searchButton: {
+    width: 40,
+    height: 40,
+    borderRadius: 20,
+    justifyContent: 'center',
+    alignItems: 'center',
+    marginLeft: 8,
   },
   filterContainer: {
     marginBottom: SPACING.md,

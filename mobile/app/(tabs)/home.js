@@ -16,7 +16,7 @@ import * as Animatable from 'react-native-animatable';
 
 import { useTheme } from '../../src/contexts/ThemeContext';
 import { useLanguage } from '../../src/contexts/LanguageContext';
-import { requestMediaLibraryPermission } from '../../src/utils/permissions';
+import { requestMediaLibraryPermission, requestCameraPermission } from '../../src/utils/permissions';
 import { SPACING, BORDER_RADIUS } from '../../src/constants/config';
 
 const { width, height } = Dimensions.get('window');
@@ -44,7 +44,7 @@ export default function HomeScreen() {
       const result = await ImagePicker.launchImageLibraryAsync({
         mediaTypes: ImagePicker.MediaTypeOptions.Images,
         allowsEditing: false,
-        quality: 0.8,
+        quality: 0.6, // Reduced from 0.8 for faster uploads
         exif: false,
       });
 
@@ -59,10 +59,75 @@ export default function HomeScreen() {
       console.error('Error picking image:', error);
       Alert.alert(
         t('common.error'),
-        t('errors.unknownError'),
-        [{ text: t('common.ok') }]
+        error.message || t('errors.unknownError'),
+        [
+          { text: t('common.cancel'), style: 'cancel' },
+          { text: t('common.retry'), onPress: handlePickImage },
+        ]
       );
     }
+  };
+
+  const handleTakePhoto = async () => {
+    try {
+      // Check camera permission
+      const hasPermission = await requestCameraPermission();
+      if (!hasPermission) {
+        Alert.alert(
+          t('common.error'),
+          t('errors.cameraPermissionDenied'),
+          [{ text: t('common.ok') }]
+        );
+        return;
+      }
+
+      // Launch camera
+      const result = await ImagePicker.launchCameraAsync({
+        mediaTypes: ImagePicker.MediaTypeOptions.Images,
+        allowsEditing: false,
+        quality: 0.6, // Reduced from 0.8 for faster uploads
+        exif: false,
+      });
+
+      if (!result.canceled && result.assets[0]) {
+        const imageUri = result.assets[0].uri;
+        router.push({
+          pathname: '/upload',
+          params: { imageUri, source: 'picker' }
+        });
+      }
+    } catch (error) {
+      console.error('Error taking photo:', error);
+      Alert.alert(
+        t('common.error'),
+        error.message || t('errors.unknownError'),
+        [
+          { text: t('common.cancel'), style: 'cancel' },
+          { text: t('common.retry'), onPress: handleTakePhoto },
+        ]
+      );
+    }
+  };
+
+  const showImageOptions = () => {
+    Alert.alert(
+      t('home.selectSource'),
+      t('home.selectSourceMessage'),
+      [
+        {
+          text: t('home.takePhoto'),
+          onPress: handleTakePhoto,
+        },
+        {
+          text: t('home.pickFromGallery'),
+          onPress: handlePickImage,
+        },
+        {
+          text: t('common.cancel'),
+          style: 'cancel',
+        },
+      ]
+    );
   };
 
   return (
@@ -98,19 +163,35 @@ export default function HomeScreen() {
         </Animatable.View>
       </View>
 
-      {/* Action Button */}
+      {/* Action Buttons */}
       <Animatable.View 
         animation="fadeInUp" 
         delay={600}
         style={styles.actionContainer}
       >
+        {/* Primary Action - Camera */}
         <TouchableOpacity
-          style={[styles.actionButton, { backgroundColor: colors.primary }]}
+          style={[styles.actionButton, styles.primaryButton, { backgroundColor: colors.primary }]}
+          onPress={handleTakePhoto}
+          activeOpacity={0.9}
+        >
+          <Ionicons name="camera" size={24} color="white" />
+          <Text style={styles.actionButtonText}>
+            {t('home.takePhoto')}
+          </Text>
+        </TouchableOpacity>
+
+        {/* Secondary Action - Gallery */}
+        <TouchableOpacity
+          style={[styles.actionButton, styles.secondaryButton, { 
+            backgroundColor: colors.surface,
+            borderColor: colors.border,
+          }]}
           onPress={handlePickImage}
           activeOpacity={0.9}
         >
-          <Ionicons name="images" size={24} color="white" />
-          <Text style={styles.actionButtonText}>
+          <Ionicons name="images" size={24} color={colors.primary} />
+          <Text style={[styles.actionButtonText, { color: colors.primary }]}>
             {t('home.pickFromGallery')}
           </Text>
         </TouchableOpacity>
@@ -187,6 +268,7 @@ const styles = StyleSheet.create({
     paddingHorizontal: SPACING.xl,
     borderRadius: BORDER_RADIUS.lg,
     minWidth: width * 0.6,
+    marginBottom: SPACING.sm,
     shadowColor: '#000',
     shadowOffset: {
       width: 0,
@@ -195,6 +277,13 @@ const styles = StyleSheet.create({
     shadowOpacity: 0.2,
     shadowRadius: 8,
     elevation: 4,
+  },
+  primaryButton: {
+    // Primary button styling - already has backgroundColor from colors.primary
+  },
+  secondaryButton: {
+    borderWidth: 2,
+    shadowOpacity: 0.1,
   },
   actionButtonText: {
     color: 'white',

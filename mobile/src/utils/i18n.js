@@ -24,8 +24,11 @@ const resources = {
       // Home
       home: {
         emptyTitle: 'Ready to get started?',
-        emptySubtitle: 'Pick an image from your gallery to turn it into an actionable item',
+        emptySubtitle: 'Take a photo or pick from gallery to turn it into an actionable item',
+        takePhoto: 'Take Photo',
         pickFromGallery: 'Pick from Gallery',
+        selectSource: 'Select Image Source',
+        selectSourceMessage: 'How would you like to add an image?',
         shareHint: 'You can also share from your gallery to this app.',
       },
       
@@ -46,6 +49,7 @@ const resources = {
         saveContact: 'Save Contact',
         openInMaps: 'Open in Maps',
         saveNote: 'Save Note',
+        saveDocument: 'Save Document',
         successToast: 'Action completed successfully!',
         fieldsSaved: 'Fields updated successfully!',
         edit: 'Edit',
@@ -65,10 +69,16 @@ const resources = {
         filterContacts: 'Contacts',
         filterAddresses: 'Addresses',
         filterNotes: 'Notes',
+        filterDocuments: 'Documents',
         itemDeleted: 'Item deleted successfully',
         favoriteAdded: 'Added to favorites',
         favoriteRemoved: 'Removed from favorites',
         titleUpdated: 'Title updated successfully',
+        sortBy: 'Sort By',
+        sortNewest: 'Newest First',
+        sortOldest: 'Oldest First',
+        sortFavorites: 'Favorites First',
+        searchPlaceholder: 'Search items...',
       },
       
       // Settings
@@ -92,6 +102,7 @@ const resources = {
         contact: 'Contact',
         address: 'Address',
         note: 'Note',
+        document: 'Document',
       },
       
       // Fields
@@ -127,6 +138,7 @@ const resources = {
         processingFailed: 'Couldn\'t process this image. Try a clearer one.',
         limitReached: 'You reached this month\'s limit (50). It resets next month.',
         permissionDenied: 'Permission denied. Please check app settings.',
+        cameraPermissionDenied: 'Camera permission denied. Please enable camera access in settings.',
         unknownError: 'Something went wrong. Please try again.',
         noImageSelected: 'No image selected',
         invalidImage: 'Invalid image format',
@@ -184,8 +196,11 @@ const resources = {
       // Home
       home: {
         emptyTitle: 'جاهز للبدء؟',
-        emptySubtitle: 'اختر صورة من معرض الصور لتحويلها إلى عنصر قابل للتنفيذ',
+        emptySubtitle: 'التقط صورة أو اختر من المعرض لتحويلها إلى عنصر قابل للتنفيذ',
+        takePhoto: 'التقط صورة',
         pickFromGallery: 'اختر من المعرض',
+        selectSource: 'اختر مصدر الصورة',
+        selectSourceMessage: 'كيف تريد إضافة صورة؟',
         shareHint: 'يمكنك أيضاً مشاركة صورة من المعرض لهذا التطبيق.',
       },
       
@@ -206,6 +221,7 @@ const resources = {
         saveContact: 'احفظ جهة الاتصال',
         openInMaps: 'افتح في الخرائط',
         saveNote: 'احفظ الملاحظة',
+        saveDocument: 'احفظ المستند',
         successToast: 'تم تنفيذ الإجراء بنجاح!',
         fieldsSaved: 'تم تحديث الحقول بنجاح!',
         edit: 'تعديل',
@@ -225,10 +241,16 @@ const resources = {
         filterContacts: 'جهات الاتصال',
         filterAddresses: 'العناوين',
         filterNotes: 'الملاحظات',
+        filterDocuments: 'المستندات',
         itemDeleted: 'تم حذف العنصر بنجاح',
         favoriteAdded: 'تم إضافة إلى المفضلة',
         favoriteRemoved: 'تم إزالة من المفضلة',
         titleUpdated: 'تم تحديث العنوان بنجاح',
+        sortBy: 'ترتيب حسب',
+        sortNewest: 'الأحدث أولاً',
+        sortOldest: 'الأقدم أولاً',
+        sortFavorites: 'المفضلة أولاً',
+        searchPlaceholder: 'البحث في العناصر...',
       },
       
       // Settings
@@ -252,6 +274,7 @@ const resources = {
         contact: 'جهة اتصال',
         address: 'عنوان',
         note: 'ملاحظة',
+        document: 'مستند',
       },
       
       // Fields
@@ -287,6 +310,7 @@ const resources = {
         processingFailed: 'لا يمكن معالجة هذه الصورة. جرب صورة أوضح.',
         limitReached: 'لقد وصلت إلى الحد الشهري (50). سيتم إعادة تعيينه الشهر القادم.',
         permissionDenied: 'تم رفض الإذن. يرجى التحقق من إعدادات التطبيق.',
+        cameraPermissionDenied: 'تم رفض إذن الكاميرا. يرجى تفعيل الوصول للكاميرا في الإعدادات.',
         unknownError: 'حدث خطأ ما. يرجى المحاولة مرة أخرى.',
         noImageSelected: 'لم يتم اختيار صورة',
         invalidImage: 'تنسيق صورة غير صالح',

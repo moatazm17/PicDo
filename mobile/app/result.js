@@ -84,9 +84,20 @@ export default function ResultScreen() {
       Toast.show({
         type: 'error',
         text1: t('common.error'),
-        text2: error.message || t('errors.unknownError'),
+        text2: error.message || t('errors.networkError'),
+        visibilityTime: 4000,
+        topOffset: 60,
+        onPress: () => {
+          Toast.hide();
+          loadJob(); // Retry on toast tap
+        },
       });
-      router.back();
+      
+      // Don't go back immediately on error - let user retry
+      setTimeout(() => {
+        if (loading) return; // Don't auto-back if retry succeeded
+        router.back();
+      }, 4000);
     } finally {
       setLoading(false);
     }
@@ -115,6 +126,12 @@ export default function ResultScreen() {
         type: 'error',
         text1: t('common.error'),
         text2: t('errors.saveFailed'),
+        visibilityTime: 4000,
+        topOffset: 60,
+        onPress: () => {
+          Toast.hide();
+          handleSave(); // Retry on toast tap
+        },
       });
     }
   };
@@ -139,6 +156,9 @@ export default function ResultScreen() {
           break;
         case 'note':
           actionType = 'note';
+          break;
+        case 'document':
+          actionType = 'document';
           break;
         default:
           throw new Error('Unknown action type');
@@ -189,6 +209,7 @@ export default function ResultScreen() {
       case 'contact': return 'person';
       case 'address': return 'location';
       case 'note': return 'document-text';
+      case 'document': return 'document-attach';
       default: return 'document';
     }
   };
@@ -200,6 +221,7 @@ export default function ResultScreen() {
       case 'contact': return t('result.saveContact');
       case 'address': return t('result.openInMaps');
       case 'note': return t('result.saveNote');
+      case 'document': return t('result.saveDocument');
       default: return t('common.save');
     }
   };
@@ -339,7 +361,38 @@ export default function ResultScreen() {
           </>
         );
         
-      case 'note':
+              case 'note':
+        return (
+          <>
+            <FieldInput
+              label={t('fields.title')}
+              value={fields.title || ''}
+              onChangeText={(value) => handleFieldChange('title', value)}
+              colors={colors}
+              isRTL={isRTL}
+              editable={editing}
+            />
+            <FieldInput
+              label={t('fields.category')}
+              value={fields.category || ''}
+              onChangeText={(value) => handleFieldChange('category', value)}
+              colors={colors}
+              isRTL={isRTL}
+              editable={editing}
+            />
+            <FieldInput
+              label={t('fields.content')}
+              value={fields.content || ''}
+              onChangeText={(value) => handleFieldChange('content', value)}
+              multiline
+              colors={colors}
+              isRTL={isRTL}
+              editable={editing}
+            />
+          </>
+        );
+        
+      case 'document':
         return (
           <>
             <FieldInput
@@ -561,7 +614,7 @@ export default function ResultScreen() {
           </TouchableOpacity>
           
           <Image
-            source={{ uri: `data:image/jpeg;base64,${job.thumb}` }}
+            source={{ uri: `data:image/jpeg;base64,${job.image || job.thumb}` }}
             style={styles.fullScreenImage}
             resizeMode="contain"
           />

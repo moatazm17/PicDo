@@ -47,6 +47,8 @@ class APIService {
       const userId = await getUserId();
       const language = getCurrentLanguage();
 
+      console.log(`📸 Uploading image from ${source}:`, imageUri);
+
       const formData = new FormData();
       formData.append('image', {
         uri: imageUri,
@@ -56,7 +58,7 @@ class APIService {
       formData.append('wantThumb', wantThumb.toString());
       formData.append('source', source);
       
-      console.log(`Uploading image to ${this.baseURL}/jobs`);
+      console.log(`🚀 Uploading to ${this.baseURL}/jobs with userId: ${userId}`);
       const response = await fetch(`${this.baseURL}/jobs`, {
         method: 'POST',
         headers: {
@@ -67,8 +69,10 @@ class APIService {
       });
 
       const data = await response.json();
+      console.log(`📦 Upload response (${response.status}):`, JSON.stringify(data).substring(0, 300));
 
       if (!response.ok) {
+        console.error(`❌ Upload failed with status ${response.status}:`, data);
         throw new APIError(data.error || 'upload_error', data.message || 'Upload failed', response.status);
       }
 
