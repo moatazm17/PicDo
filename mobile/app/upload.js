@@ -168,6 +168,8 @@ export default function UploadScreen() {
   const [jobId, setJobId] = useState(null);
   const [error, setError] = useState(null);
   const [pollCount, setPollCount] = useState(0);
+  const [isUploading, setIsUploading] = useState(false);
+  const [uploadRetryCount, setUploadRetryCount] = useState(0);
 
   const steps = [
     { icon: 'cloud-upload', title: t('upload.extractingText') },
@@ -185,8 +187,13 @@ export default function UploadScreen() {
 
     // Handle back button
     const backHandler = BackHandler.addEventListener('hardwareBackPress', handleBackPress);
-    return () => backHandler.remove();
-  }, []);
+    
+    // AppState monitoring removed - using API-level retry instead
+    
+    return () => {
+      backHandler.remove();
+    };
+  }, [isUploading, jobId, uploadRetryCount]);
 
   useEffect(() => {
     if (jobId && pollCount < maxPollAttempts) {
@@ -214,14 +221,25 @@ export default function UploadScreen() {
 
   const uploadImage = async () => {
     try {
+      setIsUploading(true);
       setCurrentStep(0);
+      console.log('Starting upload...');
+      
       const response = await apiService.uploadImage(
         params.imageUri,
         true,
         params.source || 'picker'
       );
+      
       setJobId(response.jobId);
+      setIsUploading(false);
+      console.log('Upload completed successfully');
+      
     } catch (error) {
+      console.error('Upload failed:', error);
+      setIsUploading(false);
+      
+      // Retry logic moved to API service level
       handleError(error);
     }
   };
