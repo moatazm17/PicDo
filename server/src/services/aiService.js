@@ -73,129 +73,100 @@ class AIService {
   }
 
   getSystemPrompt(uiLang) {
-    return `You are a smart document classifier that extracts actionable data from OCR text. Return **JSON only**.
+    const lang = uiLang === 'ar' ? 'Arabic' : 'English';
+    
+    return `
+You are an intelligent OCR-content processor. Your task is to clean noisy OCR text, classify it, generate a concise summary, and extract all relevant fields. **Return JSON only. No prose.**
 
-STEP 1: NOISE FILTERING
-First, identify and IGNORE these UI elements:
-- Browser UI: "Chrome", "Safari", "tabs", navigation bars, "Home | Profile | Settings"
-- Social media UI: "Like | Comment | Share", "Sponsored Ad", usernames, timestamps
-- Website navigation: menus, headers, footers, "Login", "Sign up"
-- Advertisements: "Ad", "Sponsored", promotional content
-- Generic UI: buttons, form labels, "Submit", "Cancel"
+########################## NOISE FILTERING ##########################
+1. **Ignore all UI and decoration:** Remove browser tabs, social media buttons, ads, navigation menus, "Like | Comment | Share", timestamps ("3 س"), and header/footer elements. Focus on the main content users care about.
+2. **Strip out repeated headers, footers, and unrelated interface text** before classification.
 
-FOCUS ONLY on the main document content - the actual information a human would care about.
+######################### TYPE DETECTION #########################
+Classify the cleaned content using these **priority-based, context-aware rules** (check in order):
 
-STEP 2: CONTEXT-AWARE TYPE DETECTION
-Classify using these PRIORITY rules (check in order):
+1. **CONTACT (highest priority)**
+   - Indicators: phone numbers, emails, phrases like "call us", contact hours, Dr./Mr./Ms.
+   - Context: personal or business contact details (e.g. doctors, service hotlines).
+   - Extract: \`name\` (company/person), \`phone\`, \`email\`, \`location\` (if present).
 
-1. CONTACT (highest priority):
-- Has phone numbers OR email addresses OR "Contact me" phrases
-- Contains: Dr./Mr./Ms. + name, business cards, contact sharing
-- Context: Someone sharing their contact info or business details
+2. **EXPENSE**
+   - Indicators: currency symbols (e.g., $, €, £, ج.م), "Total" lines, itemized lists, transaction confirmations, bank names.
+   - Context: receipts, bills, transfers, payments.
+   - Extract: \`merchant\` (store or bank), \`amount\` (total or transaction amount), \`name\` (recipient or payer), \`date\` and \`time\`.
 
-2. EXPENSE (high priority):
-- Has currency symbols ($, £, €, ج.م) OR amounts with "Total" OR receipts
-- Contains: transactions, bills, payments, bank transfers
-- Context: Financial transactions, purchases, money movement
+3. **EVENT**
+   - Indicators: **future** dates with invitation language ("Join us", "ستقام", "will be held"), venue/location details, official event names.
+   - Context: actual invitations to upcoming events or appointments. **Do not classify past experiences or news about events** as events.
+   - Extract: \`date\`, \`time\`, \`location\`, \`title\`, and any URLs.
+   - If the content recounts a **past** event or story ("ذهبت إلى…", "I attended…"), classify as \`note\` instead.
 
-3. EVENT (medium priority - BE CAREFUL):
-- Has FUTURE date+time+location AND invitation language
-- Keywords: "will be", "join us", "meeting at", "appointment on"
-- Context: ACTUAL invitations or calendar items
-- NOT personal stories about past events or mentions of events
+4. **ADDRESS**
+   - Indicators: street numbers, city names, postal codes, map-like structures.
+   - Context: sharing addresses or directions.
+   - Extract: \`location\`, plus any names or landmark details.
 
-4. ADDRESS (medium priority):
-- Has street numbers, city names, postal codes, map-like format
-- Context: Location sharing, directions, address information
+5. **DOCUMENT**
+   - Indicators: formal tone, headlines, publication names, official language, news or procedural content.
+   - Context: news articles, official announcements, instructions, recipes, formal documents.
+   - Extract: \`title\`, \`date\` (if present), and assign a specific \`category\` (e.g., "news", "recipe", "manual").
 
-5. DOCUMENT (formal content):
-- Has news article structure, official language, procedures
-- Contains: headlines, publication names, formal announcements
-- Context: News, government forms, official documents
+6. **NOTE (fallback)**
+   - Includes: personal stories, social media posts, lists, informal content.
+   - Context: informal narratives ("I went…", "We had a great time"), social posts. **All social media content** (detected via usernames, "posted", personal tone) should be classified as a note, even if it mentions events.
+   - Extract the full \`content\`, with \`category\` such as "social media", "personal note", or other relevant description.
 
-6. NOTE (smart fallback):
-- Social media posts (even if they mention events/places)
-- Personal stories, experiences, opinions
-- Lists, recipes, instructions, informal content
-- Context: Personal communication, social sharing
+**Social Media Detection (overrides Event):**  
+If the content contains usernames, timestamps, emoji, or personal narrative tone, it is a social media post → \`type: "note"\`, \`category: "social media"\`.
 
-SOCIAL MEDIA DETECTION:
-- Contains: usernames, "posted", timestamps like "3 س", personal pronouns
-- Author sharing personal experiences or opinions
-- Informal tone, personal narrative
-- → Always TYPE: "note", CATEGORY: "social media"
+######################### SUMMARY GENERATION #########################
+- **Language:** use ${lang} summaries.
+- **Length:** 2–4 words, max 40 characters.
+- **Specificity:** include names, amounts, locations, or key nouns (e.g., "محمد رمضان نيويورك", "تحويل محمد 560").
+- **Avoid general phrases:** Do not use generic summaries like "معاملة البنك" or "تأكيد معاملة".
 
-CONTEXT RULES:
-- "I went to..." / "I attended..." → NOTE (past experience, not event)
-- "Event on [date]" / "Meeting at..." → EVENT (future invitation)
-- Personal stories about events → NOTE (social media)
-- Actual event invitations → EVENT
-
-STEP 3: SMART SUMMARY GENERATION
-Create UNIQUE, DATA-DRIVEN summaries in ${uiLang === 'ar' ? 'Arabic' : 'English'}:
-- Use actual names, amounts, locations from the content
-- 2-4 words maximum, but make them SPECIFIC and MEANINGFUL
-- Help users distinguish between similar items
-
-SMART SUMMARY RULES:
+Example outputs for guidance (${lang} UI):
 ${uiLang === 'ar' ? 
-  '- Social posts: "محمد رمضان نيويورك" (person + location)\n- Bank transfers: "تحويل محمد 560" (to person + amount)\n- Store receipts: "ستاربكس 45 جنيه" (merchant + amount)\n- Contacts: "د. أحمد طبيب" (name + role)\n- Real events: "اجتماع سارة غداً" (event + person + time)\n- News: "خبر القطار مصر" (topic + context)' :
-  '- Social posts: "Mohamed NYC Trip" (person + topic)\n- Bank transfers: "Transfer Mohamed 560" (to person + amount)\n- Store receipts: "Starbucks 45 EGP" (merchant + amount)\n- Contacts: "Dr. Ahmed Medical" (name + role)\n- Real events: "Meeting Sarah Tomorrow" (event + person + time)\n- News: "Train Egypt News" (topic + context)'
+  '• Social post → summary: "محمد رمضان نيويورك", category: "social media"\n• Bank transfer → summary: "تحويل محمد 560", merchant: "البنك العربي"\n• Contact info → summary: "خدمة WE", name: "WE", phone: "111"' :
+  '• Social post → summary: "Mohamed NYC Trip", category: "social media"\n• Bank transfer → summary: "Transfer Mohamed 560", merchant: "Arab Bank"\n• Contact info → summary: "WE Service", name: "WE", phone: "111"'
 }
 
-CREATE UNIQUE SUMMARIES using actual data:
-- Extract key entities: names, amounts, places, companies
-- Combine 2-3 most important pieces
-- Make each summary distinguishable from others
+######################### FIELD EXTRACTION #########################
+Return the cleaned main content in \`fields.content\` and fill these fields (null if not present):
 
-BAD (generic):
-${uiLang === 'ar' ? '"معاملة البنك", "فاتورة شراء", "معلومات اتصال"' : '"Bank Transaction", "Purchase Receipt", "Contact Info"'}
+- \`title\`: original headline or document title.
+- \`content\`: full cleaned text (original language).
+- \`category\`: content category (e.g. "social media", "news", "bank transfer", "contact info").
+- \`date\`: primary date (in natural language or ISO).
+- \`amount\`: transaction or receipt total.
+- \`location\`: place names or address.
+- \`name\`: names of people or companies (e.g., payee, bank, service provider).
+- \`phone\`: phone number(s) (include only the main one).
+- \`email\`: email address(es).
+- \`merchant\`: store or bank name for expenses (null for other types).
 
-GOOD (specific):
-${uiLang === 'ar' ? '"تحويل محمد 560", "ستاربكس 45", "د. أحمد"' : '"Transfer Mohamed 560", "Starbucks 45", "Dr. Ahmed"'}
-
-STEP 4: FIELD EXTRACTION
-Extract fields based on type:
-
-FOR ALL TYPES:
-- title: Original headline/title from document (preserve exact language)
-- content: Main text content (cleaned, no UI noise)
-- category: Specific category (e.g., "news", "medical", "coffee shop", "social media")
-
-TYPE-SPECIFIC FIELDS:
-- contact: name (person name OR company name OR service name), phone (FIRST/MAIN number only), email
-- expense: amount (final total only), currency, merchant (business name), date  
-- event: date (ISO format), time (24h), location, url
-- address: full (complete address in content), location (main location name)
-
-STEP 5: DATA ACCURACY
-- NEVER modify numbers, dates, or specific details from OCR
-- If OCR shows "015", keep "015" (don't change to "+20115")
-- Preserve exact formatting and spelling from original
-- Extract multiple phone/email if present
-- For amounts, use the final "Total" not individual items
-
-Return this exact JSON structure:
+######################### RESPONSE FORMAT #########################
+Return exactly this JSON structure (nulls allowed for missing optional fields):
 {
   "type": "contact|expense|event|address|note|document",
-  "summary": "2-4 words in ${uiLang === 'ar' ? 'Arabic' : 'English'}",
+  "summary": "2–4 words in ${lang}",
   "fields": {
-    "title": "original document title/headline",
-    "content": "cleaned main content (no UI noise)",
+    "title": "original title or headline",
+    "content": "cleaned main text",
     "category": "specific category",
-    "date": "YYYY-MM-DD or null",
-    "time": "HH:mm or null", 
-    "amount": "numeric value or null",
-    "currency": "USD|EUR|EGP|SAR|AED or null",
-    "location": "location or null",
-    "name": "full name or null",
-    "phone": "phone number or null",
-    "email": "email or null"
+    "date": "date if present or null",
+    "amount": "amount if present or null",
+    "location": "location if present or null",
+    "name": "person or company name if present or null",
+    "phone": "primary phone if present or null",
+    "email": "email if present or null",
+    "merchant": "merchant/bank if present or null"
   },
   "confidence": 0.9
 }
 
-NO explanations. JSON only.`;
+Do not output anything else—**JSON only**.
+`;
   }
 
   enforceSummaryLength(classification, uiLang) {
@@ -228,22 +199,64 @@ NO explanations. JSON only.`;
   }
 
   validateClassification(classification) {
-    const requiredFields = ['type', 'summary', 'confidence'];
-    const validTypes = ['event', 'expense', 'contact', 'address', 'note', 'document'];
+    const VALID_TYPES = ['contact', 'expense', 'event', 'address', 'note', 'document'];
+    const REQUIRED_TOP_FIELDS = ['type', 'summary', 'fields', 'confidence'];
     
-    for (const field of requiredFields) {
-      if (!(field in classification)) {
+    // Ensure all required top-level fields exist
+    for (const field of REQUIRED_TOP_FIELDS) {
+      if (!classification.hasOwnProperty(field)) {
         throw new Error(`Missing required field: ${field}`);
       }
     }
     
-    // Check for title - accept either top-level title OR fields.title
-    if (!classification.title && !classification.fields?.title) {
-      throw new Error(`Missing required field: title (either top-level or in fields)`);
+    // Validate type
+    if (!VALID_TYPES.includes(classification.type)) {
+      throw new Error(`Invalid type: ${classification.type}`);
     }
     
-    if (!validTypes.includes(classification.type)) {
-      throw new Error(`Invalid type: ${classification.type}`);
+    // Validate summary: 2–4 words, <= 40 chars
+    const words = classification.summary.trim().split(/\s+/);
+    if (words.length < 2 || words.length > 4 || classification.summary.length > 40) {
+      console.log(`Summary validation failed: ${words.length} words, ${classification.summary.length} chars`);
+      // Don't throw error, just log and continue (summary enforcement will fix it)
+    }
+    
+    // Ensure fields object exists
+    if (typeof classification.fields !== 'object' || classification.fields === null) {
+      throw new Error('Missing or invalid fields object');
+    }
+    
+    // Required fields within fields: title and content must exist and be strings
+    if (typeof classification.fields.title !== 'string' || classification.fields.title.trim() === '') {
+      throw new Error('fields.title must be a non-empty string');
+    }
+    if (typeof classification.fields.content !== 'string' || classification.fields.content.trim() === '') {
+      throw new Error('fields.content must be a non-empty string');
+    }
+    
+    // Category must be present
+    if (typeof classification.fields.category !== 'string' || classification.fields.category.trim() === '') {
+      throw new Error('fields.category must be a non-empty string');
+    }
+    
+    // Confidence must be a number between 0 and 1
+    if (typeof classification.confidence !== 'number' || classification.confidence < 0 || classification.confidence > 1) {
+      throw new Error('confidence must be a number between 0 and 1');
+    }
+    
+    // For contacts, phone or email is required
+    if (classification.type === 'contact') {
+      if (!(classification.fields.phone || classification.fields.email)) {
+        throw new Error('Contact type must include at least a phone or email');
+      }
+    }
+    
+    // For expenses, merchant and amount should be present
+    if (classification.type === 'expense') {
+      if (!classification.fields.merchant || !classification.fields.amount) {
+        console.log('Expense missing merchant or amount, but allowing...');
+        // Don't throw error, just log
+      }
     }
     
     // Ensure all type sections exist
