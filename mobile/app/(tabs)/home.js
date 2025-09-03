@@ -318,11 +318,12 @@ const styles = StyleSheet.create({
     shadowRadius: 16,
     elevation: 8,
     zIndex: 2,
+    overflow: 'hidden', // This masks the logo to circle shape
   },
   logoImage: {
-    width: 70,
-    height: 70,
-    // Use original logo colors - no tinting
+    width: 120, // Same size as container to fill completely
+    height: 120,
+    // Logo fills entire circle, background gets cropped by borderRadius
   },
   accentDot: {
     position: 'absolute',
