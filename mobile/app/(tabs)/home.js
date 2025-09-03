@@ -200,7 +200,7 @@ export default function HomeScreen() {
             <View style={[styles.glowRing, { backgroundColor: colors.primary + '20' }]} />
             
             {/* Main logo circle */}
-            <View style={[styles.logoContainer, { backgroundColor: colors.primary }]}>
+            <View style={[styles.logoContainer, { backgroundColor: 'white' }]}>
               <Image
                 source={require('../../assets/icon.png')}
                 style={styles.logoImage}
@@ -322,7 +322,7 @@ const styles = StyleSheet.create({
   logoImage: {
     width: 70,
     height: 70,
-    tintColor: 'white',
+    // Use original logo colors - no tinting
   },
   accentDot: {
     position: 'absolute',
