@@ -307,7 +307,7 @@ const styles = StyleSheet.create({
     opacity: 0.3,
   },
   logoContainer: {
-    width: 130, // Bigger circle
+    width: 130, // Keep circle size the same
     height: 130,
     borderRadius: 65,
     justifyContent: 'center',
@@ -321,9 +321,9 @@ const styles = StyleSheet.create({
     overflow: 'hidden', // This masks the logo to circle shape
   },
   logoImage: {
-    width: 90, // Bigger logo but still has padding inside circle
-    height: 90,
-    // Logo is nicely centered with some breathing room
+    width: 108, // 90 + 20% = 108px (bigger logo)
+    height: 108,
+    // Logo is bigger and fills more of the circle
   },
   accentDot: {
     position: 'absolute',
