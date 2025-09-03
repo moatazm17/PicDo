@@ -226,12 +226,14 @@ Do not output anything else—**JSON only**.
       throw new Error('Missing or invalid fields object');
     }
     
-    // Required fields within fields: title and content must exist and be strings
-    if (typeof classification.fields.title !== 'string' || classification.fields.title.trim() === '') {
-      throw new Error('fields.title must be a non-empty string');
-    }
+    // Content must exist and be non-empty
     if (typeof classification.fields.content !== 'string' || classification.fields.content.trim() === '') {
       throw new Error('fields.content must be a non-empty string');
+    }
+    
+    // Title can be null for some content types (like social posts), but if present must be string
+    if (classification.fields.title !== null && (typeof classification.fields.title !== 'string' || classification.fields.title.trim() === '')) {
+      throw new Error('fields.title must be a non-empty string or null');
     }
     
     // Category must be present
