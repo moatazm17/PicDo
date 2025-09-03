@@ -24,7 +24,7 @@ import { useLanguage } from '../../src/contexts/LanguageContext';
 import apiService from '../../src/services/api';
 import { SPACING, BORDER_RADIUS } from '../../src/constants/config';
 
-const { width } = Dimensions.get('window');
+const { width, height } = Dimensions.get('window');
 
 const FilterTab = ({ title, isActive, onPress, colors }) => (
   <TouchableOpacity
