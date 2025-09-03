@@ -195,12 +195,23 @@ export default function HomeScreen() {
           style={styles.emptyState}
         >
           {/* Illustration */}
-          <View style={[styles.illustrationContainer, { backgroundColor: 'transparent' }]}>
-            <Image
-              source={require('../../assets/icon.png')}
-              style={styles.logoImage}
-              resizeMode="contain"
-            />
+          <View style={styles.illustrationContainer}>
+            {/* Outer glow ring */}
+            <View style={[styles.glowRing, { backgroundColor: colors.primary + '20' }]} />
+            
+            {/* Main logo circle */}
+            <View style={[styles.logoContainer, { backgroundColor: colors.primary }]}>
+              <Image
+                source={require('../../assets/icon.png')}
+                style={styles.logoImage}
+                resizeMode="contain"
+              />
+            </View>
+            
+            {/* Floating accent dots */}
+            <View style={[styles.accentDot, styles.dot1, { backgroundColor: colors.primary }]} />
+            <View style={[styles.accentDot, styles.dot2, { backgroundColor: colors.primary + '80' }]} />
+            <View style={[styles.accentDot, styles.dot3, { backgroundColor: colors.primary + '60' }]} />
           </View>
 
           {/* Title */}
@@ -281,25 +292,62 @@ const styles = StyleSheet.create({
     maxWidth: width * 0.8,
   },
   illustrationContainer: {
-    width: 160,
-    height: 160,
-    borderRadius: 80,
+    width: 180,
+    height: 180,
     justifyContent: 'center',
     alignItems: 'center',
     marginBottom: SPACING.xl,
+    position: 'relative',
+  },
+  glowRing: {
+    position: 'absolute',
+    width: 180,
+    height: 180,
+    borderRadius: 90,
+    opacity: 0.3,
+  },
+  logoContainer: {
+    width: 120,
+    height: 120,
+    borderRadius: 60,
+    justifyContent: 'center',
+    alignItems: 'center',
     shadowColor: '#000',
-    shadowOffset: {
-      width: 0,
-      height: 4,
-    },
-    shadowOpacity: 0.1,
-    shadowRadius: 8,
-    elevation: 4,
+    shadowOffset: { width: 0, height: 8 },
+    shadowOpacity: 0.2,
+    shadowRadius: 16,
+    elevation: 8,
+    zIndex: 2,
   },
   logoImage: {
-    width: 80,
-    height: 80,
-    // No tintColor - use original logo colors
+    width: 70,
+    height: 70,
+    tintColor: 'white',
+  },
+  accentDot: {
+    position: 'absolute',
+    width: 12,
+    height: 12,
+    borderRadius: 6,
+    zIndex: 1,
+  },
+  dot1: {
+    top: 20,
+    right: 30,
+  },
+  dot2: {
+    bottom: 25,
+    left: 25,
+    width: 8,
+    height: 8,
+    borderRadius: 4,
+  },
+  dot3: {
+    top: 50,
+    left: 10,
+    width: 6,
+    height: 6,
+    borderRadius: 3,
   },
   emptyTitle: {
     fontSize: 24,
