@@ -429,55 +429,59 @@ async function processJobAsync(job, imageBuffer, wantThumb, uiLang) {
 function extractFieldsByType(classification) {
   const { type } = classification;
   
+  // Get title from either top-level or fields
+  const title = classification.title || classification.fields?.title;
+  
   switch (type) {
     case 'event':
       return {
-        title: classification.title,
-        date: classification.event.date,
-        time: classification.event.time,
-        location: classification.event.location,
-        url: classification.event.url
+        title: title,
+        date: classification.event?.date || classification.fields?.date,
+        time: classification.event?.time || classification.fields?.time,
+        location: classification.event?.location || classification.fields?.location,
+        url: classification.event?.url || classification.fields?.url
       };
     
     case 'expense':
       return {
-        title: classification.title,
-        amount: classification.expense.amount,
-        currency: classification.expense.currency,
-        merchant: classification.expense.merchant,
-        date: classification.expense.date
+        title: title,
+        amount: classification.expense?.amount || classification.fields?.amount,
+        currency: classification.expense?.currency || classification.fields?.currency,
+        merchant: classification.expense?.merchant || classification.fields?.merchant,
+        date: classification.expense?.date || classification.fields?.date
       };
     
     case 'contact':
       return {
-        title: classification.title,
-        name: classification.contact.name,
-        phone: classification.contact.phone
+        title: title,
+        name: classification.contact?.name || classification.fields?.name,
+        phone: classification.contact?.phone || classification.fields?.phone,
+        email: classification.contact?.email || classification.fields?.email
       };
     
     case 'address':
       return {
-        title: classification.title,
-        full: classification.address.full,
-        mapsQuery: classification.address.mapsQuery
+        title: title,
+        full: classification.address?.full || classification.fields?.full,
+        mapsQuery: classification.address?.mapsQuery || classification.fields?.mapsQuery
       };
       
     case 'note':
       return {
-        title: classification.title,
-        content: classification.note.content,
-        category: classification.note.category
+        title: title,
+        content: classification.note?.content || classification.fields?.content,
+        category: classification.note?.category || classification.fields?.category
       };
     
     case 'document':
       return {
-        title: classification.title,
-        content: classification.document.content,
-        category: classification.document.category
+        title: title,
+        content: classification.document?.content || classification.fields?.content,
+        category: classification.document?.category || classification.fields?.category
       };
     
     default:
-      return { title: classification.title };
+      return { title: title };
   }
 }
 
