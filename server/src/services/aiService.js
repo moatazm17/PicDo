@@ -85,33 +85,51 @@ First, identify and IGNORE these UI elements:
 
 FOCUS ONLY on the main document content - the actual information a human would care about.
 
-STEP 2: SMART TYPE DETECTION
-Classify using these priority rules:
+STEP 2: CONTEXT-AWARE TYPE DETECTION
+Classify using these PRIORITY rules (check in order):
 
-CONTACT (highest priority if present):
-- Contains: Dr./Mr./Ms. + name, phone numbers, email addresses, company names
-- Keywords: "Phone:", "Email:", "Contact", "Office Hours", "Customer Service"
-- Name extraction: Person names (Dr. Sarah), company names (WE, Starbucks), service names (Customer Service)
+1. CONTACT (highest priority):
+- Has phone numbers OR email addresses OR "Contact me" phrases
+- Contains: Dr./Mr./Ms. + name, business cards, contact sharing
+- Context: Someone sharing their contact info or business details
 
-EXPENSE (high priority):
-- Contains: currency symbols ($, £, €, ج.م), "Total:", "Amount:", receipts
-- Keywords: "Receipt", "Invoice", "Bill", "Payment", "Tax", "Transfer", "Transaction"
-- Merchant: Extract bank names, store names, company names, service providers
+2. EXPENSE (high priority):
+- Has currency symbols ($, £, €, ج.م) OR amounts with "Total" OR receipts
+- Contains: transactions, bills, payments, bank transfers
+- Context: Financial transactions, purchases, money movement
 
-EVENT (medium priority):
-- Contains: specific dates + times, "Meeting", "Appointment", "Event"
-- Keywords: "at", location names, "will take place", calendar-like format
+3. EVENT (medium priority - BE CAREFUL):
+- Has FUTURE date+time+location AND invitation language
+- Keywords: "will be", "join us", "meeting at", "appointment on"
+- Context: ACTUAL invitations or calendar items
+- NOT personal stories about past events or mentions of events
 
-ADDRESS (medium priority):
-- Contains: street numbers, city names, postal codes
-- Keywords: "Street", "Avenue", "City", map-like format
+4. ADDRESS (medium priority):
+- Has street numbers, city names, postal codes, map-like format
+- Context: Location sharing, directions, address information
 
-DOCUMENT (for formal content):
-- Contains: official language, procedures, instructions, news articles
-- Keywords: formal tone, publication names, article structure
+5. DOCUMENT (formal content):
+- Has news article structure, official language, procedures
+- Contains: headlines, publication names, formal announcements
+- Context: News, government forms, official documents
 
-NOTE (fallback):
-- Everything else: social posts, personal notes, lists, informal content
+6. NOTE (smart fallback):
+- Social media posts (even if they mention events/places)
+- Personal stories, experiences, opinions
+- Lists, recipes, instructions, informal content
+- Context: Personal communication, social sharing
+
+SOCIAL MEDIA DETECTION:
+- Contains: usernames, "posted", timestamps like "3 س", personal pronouns
+- Author sharing personal experiences or opinions
+- Informal tone, personal narrative
+- → Always TYPE: "note", CATEGORY: "social media"
+
+CONTEXT RULES:
+- "I went to..." / "I attended..." → NOTE (past experience, not event)
+- "Event on [date]" / "Meeting at..." → EVENT (future invitation)
+- Personal stories about events → NOTE (social media)
+- Actual event invitations → EVENT
 
 STEP 3: SMART SUMMARY GENERATION
 Create UNIQUE, DATA-DRIVEN summaries in ${uiLang === 'ar' ? 'Arabic' : 'English'}:
@@ -121,8 +139,8 @@ Create UNIQUE, DATA-DRIVEN summaries in ${uiLang === 'ar' ? 'Arabic' : 'English'
 
 SMART SUMMARY RULES:
 ${uiLang === 'ar' ? 
-  '- Bank transfers: "تحويل محمد 560" (to person + amount)\n- Store receipts: "ستاربكس 45 جنيه" (merchant + amount)\n- Contacts: "د. أحمد طبيب" (name + role)\n- Events: "اجتماع مع سارة" (event + person)\n- News: "خبر القطار مصر" (topic + context)' :
-  '- Bank transfers: "Transfer Mohamed 560" (to person + amount)\n- Store receipts: "Starbucks 45 EGP" (merchant + amount)\n- Contacts: "Dr. Ahmed Medical" (name + role)\n- Events: "Meeting Sarah" (event + person)\n- News: "Train Egypt News" (topic + context)'
+  '- Social posts: "محمد رمضان نيويورك" (person + location)\n- Bank transfers: "تحويل محمد 560" (to person + amount)\n- Store receipts: "ستاربكس 45 جنيه" (merchant + amount)\n- Contacts: "د. أحمد طبيب" (name + role)\n- Real events: "اجتماع سارة غداً" (event + person + time)\n- News: "خبر القطار مصر" (topic + context)' :
+  '- Social posts: "Mohamed NYC Trip" (person + topic)\n- Bank transfers: "Transfer Mohamed 560" (to person + amount)\n- Store receipts: "Starbucks 45 EGP" (merchant + amount)\n- Contacts: "Dr. Ahmed Medical" (name + role)\n- Real events: "Meeting Sarah Tomorrow" (event + person + time)\n- News: "Train Egypt News" (topic + context)'
 }
 
 CREATE UNIQUE SUMMARIES using actual data:
