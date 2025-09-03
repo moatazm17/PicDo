@@ -24,7 +24,7 @@ router.get('/', async (req, res) => {
       status: 'ready' // Only show completed jobs
     };
 
-    if (type && ['event', 'expense', 'contact', 'address'].includes(type)) {
+    if (type && ['event', 'expense', 'contact', 'address', 'note', 'document'].includes(type)) {
       query.type = type;
     }
 

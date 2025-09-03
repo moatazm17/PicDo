@@ -145,6 +145,17 @@ export const saveNote = async (noteData) => {
   }
 };
 
+export const saveDocument = async (documentData) => {
+  try {
+    // For MVP, we just mark it as saved on the server
+    // In a full implementation, this might save to Files app or cloud storage
+    return { success: true };
+  } catch (error) {
+    console.error('Error saving document:', error);
+    return { success: false, error: error.message };
+  }
+};
+
 export const executeAction = async (type, data) => {
   switch (type) {
     case 'calendar':
@@ -157,6 +168,8 @@ export const executeAction = async (type, data) => {
       return await saveExpense(data);
     case 'note':
       return await saveNote(data);
+    case 'document':
+      return await saveDocument(data);
     default:
       return { success: false, error: 'Unknown action type' };
   }
