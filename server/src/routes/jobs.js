@@ -465,61 +465,85 @@ async function processJobAsync(job, imageBuffer, wantThumb, uiLang) {
 }
 
 function extractFieldsByType(classification) {
-  const { type } = classification;
+  const { type, fields } = classification;
   
-  // Get title from either top-level or fields
-  const title = classification.title || classification.fields?.title;
-  
+  // AI now puts everything in fields object, so extract from there
+  const extractedFields = {
+    title: fields?.title || classification.title || 'Untitled',
+    content: fields?.content || null,
+    category: fields?.category || null,
+    date: fields?.date || null,
+    time: fields?.time || null,
+    amount: fields?.amount || null,
+    currency: fields?.currency || null,
+    location: fields?.location || null,
+    name: fields?.name || null,
+    phone: fields?.phone || null,
+    email: fields?.email || null,
+    merchant: fields?.merchant || null,
+    full: fields?.full || null,
+    mapsQuery: fields?.mapsQuery || null,
+  };
+
+  // Return only relevant fields for each type
   switch (type) {
     case 'event':
       return {
-        title: title,
-        date: classification.event?.date || classification.fields?.date,
-        time: classification.event?.time || classification.fields?.time,
-        location: classification.event?.location || classification.fields?.location,
-        url: classification.event?.url || classification.fields?.url
+        title: extractedFields.title,
+        date: extractedFields.date,
+        time: extractedFields.time,
+        location: extractedFields.location,
+        content: extractedFields.content
       };
     
     case 'expense':
       return {
-        title: title,
-        amount: classification.expense?.amount || classification.fields?.amount,
-        currency: classification.expense?.currency || classification.fields?.currency,
-        merchant: classification.expense?.merchant || classification.fields?.merchant,
-        date: classification.expense?.date || classification.fields?.date
+        title: extractedFields.title,
+        amount: extractedFields.amount,
+        currency: extractedFields.currency,
+        merchant: extractedFields.merchant || extractedFields.name,
+        date: extractedFields.date,
+        content: extractedFields.content
       };
     
     case 'contact':
       return {
-        title: title,
-        name: classification.contact?.name || classification.fields?.name,
-        phone: classification.contact?.phone || classification.fields?.phone,
-        email: classification.contact?.email || classification.fields?.email
+        title: extractedFields.title,
+        name: extractedFields.name,
+        phone: extractedFields.phone,
+        email: extractedFields.email,
+        location: extractedFields.location,
+        content: extractedFields.content
       };
     
     case 'address':
       return {
-        title: title,
-        full: classification.address?.full || classification.fields?.full,
-        mapsQuery: classification.address?.mapsQuery || classification.fields?.mapsQuery
+        title: extractedFields.title,
+        full: extractedFields.full || extractedFields.content,
+        location: extractedFields.location,
+        content: extractedFields.content
       };
       
     case 'note':
       return {
-        title: title,
-        content: classification.note?.content || classification.fields?.content,
-        category: classification.note?.category || classification.fields?.category
+        title: extractedFields.title,
+        content: extractedFields.content,
+        category: extractedFields.category
       };
     
     case 'document':
       return {
-        title: title,
-        content: classification.document?.content || classification.fields?.content,
-        category: classification.document?.category || classification.fields?.category
+        title: extractedFields.title,
+        content: extractedFields.content,
+        category: extractedFields.category,
+        date: extractedFields.date
       };
     
     default:
-      return { title: title };
+      return { 
+        title: extractedFields.title,
+        content: extractedFields.content 
+      };
   }
 }
 
