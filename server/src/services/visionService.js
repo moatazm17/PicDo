@@ -49,6 +49,9 @@ class VisionService {
       const fullText = detections[0].description;
       console.log('Vision API: Text detected:', fullText.substring(0, 100) + (fullText.length > 100 ? '...' : ''));
       
+      // Check text content for inappropriate material
+      this.validateTextContent(fullText);
+      
       return {
         text: fullText,
         confidence: this.calculateConfidence(ocrResult[0])
@@ -80,6 +83,31 @@ class VisionService {
     }
 
     console.log('Vision API: Content safety check passed');
+  }
+
+  validateTextContent(text) {
+    // List of inappropriate keywords/phrases to detect in text
+    const inappropriatePatterns = [
+      // Explicit sexual content
+      /\b(cock|dick|penis|vagina|pussy|sex|sexual|porn|naked|nude)\b/i,
+      // Profanity (common ones)  
+      /\b(fuck|shit|bitch|ass|damn)\b/i,
+      // Adult content indicators
+      /\b(erotic|orgasm|masturbat|intercourse)\b/i,
+      // Violence
+      /\b(kill|murder|rape|assault|violence)\b/i
+    ];
+
+    const lowerText = text.toLowerCase();
+    
+    for (const pattern of inappropriatePatterns) {
+      if (pattern.test(lowerText)) {
+        console.log('Vision API: Inappropriate text content detected');
+        throw new Error('Content not suitable for processing');
+      }
+    }
+    
+    console.log('Vision API: Text content safety check passed');
   }
 
   calculateConfidence(result) {
