@@ -73,11 +73,18 @@ router.post('/', upload.single('image'), async (req, res) => {
       });
     }
 
-    // Validate image format
-    await ImageService.validateImageFormat(req.file.buffer);
-
-    // Create job record
+    // Create job record first
     const jobId = uuidv4();
+    
+    // Validate image format
+    try {
+      console.log(`Job ${jobId}: Validating image format, buffer size: ${req.file.buffer.length}`);
+      await ImageService.validateImageFormat(req.file.buffer);
+      console.log(`Job ${jobId}: Image format validation passed`);
+    } catch (error) {
+      console.error(`Job ${jobId}: Image validation failed:`, error);
+      throw error;
+    }
     const job = new Job({
       jobId,
       userId,
