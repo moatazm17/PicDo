@@ -23,12 +23,23 @@ class VisionService {
 
   async extractTextFromImage(imageBuffer) {
     try {
-      console.log('Vision API: Starting OCR text detection');
-      const [result] = await this.client.documentTextDetection({
-        image: { content: imageBuffer }
-      });
+      console.log('Vision API: Starting content safety check and OCR');
+      
+      // Perform both SafeSearch and text detection in parallel for efficiency
+      const [ocrResult, safeSearchResult] = await Promise.all([
+        this.client.documentTextDetection({
+          image: { content: imageBuffer }
+        }),
+        this.client.safeSearchDetection({
+          image: { content: imageBuffer }
+        })
+      ]);
 
-      const detections = result.textAnnotations;
+      // Check SafeSearch results first
+      const safeSearch = safeSearchResult[0].safeSearchAnnotation;
+      this.validateContentSafety(safeSearch);
+
+      const detections = ocrResult[0].textAnnotations;
       if (!detections || detections.length === 0) {
         console.log('Vision API: No text detected in image');
         throw new Error('No text detected in image');
@@ -40,7 +51,7 @@ class VisionService {
       
       return {
         text: fullText,
-        confidence: this.calculateConfidence(result)
+        confidence: this.calculateConfidence(ocrResult[0])
       };
     } catch (error) {
       console.error('Vision API error:', error);
@@ -50,6 +61,25 @@ class VisionService {
       }
       throw new Error(`OCR failed: ${error.message}`);
     }
+  }
+
+  validateContentSafety(safeSearch) {
+    // Define safety thresholds
+    const isUnsafe = 
+      safeSearch.adult === 'VERY_LIKELY' || safeSearch.adult === 'LIKELY' ||
+      safeSearch.violence === 'VERY_LIKELY' || safeSearch.violence === 'LIKELY' ||
+      safeSearch.racy === 'VERY_LIKELY';
+
+    if (isUnsafe) {
+      console.log('Vision API: Inappropriate content detected', {
+        adult: safeSearch.adult,
+        violence: safeSearch.violence,
+        racy: safeSearch.racy
+      });
+      throw new Error('Content not suitable for processing');
+    }
+
+    console.log('Vision API: Content safety check passed');
   }
 
   calculateConfidence(result) {

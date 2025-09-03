@@ -368,13 +368,24 @@ async function processJobAsync(job, imageBuffer, wantThumb, language) {
   } catch (error) {
     console.error(`Job ${job.jobId}: Processing error:`, error);
     
+    let errorCode = 'processing_failed';
+    let errorMessage = error.message;
+    
+    // Map specific error types
+    if (error.message.includes('Content not suitable for processing')) {
+      errorCode = 'inappropriate_content';
+      errorMessage = 'Content not suitable for processing';
+    } else if (error.message.includes('No text detected')) {
+      errorCode = 'no_text_detected';
+    }
+    
     job.status = 'failed';
     job.error = {
-      code: 'processing_failed',
-      message: error.message
+      code: errorCode,
+      message: errorMessage
     };
     
-    console.log(`Job ${job.jobId}: Status updated to failed: ${error.message}`);
+    console.log(`Job ${job.jobId}: Status updated to failed: ${errorMessage}`);
     await job.save();
   }
 }

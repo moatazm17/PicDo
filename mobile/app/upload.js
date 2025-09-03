@@ -193,6 +193,10 @@ export default function UploadScreen() {
           errorMessage = t('errors.invalidImage');
           isRetryable = false;
           break;
+        case 'inappropriate_content':
+          errorMessage = t('errors.inappropriateContent');
+          isRetryable = false;
+          break;
         default:
           errorMessage = error.message || t('errors.uploadFailed');
       }
