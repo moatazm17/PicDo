@@ -33,7 +33,8 @@ const aiService = new AIService();
 router.post('/', upload.single('image'), async (req, res) => {
   try {
     const userId = req.headers['x-user-id'];
-    const language = req.headers['accept-language'] === 'ar' ? 'ar' : 'en';
+    const language = req.headers['accept-language']?.startsWith('ar') ? 'ar' : 'en';
+    console.log(`Language detection: accept-language="${req.headers['accept-language']}" -> detected="${language}"`);
     const wantThumb = req.body.wantThumb === 'true';
     const source = req.body.source || 'picker';
 
