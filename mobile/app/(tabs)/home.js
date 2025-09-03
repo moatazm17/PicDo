@@ -18,6 +18,7 @@ import { useTheme } from '../../src/contexts/ThemeContext';
 import { useLanguage } from '../../src/contexts/LanguageContext';
 import { requestMediaLibraryPermission, requestCameraPermission } from '../../src/utils/permissions';
 import { SPACING, BORDER_RADIUS } from '../../src/constants/config';
+import apiService from '../../src/services/api';
 
 const { width, height } = Dimensions.get('window');
 
@@ -26,6 +27,58 @@ export default function HomeScreen() {
   const { colors } = useTheme();
   const { isRTL } = useLanguage();
   const router = useRouter();
+
+  const checkLimitAndProceed = async (imageUri, source = 'picker') => {
+    try {
+      // Check upload limit first
+      const limitCheck = await apiService.checkUploadLimit();
+      
+      if (!limitCheck.allowed) {
+        const resetDate = new Date(limitCheck.resetDate).toLocaleDateString();
+        Alert.alert(
+          t('errors.limitReached'),
+          `${limitCheck.message}\n\n${t('errors.used')}: ${limitCheck.used}/${limitCheck.limit}\n${t('errors.resetsOn')}: ${resetDate}`,
+          [{ text: t('common.ok') }]
+        );
+        return;
+      }
+      
+      // Show remaining uploads if getting close to limit
+      if (limitCheck.remaining <= 5 && limitCheck.remaining > 0) {
+        Alert.alert(
+          t('common.info'),
+          `${t('errors.remaining')}: ${limitCheck.remaining}/${limitCheck.limit}`,
+          [
+            { text: t('common.cancel'), style: 'cancel' },
+            { 
+              text: t('common.continue'), 
+              onPress: () => {
+                router.push({
+                  pathname: '/upload',
+                  params: { imageUri, source }
+                });
+              }
+            }
+          ]
+        );
+        return;
+      }
+      
+      // All good, proceed with upload
+      router.push({
+        pathname: '/upload',
+        params: { imageUri, source }
+      });
+      
+    } catch (error) {
+      console.error('Limit check failed:', error);
+      // If limit check fails, proceed anyway (fallback)
+      router.push({
+        pathname: '/upload',
+        params: { imageUri, source }
+      });
+    }
+  };
 
   const handlePickImage = async () => {
     try {
@@ -50,10 +103,7 @@ export default function HomeScreen() {
 
       if (!result.canceled && result.assets[0]) {
         const imageUri = result.assets[0].uri;
-        router.push({
-          pathname: '/upload',
-          params: { imageUri, source: 'picker' }
-        });
+        await checkLimitAndProceed(imageUri, 'picker');
       }
     } catch (error) {
       console.error('Error picking image:', error);
@@ -91,10 +141,7 @@ export default function HomeScreen() {
 
       if (!result.canceled && result.assets[0]) {
         const imageUri = result.assets[0].uri;
-        router.push({
-          pathname: '/upload',
-          params: { imageUri, source: 'picker' }
-        });
+        await checkLimitAndProceed(imageUri, 'camera');
       }
     } catch (error) {
       console.error('Error taking photo:', error);

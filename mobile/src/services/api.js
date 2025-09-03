@@ -135,6 +135,10 @@ class APIService {
   async checkHealth() {
     return this.makeRequest('/health');
   }
+
+  async checkUploadLimit() {
+    return this.makeRequest('/jobs/check-limit');
+  }
 }
 
 class APIError extends Error {

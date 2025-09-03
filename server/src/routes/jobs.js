@@ -30,6 +30,44 @@ const upload = multer({
 const visionService = new VisionService();
 const aiService = new AIService();
 
+// GET /check-limit - Check if user can upload
+router.get('/check-limit', async (req, res) => {
+  try {
+    const userId = req.headers['x-user-id'];
+    const uiLang = detectUiLang(req.headers['accept-language']);
+    
+    if (!userId) {
+      return res.status(400).json({ 
+        error: 'missing_user_id', 
+        message: 'x-user-id header is required' 
+      });
+    }
+
+    const monthlyLimit = parseInt(process.env.MONTHLY_LIMIT) || 50;
+    const limitCheck = await RateLimiter.checkMonthlyLimit(userId, monthlyLimit);
+    
+    // Calculate reset date (first day of next month)
+    const now = new Date();
+    const resetDate = new Date(now.getFullYear(), now.getMonth() + 1, 1);
+    
+    res.json({
+      allowed: !limitCheck.isLimitReached,
+      used: limitCheck.currentCount || 0,
+      limit: monthlyLimit,
+      remaining: Math.max(0, monthlyLimit - (limitCheck.currentCount || 0)),
+      resetDate: resetDate.toISOString().split('T')[0], // YYYY-MM-DD format
+      message: limitCheck.isLimitReached ? RateLimiter.getLimitMessage(uiLang) : null
+    });
+    
+  } catch (error) {
+    console.error('Check limit error:', error);
+    res.status(500).json({ 
+      error: 'server_error', 
+      message: 'Failed to check upload limit' 
+    });
+  }
+});
+
 // POST /jobs - Create new job
 router.post('/', upload.single('image'), async (req, res) => {
   try {
