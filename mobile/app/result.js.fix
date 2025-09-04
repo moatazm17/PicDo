@@ -1,0 +1,52 @@
+// Add this function to display all phone numbers
+const renderPhoneNumbers = () => {
+  if (!job || !job.entities || !job.entities.phones || job.entities.phones.length <= 0) {
+    return null;
+  }
+  
+  // If there's only one phone number, no need for this section
+  if (job.entities.phones.length <= 1) {
+    return null;
+  }
+  
+  return (
+    <View style={[styles.phoneNumbersContainer, { backgroundColor: colors.surface }]}>
+      <View style={styles.phoneNumbersHeader}>
+        <Ionicons name="call" size={18} color={colors.primary} />
+        <Text style={[styles.phoneNumbersTitle, { color: colors.text }]}>
+          {t('result.allPhoneNumbers')} ({job.entities.phones.length})
+        </Text>
+      </View>
+      
+      {job.entities.phones.slice(0, 3).map((phone, index) => (
+        <TouchableOpacity 
+          key={`phone-list-${index}`}
+          style={styles.phoneNumberItem}
+          onPress={() => handleEntityPress(phone, 'phone')}
+        >
+          <Text style={[styles.phoneNumberText, { color: colors.text }]}>
+            {phone}
+          </Text>
+          <View style={[styles.phoneCallButton, { backgroundColor: colors.primary + '15' }]}>
+            <Ionicons name="call" size={16} color={colors.primary} />
+          </View>
+        </TouchableOpacity>
+      ))}
+      
+      {job.entities.phones.length > 3 && (
+        <TouchableOpacity 
+          style={[styles.viewAllButton, { borderColor: colors.primary }]}
+          onPress={() => router.push({
+            pathname: '/AllPhones',
+            params: { phones: job.entities.phones }
+          })}
+        >
+          <Text style={[styles.viewAllButtonText, { color: colors.primary }]}>
+            {t('common.viewAll')} ({job.entities.phones.length})
+          </Text>
+          <Ionicons name="chevron-forward" size={16} color={colors.primary} />
+        </TouchableOpacity>
+      )}
+    </View>
+  );
+};

@@ -1,0 +1,123 @@
+  // Render entities strip with all extracted data
+  const renderEntitiesStrip = () => {
+    if (!job || !job.entities) return null;
+    
+    const { phones, emails, urls, addresses, businessInfo } = job.entities;
+    
+    // Count all entities
+    const totalEntities = 
+      (phones?.length || 0) + 
+      (emails?.length || 0) + 
+      (urls?.length || 0) + 
+      (addresses?.length || 0);
+      
+    if (totalEntities === 0) return null;
+    
+    return (
+      <Animated.View style={[styles.entitiesContainer, { backgroundColor: colors.surface, opacity: fadeAnim }]}>
+        <View style={styles.entitiesHeader}>
+          <Ionicons name="information-circle" size={18} color={colors.primary} />
+          <Text style={[styles.entitiesTitle, { color: colors.text }]}>
+            {t('result.detectedEntities')} ({totalEntities})
+          </Text>
+        </View>
+        
+        <ScrollView 
+          horizontal 
+          showsHorizontalScrollIndicator={false} 
+          contentContainerStyle={styles.entitiesScrollContent}
+        >
+          {phones?.map((phone, index) => (
+            <EntityChip 
+              key={`phone-${index}`}
+              entity={phone}
+              type="phone"
+              colors={colors}
+              onPress={() => handleEntityPress(phone, 'phone')}
+            />
+          ))}
+          
+          {emails?.map((email, index) => (
+            <EntityChip 
+              key={`email-${index}`}
+              entity={email}
+              type="email"
+              colors={colors}
+              onPress={() => handleEntityPress(email, 'email')}
+            />
+          ))}
+          
+          {urls?.map((url, index) => (
+            <EntityChip 
+              key={`url-${index}`}
+              entity={url.length > 20 ? url.substring(0, 20) + '...' : url}
+              type="url"
+              colors={colors}
+              onPress={() => handleEntityPress(url, 'url')}
+            />
+          ))}
+          
+          {addresses?.map((address, index) => (
+            <EntityChip 
+              key={`address-${index}`}
+              entity={address.length > 20 ? address.substring(0, 20) + '...' : address}
+              type="address"
+              colors={colors}
+              onPress={() => handleEntityPress(address, 'address')}
+            />
+          ))}
+        </ScrollView>
+      </Animated.View>
+    );
+  };
+  
+  // Render business info section
+  const renderBusinessInfo = () => {
+    if (!job || !job.entities || !job.entities.businessInfo) return null;
+    
+    const { ratings, hours, categories } = job.entities.businessInfo;
+    
+    if ((!ratings || ratings.length === 0) && 
+        (!hours || hours.length === 0) && 
+        (!categories || categories.length === 0)) {
+      return null;
+    }
+    
+    return (
+      <View style={[styles.businessInfoContainer, { backgroundColor: colors.surface }]}>
+        <View style={styles.businessInfoHeader}>
+          <Ionicons name="business" size={18} color={colors.primary} />
+          <Text style={[styles.businessInfoTitle, { color: colors.text }]}>
+            {t('result.businessInfo')}
+          </Text>
+        </View>
+        
+        {ratings?.length > 0 && (
+          <View style={styles.businessInfoItem}>
+            <Ionicons name="star" size={16} color={colors.primary} style={styles.businessInfoIcon} />
+            <Text style={[styles.businessInfoText, { color: colors.text }]}>
+              {ratings[0]}
+            </Text>
+          </View>
+        )}
+        
+        {hours?.length > 0 && (
+          <View style={styles.businessInfoItem}>
+            <Ionicons name="time" size={16} color={colors.primary} style={styles.businessInfoIcon} />
+            <Text style={[styles.businessInfoText, { color: colors.text }]}>
+              {hours[0]}
+            </Text>
+          </View>
+        )}
+        
+        {categories?.length > 0 && (
+          <View style={styles.businessInfoItem}>
+            <Ionicons name="pricetag" size={16} color={colors.primary} style={styles.businessInfoIcon} />
+            <Text style={[styles.businessInfoText, { color: colors.text }]}>
+              {categories[0]}
+            </Text>
+          </View>
+        )}
+      </View>
+    );
+  };

@@ -1,0 +1,34 @@
+  // Business info styles
+  businessInfoContainer: {
+    marginHorizontal: SPACING.medium,
+    marginBottom: SPACING.medium,
+    padding: SPACING.medium,
+    borderRadius: BORDER_RADIUS.large,
+    shadowColor: '#000',
+    shadowOffset: { width: 0, height: 2 },
+    shadowOpacity: 0.05,
+    shadowRadius: 8,
+    elevation: 2,
+  },
+  businessInfoHeader: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    marginBottom: SPACING.small,
+  },
+  businessInfoTitle: {
+    fontSize: 16,
+    fontWeight: '600',
+    marginLeft: SPACING.small,
+  },
+  businessInfoItem: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    marginTop: SPACING.small,
+  },
+  businessInfoIcon: {
+    marginRight: SPACING.small,
+  },
+  businessInfoText: {
+    fontSize: 14,
+    flex: 1,
+  },
