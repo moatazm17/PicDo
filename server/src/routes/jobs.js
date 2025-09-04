@@ -426,9 +426,11 @@ async function processJobAsync(job, imageBuffer, wantThumb, uiLang) {
     console.log(`Job ${job.jobId}: Starting OpenAI classification`);
     const classification = await aiService.classifyText(ocrResult.text, uiLang);
     console.log(`Job ${job.jobId}: Classification completed, type: ${classification.type}`);
+    console.log(`Job ${job.jobId}: Detected types:`, JSON.stringify(classification.detectedTypes || []));
     
     job.type = classification.type;
     job.classification = classification;
+    job.detectedTypes = classification.detectedTypes || [];
     job.fields = extractFieldsByType(classification);
     job.summary = classification.summary || aiService.generateSummary(classification);
     job.status = 'ready';

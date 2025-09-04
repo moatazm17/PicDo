@@ -145,10 +145,13 @@ Return the cleaned main content in \`fields.content\` and fill these fields (nul
 - \`email\`: email address(es).
 - \`merchant\`: store or bank name for expenses (null for other types).
 
+######################### IMPORTANT: DETECT ALL TYPES #########################
+**CRITICAL**: Analyze the content for ALL possible types. Many texts contain multiple types of information (e.g., a travel ad with contact info AND event details). You MUST return ALL detected types in the "detectedTypes" array.
+
 ######################### RESPONSE FORMAT #########################
-Return exactly this JSON structure with ALL detected information types:
+Return EXACTLY this JSON structure. The "detectedTypes" array is REQUIRED:
 {
-  "type": "contact|expense|event|address|note|document", // primary type
+  "type": "contact|expense|event|address|note|document", // primary/most confident type
   "summary": "2–4 words in ${lang}",
   "fields": {
     "title": "original title or headline",
@@ -162,18 +165,22 @@ Return exactly this JSON structure with ALL detected information types:
     "email": "email if present or null",
     "merchant": "merchant/bank if present or null"
   },
-  "detectedTypes": [
+  "detectedTypes": [ // REQUIRED: Include ALL possible types detected
     {
       "type": "contact",
       "confidence": 0.9,
       "data": { "name": "...", "phone": "...", "email": "..." }
     },
     {
-      "type": "event",
-      "confidence": 0.8,
-      "data": { "title": "...", "date": "...", "time": "...", "location": "..." }
+      "type": "event", // Example: if text mentions travel/tours, it could be an event
+      "confidence": 0.7,
+      "data": { "title": "...", "date": "...", "location": "..." }
+    },
+    {
+      "type": "note", // Example: if it's also a social media post or ad
+      "confidence": 0.6,
+      "data": { "content": "...", "category": "travel ad" }
     }
-    // Include ALL types detected with confidence > 0.5
   ],
   "confidence": 0.9
 }

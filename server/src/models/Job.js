@@ -36,6 +36,10 @@ const jobSchema = new mongoose.Schema({
     type: mongoose.Schema.Types.Mixed,
     default: null
   },
+  detectedTypes: {
+    type: Array,
+    default: []
+  },
   fields: {
     type: mongoose.Schema.Types.Mixed,
     default: null
