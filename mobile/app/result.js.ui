@@ -1,0 +1,217 @@
+  {/* Render entities strip */}
+  const renderEntitiesStrip = () => {
+    // Count all entities
+    const totalEntities = 
+      entities.phones.length + 
+      entities.emails.length + 
+      entities.urls.length + 
+      entities.dates.length + 
+      entities.amounts.length + 
+      entities.addresses.length;
+      
+    if (totalEntities === 0) return null;
+    
+    return (
+      <Animated.View style={[styles.entitiesContainer, { backgroundColor: colors.surface, opacity: fadeAnim }]}>
+        <View style={styles.entitiesHeader}>
+          <Ionicons name="information-circle" size={18} color={colors.primary} />
+          <Text style={[styles.entitiesTitle, { color: colors.text }]}>
+            {t('result.detectedEntities')} ({totalEntities})
+          </Text>
+        </View>
+        
+        <ScrollView 
+          horizontal 
+          showsHorizontalScrollIndicator={false} 
+          contentContainerStyle={styles.entitiesScrollContent}
+        >
+          {entities.phones.map((phone, index) => (
+            <EntityChip 
+              key={`phone-${index}`}
+              entity={phone}
+              type="phone"
+              colors={colors}
+              onPress={() => handleEntityPress(phone, 'phone')}
+            />
+          ))}
+          
+          {entities.emails.map((email, index) => (
+            <EntityChip 
+              key={`email-${index}`}
+              entity={email}
+              type="email"
+              colors={colors}
+              onPress={() => handleEntityPress(email, 'email')}
+            />
+          ))}
+          
+          {entities.addresses.map((address, index) => (
+            <EntityChip 
+              key={`address-${index}`}
+              entity={address.length > 20 ? address.substring(0, 20) + '...' : address}
+              type="address"
+              colors={colors}
+              onPress={() => handleEntityPress(address, 'address')}
+            />
+          ))}
+          
+          {entities.urls.map((url, index) => (
+            <EntityChip 
+              key={`url-${index}`}
+              entity={url.length > 20 ? url.substring(0, 20) + '...' : url}
+              type="url"
+              colors={colors}
+              onPress={() => handleEntityPress(url, 'url')}
+            />
+          ))}
+          
+          {entities.dates.map((date, index) => (
+            <EntityChip 
+              key={`date-${index}`}
+              entity={date}
+              type="date"
+              colors={colors}
+              onPress={() => handleEntityPress(date, 'date')}
+            />
+          ))}
+          
+          {entities.amounts.map((amount, index) => (
+            <EntityChip 
+              key={`amount-${index}`}
+              entity={amount}
+              type="amount"
+              colors={colors}
+              onPress={() => handleEntityPress(amount, 'amount')}
+            />
+          ))}
+        </ScrollView>
+      </Animated.View>
+    );
+  };
+  
+  {/* Render suggested types */}
+  const renderSuggestedTypes = () => {
+    if (!suggestedTypes || suggestedTypes.length <= 1) return null;
+    
+    return (
+      <View style={[styles.suggestedTypes, { backgroundColor: colors.surface }]}>
+        <Text style={[styles.suggestedTypesTitle, { color: colors.text }]}>
+          {t('result.suggestedTypes')}
+        </Text>
+        
+        <View style={styles.typeChips}>
+          {suggestedTypes.map((type, index) => (
+            <TouchableOpacity 
+              key={`type-${index}`}
+              style={[
+                styles.typeChip, 
+                { 
+                  backgroundColor: (selectedType?.type || job.type) === type.type 
+                    ? colors.primary 
+                    : colors.primary + '20' 
+                }
+              ]}
+              onPress={() => setSelectedType(type)}
+            >
+              <Ionicons 
+                name={getTypeIcon(type.type)} 
+                size={16} 
+                color={(selectedType?.type || job.type) === type.type ? 'white' : colors.primary} 
+              />
+              <Text 
+                style={[
+                  styles.typeChipText, 
+                  { 
+                    color: (selectedType?.type || job.type) === type.type 
+                      ? 'white' 
+                      : colors.primary 
+                  }
+                ]}
+              >
+                {t(`types.${type.type}`)}
+                {type.confidence ? ` (${Math.round(type.confidence * 100)}%)` : ''}
+              </Text>
+            </TouchableOpacity>
+          ))}
+        </View>
+      </View>
+    );
+  };
+  
+  {/* Render text blocks */}
+  const renderTextBlocks = () => {
+    if (!textBlocks || textBlocks.length === 0) return null;
+    
+    return (
+      <View style={[styles.textBlocksContainer, { backgroundColor: colors.surface }]}>
+        <View style={styles.textBlocksHeader}>
+          <Ionicons name="document-text" size={18} color={colors.primary} />
+          <Text style={[styles.textBlocksTitle, { color: colors.text }]}>
+            {t('result.fullText')}
+          </Text>
+        </View>
+        
+        {textBlocks.map((block, index) => (
+          <TextBlock 
+            key={`block-${index}`}
+            block={block}
+            index={index}
+            isExpanded={expandedBlocks[index]}
+            onToggle={toggleBlockExpansion}
+            onActionPress={handleBlockAction}
+            colors={colors}
+            isRTL={isRTL}
+          />
+        ))}
+      </View>
+    );
+  };
+  
+  {/* Toggle button for image/text view */}
+  const renderViewToggle = () => (
+    <View style={styles.viewToggle}>
+      <TouchableOpacity
+        style={[
+          styles.viewToggleButton,
+          { backgroundColor: !showingFullText ? colors.primary : colors.surface }
+        ]}
+        onPress={() => setShowingFullText(false)}
+      >
+        <Ionicons 
+          name="image" 
+          size={20} 
+          color={!showingFullText ? 'white' : colors.textSecondary} 
+        />
+        <Text 
+          style={[
+            styles.viewToggleText, 
+            { color: !showingFullText ? 'white' : colors.textSecondary }
+          ]}
+        >
+          {t('result.image')}
+        </Text>
+      </TouchableOpacity>
+      
+      <TouchableOpacity
+        style={[
+          styles.viewToggleButton,
+          { backgroundColor: showingFullText ? colors.primary : colors.surface }
+        ]}
+        onPress={() => setShowingFullText(true)}
+      >
+        <Ionicons 
+          name="document-text" 
+          size={20} 
+          color={showingFullText ? 'white' : colors.textSecondary} 
+        />
+        <Text 
+          style={[
+            styles.viewToggleText, 
+            { color: showingFullText ? 'white' : colors.textSecondary }
+          ]}
+        >
+          {t('result.text')}
+        </Text>
+      </TouchableOpacity>
+    </View>
+  );

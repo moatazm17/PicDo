@@ -1,0 +1,51 @@
+  /**
+   * Extract entities from text
+   * @param {string} text - The text to extract entities from
+   * @returns {Object} - Object containing arrays of extracted entities
+   */
+  extractEntities(text) {
+    if (!text) return {
+      phones: [],
+      emails: [],
+      urls: [],
+      dates: [],
+      amounts: [],
+      addresses: []
+    };
+
+    // Extract entities using regex patterns
+    const phones = [...new Set((text.match(this.PATTERNS.PHONE) || []).filter(p => p.replace(/[^\d]/g, '').length > 5))];
+    const emails = [...new Set(text.match(this.PATTERNS.EMAIL) || [])];
+    const urls = [...new Set(text.match(this.PATTERNS.URL) || [])];
+    const dates = [...new Set(text.match(this.PATTERNS.DATE) || [])];
+    const amounts = [...new Set(text.match(this.PATTERNS.AMOUNT) || [])];
+    const addresses = [...new Set(text.match(this.PATTERNS.ADDRESS) || [])];
+
+    return {
+      phones,
+      emails,
+      urls,
+      dates,
+      amounts,
+      addresses
+    };
+  }
+
+  /**
+   * Split text into logical blocks (paragraphs)
+   * @param {string} text - The text to split into blocks
+   * @returns {Array} - Array of text blocks
+   */
+  splitTextBlocks(text) {
+    if (!text) return [];
+    
+    // Split by double newlines (paragraphs)
+    const blocks = text.split(/\n\s*\n/).map(block => block.trim()).filter(Boolean);
+    
+    // If no paragraphs found, try single newlines
+    if (blocks.length <= 1) {
+      return text.split(/\n/).map(block => block.trim()).filter(Boolean);
+    }
+    
+    return blocks;
+  }

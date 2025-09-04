@@ -40,6 +40,21 @@ const jobSchema = new mongoose.Schema({
     type: Array,
     default: []
   },
+  entities: {
+    type: Object,
+    default: {
+      phones: [],
+      emails: [],
+      urls: [],
+      dates: [],
+      amounts: [],
+      addresses: []
+    }
+  },
+  textBlocks: {
+    type: Array,
+    default: []
+  },
   fields: {
     type: mongoose.Schema.Types.Mixed,
     default: null

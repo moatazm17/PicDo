@@ -1,4 +1,4 @@
-import React, { useEffect, useState } from 'react';
+import React, { useEffect, useState, useRef } from 'react';
 import {
   View,
   Text,
@@ -12,6 +12,10 @@ import {
   KeyboardAvoidingView,
   Platform,
   Modal,
+  Animated,
+  Clipboard,
+  Linking,
+  FlatList,
 } from 'react-native';
 import { LinearGradient } from 'expo-linear-gradient';
 import { SafeAreaView } from 'react-native-safe-area-context';
@@ -26,8 +30,98 @@ import { useLanguage } from '../src/contexts/LanguageContext';
 import apiService from '../src/services/api';
 import { executeAction } from '../src/utils/actions';
 import { SPACING, BORDER_RADIUS } from '../src/constants/config';
+import { extractEntities, splitTextBlocks, getEntityIcon, getEntityAction } from '../src/utils/entityExtractor';
 
 const { width, height } = Dimensions.get('window');
+
+// Entity chip component
+const EntityChip = ({ entity, type, colors, onPress }) => (
+  <TouchableOpacity 
+    style={[styles.entityChip, { backgroundColor: colors.primary + '15' }]}
+    onPress={onPress}
+    activeOpacity={0.7}
+  >
+    <Ionicons name={getEntityIcon(type)} size={14} color={colors.primary} style={styles.entityIcon} />
+    <Text style={[styles.entityText, { color: colors.text }]} numberOfLines={1}>
+      {entity}
+    </Text>
+    <View style={styles.entityActionBadge}>
+      <Text style={[styles.entityActionText, { color: colors.primary }]}>
+        {type === 'phone' ? 'Call' : 
+         type === 'email' ? 'Email' :
+         type === 'url' ? 'Open' :
+         type === 'address' ? 'Map' : 'Copy'}
+      </Text>
+    </View>
+  </TouchableOpacity>
+);
+
+// Text block component
+const TextBlock = ({ block, index, isExpanded, onToggle, onActionPress, colors, isRTL }) => (
+  <View style={[styles.textBlock, { backgroundColor: colors.surface }]}>
+    <TouchableOpacity 
+      style={styles.blockHeader} 
+      onPress={() => onToggle(index)}
+      activeOpacity={0.7}
+    >
+      <Text 
+        style={[styles.blockText, { color: colors.text }]} 
+        numberOfLines={isExpanded ? undefined : 2}
+      >
+        {block}
+      </Text>
+      <Ionicons 
+        name={isExpanded ? "chevron-up" : "chevron-down"} 
+        size={18} 
+        color={colors.textSecondary} 
+        style={{ marginLeft: 8 }}
+      />
+    </TouchableOpacity>
+    
+    {isExpanded && (
+      <View style={styles.blockActions}>
+        <TouchableOpacity 
+          style={[styles.blockAction, { backgroundColor: colors.primary + '15' }]}
+          onPress={() => onActionPress(index, 'contact')}
+        >
+          <Ionicons name="person" size={14} color={colors.primary} />
+          <Text style={[styles.blockActionText, { color: colors.primary }]}>Contact</Text>
+        </TouchableOpacity>
+        
+        <TouchableOpacity 
+          style={[styles.blockAction, { backgroundColor: colors.primary + '15' }]}
+          onPress={() => onActionPress(index, 'address')}
+        >
+          <Ionicons name="location" size={14} color={colors.primary} />
+          <Text style={[styles.blockActionText, { color: colors.primary }]}>Address</Text>
+        </TouchableOpacity>
+        
+        <TouchableOpacity 
+          style={[styles.blockAction, { backgroundColor: colors.primary + '15' }]}
+          onPress={() => onActionPress(index, 'note')}
+        >
+          <Ionicons name="document-text" size={14} color={colors.primary} />
+          <Text style={[styles.blockActionText, { color: colors.primary }]}>Note</Text>
+        </TouchableOpacity>
+        
+        <TouchableOpacity 
+          style={[styles.blockAction, { backgroundColor: colors.primary + '15' }]}
+          onPress={() => {
+            Clipboard.setString(block);
+            Toast.show({
+              type: 'success',
+              text1: 'Copied to clipboard',
+              visibilityTime: 2000,
+            });
+          }}
+        >
+          <Ionicons name="copy" size={14} color={colors.primary} />
+          <Text style={[styles.blockActionText, { color: colors.primary }]}>Copy</Text>
+        </TouchableOpacity>
+      </View>
+    )}
+  </View>
+);
 
 const FieldInput = ({ label, value, onChangeText, keyboardType, multiline, colors, isRTL, editable = true }) => (
   <View style={[styles.fieldContainer, { backgroundColor: colors.surface }]}>
@@ -164,6 +258,22 @@ export default function ResultScreen() {
   const [showFullImage, setShowFullImage] = useState(false);
   const [selectedType, setSelectedType] = useState(null);
   const [showTypeSelector, setShowTypeSelector] = useState(false);
+  
+  // New state variables for enhanced UI
+  const [textBlocks, setTextBlocks] = useState([]);
+  const [entities, setEntities] = useState({
+    phones: [],
+    emails: [],
+    urls: [],
+    dates: [],
+    amounts: [],
+    addresses: []
+  });
+  const [expandedBlocks, setExpandedBlocks] = useState({});
+  const [showingFullText, setShowingFullText] = useState(false);
+  const [suggestedTypes, setSuggestedTypes] = useState([]);
+  const [selectedBlockIndex, setSelectedBlockIndex] = useState(null);
+  const fadeAnim = useRef(new Animated.Value(0)).current;
 
   useEffect(() => {
     if (params.jobId) {
@@ -177,6 +287,41 @@ export default function ResultScreen() {
       const response = await apiService.getJob(params.jobId);
       setJob(response);
       setFields(response.fields || {});
+      
+      // Extract entities from the content
+      if (response.fields && response.fields.content) {
+        const extractedEntities = extractEntities(response.fields.content);
+        setEntities(extractedEntities);
+        
+        // Split content into blocks
+        const blocks = splitTextBlocks(response.fields.content);
+        setTextBlocks(blocks);
+        
+        // Initialize expanded state for blocks
+        const initialExpandedState = {};
+        blocks.forEach((_, index) => {
+          initialExpandedState[index] = index < 2; // First two blocks expanded by default
+        });
+        setExpandedBlocks(initialExpandedState);
+      }
+      
+      // Determine suggested types
+      if (response.detectedTypes && response.detectedTypes.length > 0) {
+        // Filter types by confidence threshold
+        const CONFIDENCE_THRESHOLD = 0.5;
+        const suggested = response.detectedTypes
+          .filter(type => type.confidence >= CONFIDENCE_THRESHOLD)
+          .sort((a, b) => b.confidence - a.confidence);
+        
+        setSuggestedTypes(suggested);
+      }
+      
+      // Animate entities appearance
+      Animated.timing(fadeAnim, {
+        toValue: 1,
+        duration: 500,
+        useNativeDriver: true
+      }).start();
     } catch (error) {
       console.error('Error loading job:', error);
       Toast.show({

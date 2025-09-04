@@ -10,6 +10,27 @@ class AIService {
     this.openai = new OpenAI({
       apiKey: process.env.OPENAI_API_KEY,
     });
+    
+    // Regular expressions for entity extraction
+    this.PATTERNS = {
+      // International phone number formats
+      PHONE: /(?:(?:\+|00)[1-9]\d{0,3}[\s.-]?)?(?:\(\d{1,4}\)[\s.-]?)?\d{1,4}[\s.-]?\d{1,4}[\s.-]?\d{1,9}/g,
+      
+      // Email addresses
+      EMAIL: /[a-zA-Z0-9._%+-]+@[a-zA-Z0-9.-]+\.[a-zA-Z]{2,}/g,
+      
+      // URLs
+      URL: /(https?:\/\/[^\s]+)|(www\.[^\s]+\.[^\s]+)/g,
+      
+      // Dates in various formats (including Arabic/English)
+      DATE: /(?:\d{1,2}[-\/\.]\d{1,2}[-\/\.]\d{2,4})|(?:\d{1,2}\s(?:Jan|Feb|Mar|Apr|May|Jun|Jul|Aug|Sep|Oct|Nov|Dec)[a-z]*\s?\d{2,4})|(?:\d{1,2}\s(?:يناير|فبراير|مارس|أبريل|مايو|يونيو|يوليو|أغسطس|سبتمبر|أكتوبر|نوفمبر|ديسمبر)\s?\d{2,4})/gi,
+      
+      // Currency amounts (handles $, €, £, ج.م, ر.س, د.إ, etc.)
+      AMOUNT: /(?:[$€£¥₹]\s?\d+(?:[,.]\d+)*)|(?:\d+(?:[,.]\d+)*\s?(?:USD|EUR|GBP|JPY|INR|ج\.م|ر\.س|د\.إ|JOD|SAR|AED|EGP))/gi,
+      
+      // Addresses (simplified pattern)
+      ADDRESS: /(?:\d+\s[A-Za-z\u0600-\u06FF]+(?:\s[A-Za-z\u0600-\u06FF]+)*,?\s*(?:[A-Za-z\u0600-\u06FF]+\s*)+,\s*[A-Za-z\u0600-\u06FF\s,]*\d{5}?)/g,
+    };
   }
 
   async classifyText(ocrText, uiLang = 'en') {
@@ -254,26 +275,12 @@ Do not output anything else—**JSON only**.
       }];
     }
     
-    // Ensure minimum 2 types detected
-    if (classification.detectedTypes.length < 2) {
-      // Add a second type based on content analysis
-      const text = (classification.fields.content || '').toLowerCase();
-      let secondType = null;
-      
-      if (classification.type === 'contact' && text.includes('شارع') || text.includes('street')) {
-        secondType = { type: 'address', confidence: 0.6, data: { location: classification.fields.location, content: classification.fields.content } };
-      } else if (classification.type === 'contact') {
-        secondType = { type: 'note', confidence: 0.5, data: { content: classification.fields.content, category: 'business info' } };
-      } else if (classification.type === 'address') {
-        secondType = { type: 'note', confidence: 0.5, data: { content: classification.fields.content, category: 'location info' } };
-      } else {
-        secondType = { type: 'note', confidence: 0.5, data: { content: classification.fields.content, category: 'general info' } };
-      }
-      
-      if (secondType) {
-        classification.detectedTypes.push(secondType);
-      }
-    }
+    // Extract entities from the content
+    const content = classification.fields.content || '';
+    classification.entities = this.extractEntities(content);
+    
+    // Split content into blocks
+    classification.textBlocks = this.splitTextBlocks(content);
     
     // Validate type
     if (!VALID_TYPES.includes(classification.type)) {
@@ -380,6 +387,58 @@ Do not output anything else—**JSON only**.
       default:
         return title;
     }
+  }
+  
+  /**
+   * Extract entities from text
+   * @param {string} text - The text to extract entities from
+   * @returns {Object} - Object containing arrays of extracted entities
+   */
+  extractEntities(text) {
+    if (!text) return {
+      phones: [],
+      emails: [],
+      urls: [],
+      dates: [],
+      amounts: [],
+      addresses: []
+    };
+
+    // Extract entities using regex patterns
+    const phones = [...new Set((text.match(this.PATTERNS.PHONE) || []).filter(p => p.replace(/[^\d]/g, '').length > 5))];
+    const emails = [...new Set(text.match(this.PATTERNS.EMAIL) || [])];
+    const urls = [...new Set(text.match(this.PATTERNS.URL) || [])];
+    const dates = [...new Set(text.match(this.PATTERNS.DATE) || [])];
+    const amounts = [...new Set(text.match(this.PATTERNS.AMOUNT) || [])];
+    const addresses = [...new Set(text.match(this.PATTERNS.ADDRESS) || [])];
+
+    return {
+      phones,
+      emails,
+      urls,
+      dates,
+      amounts,
+      addresses
+    };
+  }
+
+  /**
+   * Split text into logical blocks (paragraphs)
+   * @param {string} text - The text to split into blocks
+   * @returns {Array} - Array of text blocks
+   */
+  splitTextBlocks(text) {
+    if (!text) return [];
+    
+    // Split by double newlines (paragraphs)
+    const blocks = text.split(/\n\s*\n/).map(block => block.trim()).filter(Boolean);
+    
+    // If no paragraphs found, try single newlines
+    if (blocks.length <= 1) {
+      return text.split(/\n/).map(block => block.trim()).filter(Boolean);
+    }
+    
+    return blocks;
   }
 }
 

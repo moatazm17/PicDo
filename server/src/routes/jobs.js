@@ -208,6 +208,15 @@ router.get('/:jobId', async (req, res) => {
       thumb: job.thumb,
       isFavorite: job.isFavorite || false,
       detectedTypes: job.detectedTypes || [],
+      entities: job.entities || {
+        phones: [],
+        emails: [],
+        urls: [],
+        dates: [],
+        amounts: [],
+        addresses: []
+      },
+      textBlocks: job.textBlocks || [],
       createdAt: job.createdAt,
       updatedAt: job.updatedAt
     };
@@ -432,6 +441,15 @@ async function processJobAsync(job, imageBuffer, wantThumb, uiLang) {
     job.type = classification.type;
     job.classification = classification;
     job.detectedTypes = classification.detectedTypes || [];
+    job.entities = classification.entities || {
+      phones: [],
+      emails: [],
+      urls: [],
+      dates: [],
+      amounts: [],
+      addresses: []
+    };
+    job.textBlocks = classification.textBlocks || [];
     job.fields = extractFieldsByType(classification);
     job.summary = classification.summary || aiService.generateSummary(classification);
     job.status = 'ready';

@@ -1,0 +1,100 @@
+  // Handle entity chip press
+  const handleEntityPress = (entity, type) => {
+    try {
+      switch (type) {
+        case 'phone':
+          Linking.openURL(`tel:${entity}`);
+          break;
+        case 'email':
+          Linking.openURL(`mailto:${entity}`);
+          break;
+        case 'url':
+          Linking.openURL(entity);
+          break;
+        case 'address':
+          Linking.openURL(`https://maps.google.com/?q=${encodeURIComponent(entity)}`);
+          break;
+        default:
+          Clipboard.setString(entity);
+          Toast.show({
+            type: 'success',
+            text1: 'Copied to clipboard',
+            visibilityTime: 2000,
+          });
+      }
+    } catch (error) {
+      console.error('Error handling entity action:', error);
+      Toast.show({
+        type: 'error',
+        text1: 'Action failed',
+        text2: error.message,
+      });
+    }
+  };
+  
+  // Toggle text block expansion
+  const toggleBlockExpansion = (index) => {
+    setExpandedBlocks(prev => ({
+      ...prev,
+      [index]: !prev[index]
+    }));
+  };
+  
+  // Handle text block action
+  const handleBlockAction = (blockIndex, actionType) => {
+    if (!textBlocks[blockIndex]) return;
+    
+    const blockContent = textBlocks[blockIndex];
+    
+    // Update fields based on the selected block and action type
+    const updatedFields = { ...fields };
+    
+    switch (actionType) {
+      case 'contact':
+        updatedFields.content = blockContent;
+        // Extract name from first line if possible
+        const nameMatch = blockContent.split('\n')[0];
+        if (nameMatch) updatedFields.name = nameMatch;
+        setFields(updatedFields);
+        setSelectedType({ type: 'contact', confidence: 1 });
+        break;
+        
+      case 'address':
+        updatedFields.content = blockContent;
+        updatedFields.location = blockContent;
+        setFields(updatedFields);
+        setSelectedType({ type: 'address', confidence: 1 });
+        break;
+        
+      case 'note':
+        updatedFields.content = blockContent;
+        updatedFields.category = 'note';
+        setFields(updatedFields);
+        setSelectedType({ type: 'note', confidence: 1 });
+        break;
+        
+      default:
+        // Just copy the text
+        Clipboard.setString(blockContent);
+        Toast.show({
+          type: 'success',
+          text1: 'Copied to clipboard',
+          visibilityTime: 2000,
+        });
+    }
+    
+    // If we've updated fields for a specific type, show success message
+    if (actionType !== 'copy') {
+      Toast.show({
+        type: 'success',
+        text1: `Ready to save as ${actionType}`,
+        text2: 'Press Save to confirm',
+        visibilityTime: 2000,
+      });
+    }
+  };
+  
+  // Toggle between image and full text view
+  const toggleFullTextView = () => {
+    setShowingFullText(prev => !prev);
+  };
