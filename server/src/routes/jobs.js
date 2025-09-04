@@ -207,6 +207,7 @@ router.get('/:jobId', async (req, res) => {
       summary: job.summary,
       thumb: job.thumb,
       isFavorite: job.isFavorite || false,
+      detectedTypes: job.detectedTypes || [],
       createdAt: job.createdAt,
       updatedAt: job.updatedAt
     };
