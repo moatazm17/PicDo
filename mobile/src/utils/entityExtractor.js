@@ -3,25 +3,25 @@
  * Extracts entities like phone numbers, emails, URLs, dates, and amounts from text
  */
 
-// Regular expressions for entity extraction
+// Regular expressions for entity extraction - simplified to avoid stack depth issues
 const PATTERNS = {
-  // International phone number formats
-  PHONE: /(?:(?:\+|00)[1-9]\d{0,3}[\s.-]?)?(?:\(\d{1,4}\)[\s.-]?)?\d{1,4}[\s.-]?\d{1,4}[\s.-]?\d{1,9}/g,
+  // International phone number formats - simplified
+  PHONE: /\+?[0-9]{7,15}/g,
   
-  // Email addresses
+  // Email addresses - simplified
   EMAIL: /[a-zA-Z0-9._%+-]+@[a-zA-Z0-9.-]+\.[a-zA-Z]{2,}/g,
   
-  // URLs
-  URL: /(https?:\/\/[^\s]+)|(www\.[^\s]+\.[^\s]+)/g,
+  // URLs - simplified
+  URL: /(https?:\/\/\S+)|(www\.\S+\.\S+)/g,
   
-  // Dates in various formats (including Arabic/English)
-  DATE: /(?:\d{1,2}[-\/\.]\d{1,2}[-\/\.]\d{2,4})|(?:\d{1,2}\s(?:Jan|Feb|Mar|Apr|May|Jun|Jul|Aug|Sep|Oct|Nov|Dec)[a-z]*\s?\d{2,4})|(?:\d{1,2}\s(?:يناير|فبراير|مارس|أبريل|مايو|يونيو|يوليو|أغسطس|سبتمبر|أكتوبر|نوفمبر|ديسمبر)\s?\d{2,4})/gi,
+  // Dates - simplified
+  DATE: /\d{1,2}[-\/\.]\d{1,2}[-\/\.]\d{2,4}/g,
   
-  // Currency amounts (handles $, €, £, ج.م, ر.س, د.إ, etc.)
-  AMOUNT: /(?:[$€£¥₹]\s?\d+(?:[,.]\d+)*)|(?:\d+(?:[,.]\d+)*\s?(?:USD|EUR|GBP|JPY|INR|ج\.م|ر\.س|د\.إ|JOD|SAR|AED|EGP))/gi,
+  // Currency amounts - simplified
+  AMOUNT: /[$€£¥₹]\s?\d+|\d+\s?(?:USD|EUR|GBP|JPY|SAR)/gi,
   
-  // Addresses (simplified pattern)
-  ADDRESS: /(?:\d+\s[A-Za-z\u0600-\u06FF]+(?:\s[A-Za-z\u0600-\u06FF]+)*,?\s*(?:[A-Za-z\u0600-\u06FF]+\s*)+,\s*[A-Za-z\u0600-\u06FF\s,]*\d{5}?)/g,
+  // Addresses - simplified dramatically
+  ADDRESS: /[A-Za-z\u0600-\u06FF]+\s+\d+|\d+\s+[A-Za-z\u0600-\u06FF]+/g,
 };
 
 /**

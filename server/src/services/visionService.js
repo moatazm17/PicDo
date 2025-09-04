@@ -225,8 +225,8 @@ class VisionService {
     
     // Process each text block
     allText.forEach(text => {
-      // Extract phone numbers (international format with country codes)
-      const phoneMatches = text.match(/(?:(?:\+|00)[1-9]\d{0,3}[\s.-]?)?(?:\(\d{1,4}\)[\s.-]?)?\d{1,4}[\s.-]?\d{1,4}[\s.-]?\d{1,9}/g);
+      // Extract phone numbers - simplified to avoid regex stack depth issues
+      const phoneMatches = text.match(/\+?[0-9]{7,15}/g);
       if (phoneMatches) {
         phoneMatches.forEach(phone => {
           // Only add if it looks like a valid phone (at least 7 digits)
@@ -244,16 +244,16 @@ class VisionService {
         });
       }
       
-      // Extract URLs
-      const urlMatches = text.match(/(?:https?:\/\/)?(?:www\.)?[a-zA-Z0-9-]+(?:\.[a-zA-Z]{2,})+(?:\/[^\s]*)?/g);
+      // Extract URLs - simplified to avoid regex stack depth issues
+      const urlMatches = text.match(/(https?:\/\/\S+)|(www\.\S+\.\S+)/g);
       if (urlMatches) {
         urlMatches.forEach(url => {
           structuredData.urls.push(url.trim());
         });
       }
       
-      // Extract business hours (common patterns)
-      const hoursMatches = text.match(/(?:open|opens|closed|hours|timing)[\s:]*(?:\d{1,2}(?::\d{2})?(?:\s*[ap]m)?[\s-]*(?:to|until|till|-|\u2013|\u2014)[\s]*\d{1,2}(?::\d{2})?(?:\s*[ap]m)?)/i);
+      // Extract business hours - simplified to avoid regex stack depth issues
+      const hoursMatches = text.match(/(?:open|opens|closed)\s+\d{1,2}(?::\d{2})?\s*[ap]m/i);
       if (hoursMatches) {
         structuredData.businessInfo.hours.push(hoursMatches[0].trim());
       }
@@ -270,8 +270,9 @@ class VisionService {
         structuredData.businessInfo.categories.push(text.trim());
       }
       
-      // Extract addresses (look for location patterns)
-      if (text.match(/(?:street|road|ave|avenue|blvd|شارع|طريق|منطقة|حي|مدينة)/i)) {
+      // Extract addresses - simplified to avoid regex stack depth issues
+      if (text.includes('street') || text.includes('road') || text.includes('شارع') || 
+          text.includes('طريق') || text.includes('حي') || text.includes('مدينة')) {
         structuredData.addresses.push(text.trim());
       }
     });
