@@ -48,7 +48,13 @@ const jobSchema = new mongoose.Schema({
       urls: [],
       dates: [],
       amounts: [],
-      addresses: []
+      addresses: [],
+      businessInfo: {
+        names: [],
+        ratings: [],
+        hours: [],
+        categories: []
+      }
     }
   },
   textBlocks: {

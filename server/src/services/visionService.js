@@ -25,13 +25,28 @@ class VisionService {
     try {
       console.log('Vision API: Starting content safety check and OCR');
       
-      // Perform both SafeSearch and text detection in parallel for efficiency
-      const [ocrResult, safeSearchResult] = await Promise.all([
+      // Perform SafeSearch, document text detection, and regular text detection in parallel
+      const [ocrResult, safeSearchResult, textResult] = await Promise.all([
+        // Document text detection (optimized for dense text)
         this.client.documentTextDetection({
-          image: { content: imageBuffer }
+          image: { content: imageBuffer },
+          imageContext: {
+            languageHints: ['en', 'ar'], // Support both English and Arabic
+            textDetectionParams: {
+              enableTextDetectionConfidenceScore: true
+            }
+          }
         }),
+        // Safe search detection
         this.client.safeSearchDetection({
           image: { content: imageBuffer }
+        }),
+        // Regular text detection (better for sparse text like signs, logos)
+        this.client.textDetection({
+          image: { content: imageBuffer },
+          imageContext: {
+            languageHints: ['en', 'ar'] // Support both English and Arabic
+          }
         })
       ]);
 
@@ -39,22 +54,45 @@ class VisionService {
       const safeSearch = safeSearchResult[0].safeSearchAnnotation;
       this.validateContentSafety(safeSearch);
 
-      const detections = ocrResult[0].textAnnotations;
-      if (!detections || detections.length === 0) {
+      // Get text from both detection methods
+      const docDetections = ocrResult[0].textAnnotations || [];
+      const textDetections = textResult[0].textAnnotations || [];
+      
+      if ((!docDetections || docDetections.length === 0) && 
+          (!textDetections || textDetections.length === 0)) {
         console.log('Vision API: No text detected in image');
         throw new Error('No text detected in image');
       }
 
-      // The first annotation contains the full detected text
-      const fullText = detections[0].description;
+      // Combine results from both methods for best coverage
+      let fullText = '';
+      
+      // Document text detection is usually better for dense text
+      if (docDetections && docDetections.length > 0) {
+        fullText = docDetections[0].description;
+      }
+      
+      // If text detection found something different, append it
+      if (textDetections && textDetections.length > 0) {
+        const textOnly = textDetections[0].description;
+        if (textOnly && textOnly !== fullText) {
+          // Combine texts if they're different
+          fullText = fullText ? fullText + '\n\n' + textOnly : textOnly;
+        }
+      }
+      
       console.log('Vision API: Text detected:', fullText.substring(0, 100) + (fullText.length > 100 ? '...' : ''));
+      
+      // Extract structured data from the OCR results
+      const structuredData = this.extractStructuredData(ocrResult[0], textResult[0]);
       
       // Check text content for inappropriate material (temporarily disabled)
       // this.validateTextContent(fullText);
       
       return {
         text: fullText,
-        confidence: this.calculateConfidence(ocrResult[0])
+        confidence: this.calculateConfidence(ocrResult[0]),
+        structuredData
       };
     } catch (error) {
       console.error('Vision API error:', error);
@@ -129,6 +167,125 @@ class VisionService {
     });
 
     return blockCount > 0 ? totalConfidence / blockCount : 0.5;
+  }
+  
+  /**
+   * Extract structured data like phone numbers, addresses, business info from OCR results
+   * @param {Object} docResult - Document text detection result
+   * @param {Object} textResult - Text detection result
+   * @returns {Object} Structured data extracted from the image
+   */
+  extractStructuredData(docResult, textResult) {
+    const structuredData = {
+      phoneNumbers: [],
+      emails: [],
+      urls: [],
+      addresses: [],
+      businessInfo: {
+        names: [],
+        ratings: [],
+        hours: [],
+        categories: []
+      }
+    };
+    
+    // Extract all text blocks for analysis
+    const allText = [];
+    
+    // Process document text blocks
+    if (docResult.fullTextAnnotation && docResult.fullTextAnnotation.pages) {
+      docResult.fullTextAnnotation.pages.forEach(page => {
+        page.blocks?.forEach(block => {
+          let blockText = '';
+          
+          block.paragraphs?.forEach(paragraph => {
+            paragraph.words?.forEach(word => {
+              const wordText = word.symbols?.map(symbol => symbol.text).join('') || '';
+              blockText += wordText + ' ';
+            });
+          });
+          
+          if (blockText.trim()) {
+            allText.push(blockText.trim());
+          }
+        });
+      });
+    }
+    
+    // Process individual text annotations (often better for sparse text)
+    if (textResult && textResult.textAnnotations) {
+      // Skip the first one as it's the full text
+      for (let i = 1; i < textResult.textAnnotations.length; i++) {
+        const annotation = textResult.textAnnotations[i];
+        if (annotation.description && annotation.description.trim()) {
+          allText.push(annotation.description.trim());
+        }
+      }
+    }
+    
+    // Process each text block
+    allText.forEach(text => {
+      // Extract phone numbers (international format with country codes)
+      const phoneMatches = text.match(/(?:(?:\+|00)[1-9]\d{0,3}[\s.-]?)?(?:\(\d{1,4}\)[\s.-]?)?\d{1,4}[\s.-]?\d{1,4}[\s.-]?\d{1,9}/g);
+      if (phoneMatches) {
+        phoneMatches.forEach(phone => {
+          // Only add if it looks like a valid phone (at least 7 digits)
+          if (phone.replace(/\D/g, '').length >= 7) {
+            structuredData.phoneNumbers.push(phone.trim());
+          }
+        });
+      }
+      
+      // Extract emails
+      const emailMatches = text.match(/[a-zA-Z0-9._%+-]+@[a-zA-Z0-9.-]+\.[a-zA-Z]{2,}/g);
+      if (emailMatches) {
+        emailMatches.forEach(email => {
+          structuredData.emails.push(email.trim());
+        });
+      }
+      
+      // Extract URLs
+      const urlMatches = text.match(/(?:https?:\/\/)?(?:www\.)?[a-zA-Z0-9-]+(?:\.[a-zA-Z]{2,})+(?:\/[^\s]*)?/g);
+      if (urlMatches) {
+        urlMatches.forEach(url => {
+          structuredData.urls.push(url.trim());
+        });
+      }
+      
+      // Extract business hours (common patterns)
+      const hoursMatches = text.match(/(?:open|opens|closed|hours|timing)[\s:]*(?:\d{1,2}(?::\d{2})?(?:\s*[ap]m)?[\s-]*(?:to|until|till|-|\u2013|\u2014)[\s]*\d{1,2}(?::\d{2})?(?:\s*[ap]m)?)/i);
+      if (hoursMatches) {
+        structuredData.businessInfo.hours.push(hoursMatches[0].trim());
+      }
+      
+      // Extract ratings (e.g., "4.2 stars", "★★★★☆", "(241 reviews)")
+      const ratingMatches = text.match(/\d+\.\d+\s*(?:★|stars|rating)|[★⭐]{1,5}|[\(\[]?\d+\s*(?:reviews|ratings)[\)\]]?/i);
+      if (ratingMatches) {
+        structuredData.businessInfo.ratings.push(ratingMatches[0].trim());
+      }
+      
+      // Extract business categories (common patterns in Arabic and English)
+      const categoryMatches = text.match(/(?:مكتب|متجر|مطعم|فندق|شركة|مؤسسة|محل|agency|office|store|restaurant|hotel|company)/i);
+      if (categoryMatches) {
+        structuredData.businessInfo.categories.push(text.trim());
+      }
+      
+      // Extract addresses (look for location patterns)
+      if (text.match(/(?:street|road|ave|avenue|blvd|شارع|طريق|منطقة|حي|مدينة)/i)) {
+        structuredData.addresses.push(text.trim());
+      }
+    });
+    
+    // Remove duplicates
+    structuredData.phoneNumbers = [...new Set(structuredData.phoneNumbers)];
+    structuredData.emails = [...new Set(structuredData.emails)];
+    structuredData.urls = [...new Set(structuredData.urls)];
+    structuredData.addresses = [...new Set(structuredData.addresses)];
+    structuredData.businessInfo.hours = [...new Set(structuredData.businessInfo.hours)];
+    structuredData.businessInfo.ratings = [...new Set(structuredData.businessInfo.ratings)];
+    structuredData.businessInfo.categories = [...new Set(structuredData.businessInfo.categories)];
+    
+    return structuredData;
   }
 }
 

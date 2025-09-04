@@ -419,6 +419,23 @@ async function processJobAsync(job, imageBuffer, wantThumb, uiLang) {
     const ocrResult = await visionService.extractTextFromImage(compressedImage);
     job.ocrText = ocrResult.text;
     job.status = 'ocr_done';
+    
+    // Store structured data directly from OCR
+    if (ocrResult.structuredData) {
+      console.log(`Job ${job.jobId}: Structured data extracted:`, JSON.stringify(ocrResult.structuredData));
+      
+      // Map structured data to our entity format
+      job.entities = {
+        phones: ocrResult.structuredData.phoneNumbers || [],
+        emails: ocrResult.structuredData.emails || [],
+        urls: ocrResult.structuredData.urls || [],
+        addresses: ocrResult.structuredData.addresses || [],
+        businessInfo: ocrResult.structuredData.businessInfo || {},
+        dates: [],
+        amounts: []
+      };
+    }
+    
     await job.save();
     console.log(`Job ${job.jobId}: OCR completed, text length: ${ocrResult.text.length}`);
 
@@ -441,15 +458,40 @@ async function processJobAsync(job, imageBuffer, wantThumb, uiLang) {
     job.type = classification.type;
     job.classification = classification;
     job.detectedTypes = classification.detectedTypes || [];
-    job.entities = classification.entities || {
-      phones: [],
-      emails: [],
-      urls: [],
-      dates: [],
-      amounts: [],
-      addresses: []
-    };
-    job.textBlocks = classification.textBlocks || [];
+    
+    // Merge AI-detected entities with OCR-detected entities
+    if (!job.entities) {
+      job.entities = classification.entities || {
+        phones: [],
+        emails: [],
+        urls: [],
+        dates: [],
+        amounts: [],
+        addresses: []
+      };
+    } else if (classification.entities) {
+      // Add AI-detected entities
+      job.entities.dates = classification.entities.dates || [];
+      job.entities.amounts = classification.entities.amounts || [];
+      
+      // Add any additional phones/emails/urls detected by AI
+      if (classification.entities.phones) {
+        job.entities.phones = [...new Set([...job.entities.phones, ...classification.entities.phones])];
+      }
+      if (classification.entities.emails) {
+        job.entities.emails = [...new Set([...job.entities.emails, ...classification.entities.emails])];
+      }
+      if (classification.entities.urls) {
+        job.entities.urls = [...new Set([...job.entities.urls, ...classification.entities.urls])];
+      }
+      if (classification.entities.addresses) {
+        job.entities.addresses = [...new Set([...job.entities.addresses, ...classification.entities.addresses])];
+      }
+    }
+    
+    // Split text into blocks if not already done
+    job.textBlocks = classification.textBlocks || 
+                     ocrResult.text.split(/\n\s*\n/).map(block => block.trim()).filter(Boolean);
     job.fields = extractFieldsByType(classification);
     job.summary = classification.summary || aiService.generateSummary(classification);
     job.status = 'ready';
