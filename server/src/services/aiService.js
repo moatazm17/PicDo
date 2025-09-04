@@ -146,10 +146,26 @@ Return the cleaned main content in \`fields.content\` and fill these fields (nul
 - \`merchant\`: store or bank name for expenses (null for other types).
 
 ######################### IMPORTANT: DETECT ALL TYPES #########################
-**CRITICAL**: Analyze the content for ALL possible types. Many texts contain multiple types of information (e.g., a travel ad with contact info AND event details). You MUST return ALL detected types in the "detectedTypes" array.
+**CRITICAL**: Analyze the content for ALL possible types. Many texts contain multiple types of information. You MUST return ALL detected types in the "detectedTypes" array.
+
+**Examples of multi-type content:**
+- Exchange office with branches → Contact (phone) + Address (locations) + Note (business info)
+- Travel agency ad → Contact (phone) + Event (tour) + Note (ad content)
+- Restaurant menu → Contact (phone/address) + Note (menu items) + Document (menu)
+- Bank statement → Expense (transactions) + Contact (bank info) + Document (statement)
+
+**ALWAYS check for:**
+1. Contact info (phone/email) → add as "contact" type
+2. Addresses/locations → add as "address" type  
+3. Business info/descriptions → add as "note" type
+4. Financial data → add as "expense" type
+5. Event details → add as "event" type
+6. Formal documents → add as "document" type
+
+**Minimum 2 types per response** unless the content is extremely simple.
 
 ######################### RESPONSE FORMAT #########################
-Return EXACTLY this JSON structure. The "detectedTypes" array is REQUIRED:
+Return EXACTLY this JSON structure. The "detectedTypes" array is REQUIRED and must contain at least 2 types:
 {
   "type": "contact|expense|event|address|note|document", // primary/most confident type
   "summary": "2–4 words in ${lang}",
@@ -165,7 +181,7 @@ Return EXACTLY this JSON structure. The "detectedTypes" array is REQUIRED:
     "email": "email if present or null",
     "merchant": "merchant/bank if present or null"
   },
-  "detectedTypes": [ // REQUIRED: Include ALL possible types detected
+  "detectedTypes": [ // REQUIRED: Include ALL possible types detected (minimum 2)
     {
       "type": "contact",
       "confidence": 0.9,
@@ -236,6 +252,27 @@ Do not output anything else—**JSON only**.
         confidence: classification.confidence,
         data: { ...classification.fields }
       }];
+    }
+    
+    // Ensure minimum 2 types detected
+    if (classification.detectedTypes.length < 2) {
+      // Add a second type based on content analysis
+      const text = (classification.fields.content || '').toLowerCase();
+      let secondType = null;
+      
+      if (classification.type === 'contact' && text.includes('شارع') || text.includes('street')) {
+        secondType = { type: 'address', confidence: 0.6, data: { location: classification.fields.location, content: classification.fields.content } };
+      } else if (classification.type === 'contact') {
+        secondType = { type: 'note', confidence: 0.5, data: { content: classification.fields.content, category: 'business info' } };
+      } else if (classification.type === 'address') {
+        secondType = { type: 'note', confidence: 0.5, data: { content: classification.fields.content, category: 'location info' } };
+      } else {
+        secondType = { type: 'note', confidence: 0.5, data: { content: classification.fields.content, category: 'general info' } };
+      }
+      
+      if (secondType) {
+        classification.detectedTypes.push(secondType);
+      }
     }
     
     // Validate type
