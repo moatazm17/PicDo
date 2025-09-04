@@ -162,6 +162,8 @@ export default function ResultScreen() {
   const [fields, setFields] = useState({});
   const [actionLoading, setActionLoading] = useState(false);
   const [showFullImage, setShowFullImage] = useState(false);
+  const [selectedType, setSelectedType] = useState(null);
+  const [showTypeSelector, setShowTypeSelector] = useState(false);
 
   useEffect(() => {
     if (params.jobId) {
@@ -625,6 +627,64 @@ export default function ResultScreen() {
             </View>
           )}
 
+          {/* Multiple Types Detected Card */}
+          {job.detectedTypes && job.detectedTypes.length > 1 && !editing && (
+            <View style={[styles.multiTypeCard, { backgroundColor: colors.surface }]}>
+              <View style={styles.multiTypeHeader}>
+                <Ionicons name="layers" size={20} color={colors.primary} />
+                <Text style={[styles.multiTypeTitle, { color: colors.text }]}>
+                  {t('result.multipleTypesDetected')}
+                </Text>
+              </View>
+              <ScrollView horizontal showsHorizontalScrollIndicator={false} style={styles.typesList}>
+                {job.detectedTypes.map((detectedType, index) => {
+                  const isSelected = selectedType ? selectedType.type === detectedType.type : job.type === detectedType.type;
+                  return (
+                    <TouchableOpacity
+                      key={index}
+                      style={[
+                        styles.typeOption,
+                        { 
+                          backgroundColor: isSelected ? colors.primary : colors.background,
+                          borderColor: colors.primary,
+                        }
+                      ]}
+                      onPress={() => {
+                        setSelectedType(detectedType);
+                        setJob(prev => ({
+                          ...prev,
+                          type: detectedType.type,
+                          fields: { ...prev.fields, ...detectedType.data }
+                        }));
+                        setFields({ ...fields, ...detectedType.data });
+                      }}
+                    >
+                      <Ionicons 
+                        name={getTypeIcon(detectedType.type)} 
+                        size={20} 
+                        color={isSelected ? 'white' : colors.primary} 
+                      />
+                      <Text style={[
+                        styles.typeOptionText,
+                        { color: isSelected ? 'white' : colors.text }
+                      ]}>
+                        {t(`types.${detectedType.type}`)}
+                      </Text>
+                      {detectedType.confidence && (
+                        <Text style={[
+                          styles.typeConfidence,
+                          { color: isSelected ? 'rgba(255,255,255,0.7)' : colors.textSecondary }
+                        ]}>
+                          {Math.round(detectedType.confidence * 100)}%
+                        </Text>
+                      )}
+                    </TouchableOpacity>
+                  );
+                })}
+              </ScrollView>
+            </View>
+          )}
+
           {/* Data Card */}
           <View style={[styles.dataCard, { backgroundColor: colors.surface }]}>
             <View style={styles.cardHeader}>
@@ -995,5 +1055,51 @@ const styles = StyleSheet.create({
     fontSize: 16,
     fontWeight: '600',
     textAlign: 'center',
+  },
+
+  // Multi-type selector
+  multiTypeCard: {
+    borderRadius: BORDER_RADIUS.large,
+    marginHorizontal: SPACING.medium,
+    marginBottom: SPACING.medium,
+    padding: SPACING.medium,
+    shadowColor: '#000',
+    shadowOffset: { width: 0, height: 2 },
+    shadowOpacity: 0.05,
+    shadowRadius: 8,
+    elevation: 2,
+  },
+  multiTypeHeader: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    marginBottom: SPACING.small,
+  },
+  multiTypeTitle: {
+    fontSize: 16,
+    fontWeight: '600',
+    marginLeft: SPACING.small,
+  },
+  typesList: {
+    flexDirection: 'row',
+  },
+  typeOption: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    paddingHorizontal: SPACING.medium,
+    paddingVertical: SPACING.small,
+    borderRadius: BORDER_RADIUS.medium,
+    marginRight: SPACING.small,
+    borderWidth: 1.5,
+    minWidth: 100,
+  },
+  typeOptionText: {
+    fontSize: 14,
+    fontWeight: '600',
+    marginLeft: SPACING.small,
+  },
+  typeConfidence: {
+    fontSize: 12,
+    marginLeft: 'auto',
+    paddingLeft: SPACING.small,
   },
 });

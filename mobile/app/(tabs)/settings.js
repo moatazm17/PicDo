@@ -6,6 +6,7 @@ import {
   TouchableOpacity,
   ScrollView,
   Alert,
+  Linking,
 } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
 import { Ionicons } from '@expo/vector-icons';
@@ -80,16 +81,22 @@ export default function SettingsScreen() {
   const handleHelp = () => {
     Alert.alert(
       t('settings.help'),
-      'For support, please contact us at support@picdo.app',
-      [{ text: t('common.ok') }]
+      'For support, please contact us at support@livroll.com',
+      [
+        { text: 'Cancel', style: 'cancel' },
+        { text: 'Email Support', onPress: () => Linking.openURL('mailto:support@livroll.com') }
+      ]
     );
   };
 
   const handlePrivacy = () => {
     Alert.alert(
       t('settings.privacy'),
-      'We only process the text extracted from your images. No images are stored on our servers.',
-      [{ text: t('common.ok') }]
+      'View our complete privacy policy',
+      [
+        { text: 'Cancel', style: 'cancel' },
+        { text: 'View Policy', onPress: () => Linking.openURL('https://doc-hosting.flycricket.io/picdo-privacy-policy/9b03f59b-b9da-42ad-b5fd-967c78f30fe8/privacy') }
+      ]
     );
   };
 

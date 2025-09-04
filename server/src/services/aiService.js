@@ -146,9 +146,9 @@ Return the cleaned main content in \`fields.content\` and fill these fields (nul
 - \`merchant\`: store or bank name for expenses (null for other types).
 
 ######################### RESPONSE FORMAT #########################
-Return exactly this JSON structure (nulls allowed for missing optional fields):
+Return exactly this JSON structure with ALL detected information types:
 {
-  "type": "contact|expense|event|address|note|document",
+  "type": "contact|expense|event|address|note|document", // primary type
   "summary": "2–4 words in ${lang}",
   "fields": {
     "title": "original title or headline",
@@ -162,6 +162,19 @@ Return exactly this JSON structure (nulls allowed for missing optional fields):
     "email": "email if present or null",
     "merchant": "merchant/bank if present or null"
   },
+  "detectedTypes": [
+    {
+      "type": "contact",
+      "confidence": 0.9,
+      "data": { "name": "...", "phone": "...", "email": "..." }
+    },
+    {
+      "type": "event",
+      "confidence": 0.8,
+      "data": { "title": "...", "date": "...", "time": "...", "location": "..." }
+    }
+    // Include ALL types detected with confidence > 0.5
+  ],
   "confidence": 0.9
 }
 
@@ -209,6 +222,15 @@ Do not output anything else—**JSON only**.
       }
     }
     
+    // If detectedTypes is missing, create it from primary type
+    if (!classification.detectedTypes) {
+      classification.detectedTypes = [{
+        type: classification.type,
+        confidence: classification.confidence,
+        data: { ...classification.fields }
+      }];
+    }
+    
     // Validate type
     if (!VALID_TYPES.includes(classification.type)) {
       throw new Error(`Invalid type: ${classification.type}`);
@@ -247,9 +269,23 @@ Do not output anything else—**JSON only**.
     }
     
     // For contacts, phone or email is required
+    // But if it looks like an address, reclassify it
     if (classification.type === 'contact') {
       if (!(classification.fields.phone || classification.fields.email)) {
-        throw new Error('Contact type must include at least a phone or email');
+        // Check if it's actually an address
+        const text = (classification.fields.content || '').toLowerCase();
+        const addressKeywords = ['street', 'st', 'road', 'rd', 'avenue', 'ave', 'city', 
+                                'شارع', 'ش', 'طريق', 'مدينة', 'عنوان', 'داخل', 'بجوار'];
+        
+        if (addressKeywords.some(keyword => text.includes(keyword))) {
+          // Reclassify as address
+          classification.type = 'address';
+          classification.fields.location = classification.fields.content;
+          delete classification.fields.phone;
+          delete classification.fields.email;
+        } else {
+          throw new Error('Contact type must include at least a phone or email');
+        }
       }
     }
     

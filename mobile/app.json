@@ -36,7 +36,9 @@
             ]
           }
         ],
-        "LSApplicationQueriesSchemes": ["photos"],
+        "LSApplicationQueriesSchemes": [
+          "photos"
+        ],
         "NSUserActivityTypes": [
           "com.picdo.app.import",
           "com.picdo.app.extract-text",
@@ -45,7 +47,9 @@
         ],
         "CFBundleURLTypes": [
           {
-            "CFBundleURLSchemes": ["picdo"],
+            "CFBundleURLSchemes": [
+              "picdo"
+            ],
             "CFBundleURLName": "com.picdo.app"
           }
         ],
@@ -77,12 +81,15 @@
         "android.permission.READ_CONTACTS",
         "android.permission.WRITE_CONTACTS",
         "android.permission.READ_CALENDAR",
-        "android.permission.WRITE_CALENDAR"
+        "android.permission.WRITE_CALENDAR",
+        "android.permission.RECORD_AUDIO"
       ],
       "intentFilters": [
         {
           "action": "android.intent.action.SEND",
-          "category": ["android.intent.category.DEFAULT"],
+          "category": [
+            "android.intent.category.DEFAULT"
+          ],
           "data": [
             {
               "mimeType": "image/*"
@@ -92,7 +99,9 @@
         },
         {
           "action": "android.intent.action.SEND",
-          "category": ["android.intent.category.DEFAULT"],
+          "category": [
+            "android.intent.category.DEFAULT"
+          ],
           "data": [
             {
               "mimeType": "image/jpeg"
@@ -102,7 +111,9 @@
         },
         {
           "action": "android.intent.action.SEND",
-          "category": ["android.intent.category.DEFAULT"],
+          "category": [
+            "android.intent.category.DEFAULT"
+          ],
           "data": [
             {
               "mimeType": "image/png"
@@ -112,7 +123,10 @@
         },
         {
           "action": "android.intent.action.VIEW",
-          "category": ["android.intent.category.DEFAULT", "android.intent.category.BROWSABLE"],
+          "category": [
+            "android.intent.category.DEFAULT",
+            "android.intent.category.BROWSABLE"
+          ],
           "data": [
             {
               "scheme": "picdo"
@@ -141,10 +155,12 @@
       ]
     ],
     "scheme": "picdo",
-
     "extra": {
       "router": {
         "origin": false
+      },
+      "eas": {
+        "projectId": "800e2f83-b267-4d28-a247-30f8c90b2c28"
       }
     }
   }

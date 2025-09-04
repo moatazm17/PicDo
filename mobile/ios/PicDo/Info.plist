@@ -11,12 +11,8 @@
     <key>CFBundleDocumentTypes</key>
     <array>
       <dict>
-        <key>CFBundleTypeIconFiles</key>
-        <array/>
         <key>CFBundleTypeName</key>
         <string>Images</string>
-        <key>CFBundleTypeRole</key>
-        <string>Editor</string>
         <key>LSHandlerRank</key>
         <string>Owner</string>
         <key>LSItemContentTypes</key>
@@ -24,9 +20,6 @@
           <string>public.image</string>
           <string>public.jpeg</string>
           <string>public.png</string>
-          <string>public.heif</string>
-          <string>public.heic</string>
-          <string>public.gif</string>
         </array>
       </dict>
     </array>
@@ -90,10 +83,16 @@
     <string>Allow $(PRODUCT_NAME) to save photos</string>
     <key>NSPhotoLibraryUsageDescription</key>
     <string>PicDo needs access to your photos to select images for processing.</string>
+    <key>NSPrivacyPolicyURL</key>
+    <string>https://doc-hosting.flycricket.io/picdo-privacy-policy/9b03f59b-b9da-42ad-b5fd-967c78f30fe8/privacy</string>
     <key>NSRemindersFullAccessUsageDescription</key>
     <string>Allow $(PRODUCT_NAME) to access your reminders</string>
     <key>NSRemindersUsageDescription</key>
     <string>PicDo can create reminders from extracted information.</string>
+    <key>NSSupportEmail</key>
+    <string>support@livroll.com</string>
+    <key>NSSupportURL</key>
+    <string>https://doc-hosting.flycricket.io/picdo-privacy-policy/9b03f59b-b9da-42ad-b5fd-967c78f30fe8/privacy</string>
     <key>NSUserActivityTypes</key>
     <array>
       <string>com.picdo.app.import</string>
