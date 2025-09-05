@@ -363,16 +363,17 @@ export default function UploadScreen() {
 
   if (error) {
     const getErrorIcon = () => {
-      if (error.message.includes('No text detected') || error.message.includes('noTextDetected')) {
+      const message = error.message || '';
+      if (message.includes('No text detected') || message.includes('noTextDetected')) {
         return 'document-text-outline';
       }
-      if (error.message.includes('network') || error.message.includes('Network')) {
+      if (message.includes('network') || message.includes('Network')) {
         return 'wifi-outline';
       }
-      if (error.message.includes('limit') || error.message.includes('Limit')) {
+      if (message.includes('limit') || message.includes('Limit')) {
         return 'warning-outline';
       }
-      if (error.message.includes('cannot be processed') || error.message.includes('inappropriate')) {
+      if (message.includes('cannot be processed') || message.includes('inappropriate')) {
         return 'shield-outline';
       }
       return 'alert-circle';
@@ -384,7 +385,7 @@ export default function UploadScreen() {
           <Animatable.View animation="bounceIn" style={styles.errorContent}>
             <Ionicons name={getErrorIcon()} size={80} color={colors.error} />
             <Text style={[styles.errorTitle, { color: colors.error }]}>
-              {error.message.includes('No text detected') ? t('errors.noTextTitle') : t('common.error')}
+              {(error.message || '').includes('No text detected') ? t('errors.noTextTitle') : t('common.error')}
             </Text>
             <Text style={[styles.errorMessage, { color: colors.text }]}>
               {error.message}
