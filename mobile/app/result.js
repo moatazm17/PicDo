@@ -98,47 +98,36 @@ const DataCards = ({ entities, onActionPress, colors }) => {
   
   const cards = [];
   
-  // Phone number cards - handle both simple array and enhanced object format
-  const phones = entities.phones || [];
-  phones.forEach((phone, index) => {
-    // Handle both string format and enhanced object format
-    const phoneNumber = typeof phone === 'string' ? phone : phone.number || phone;
-    const phoneContext = typeof phone === 'object' ? phone.context : null;
-    const phoneType = typeof phone === 'object' ? phone.type : 'main';
-    
-    cards.push(
-      <View key={`phone-${index}`} style={[styles.dataCard, { backgroundColor: colors.surface }]}>
-        <View style={styles.cardHeader}>
-          <View style={[styles.cardIconContainer, { backgroundColor: '#4CAF50' + '20' }]}>
-            <Ionicons name="call" size={22} color="#4CAF50" />
-          </View>
-          <View style={styles.cardTitleContainer}>
+  // Phone number cards - simple
+  if (entities.phones && entities.phones.length > 0) {
+    entities.phones.forEach((phone, index) => {
+      cards.push(
+        <View key={`phone-${index}`} style={[styles.dataCard, { backgroundColor: colors.surface }]}>
+          <View style={styles.cardHeader}>
+            <View style={[styles.cardIconContainer, { backgroundColor: '#4CAF50' + '20' }]}>
+              <Ionicons name="call" size={22} color="#4CAF50" />
+            </View>
             <Text style={[styles.cardTitle, { color: colors.text }]}>
               {t('result.phoneNumber')}
             </Text>
-            {phoneContext && (
-              <Text style={[styles.cardSubtitle, { color: colors.textSecondary }]}>
-                {phoneContext}
-              </Text>
-            )}
           </View>
-        </View>
-        <Text style={[styles.cardValue, { color: colors.text }]}>
-          {phoneNumber}
-        </Text>
-        <TouchableOpacity 
-          style={[styles.cardAction, { backgroundColor: '#4CAF50' }]}
-          onPress={() => onActionPress('phone', phoneNumber)}
-          activeOpacity={0.8}
-        >
-          <Ionicons name="call" size={18} color="white" />
-          <Text style={styles.cardActionText}>
-            {t('result.call')}
+          <Text style={[styles.cardValue, { color: colors.text }]}>
+            {phone}
           </Text>
-        </TouchableOpacity>
-      </View>
-    );
-  });
+          <TouchableOpacity 
+            style={[styles.cardAction, { backgroundColor: '#4CAF50' }]}
+            onPress={() => onActionPress('phone', phone)}
+            activeOpacity={0.8}
+          >
+            <Ionicons name="call" size={18} color="white" />
+            <Text style={styles.cardActionText}>
+              {t('result.call')}
+            </Text>
+          </TouchableOpacity>
+        </View>
+      );
+    });
+  }
   
   // Email cards
   if (entities.emails && entities.emails.length > 0) {
@@ -171,156 +160,37 @@ const DataCards = ({ entities, onActionPress, colors }) => {
     });
   }
   
-  // Address cards - handle both simple array and enhanced object format
-  const addresses = entities.addresses || [];
-  const addressObjects = entities.addressObjects || [];
-  addresses.forEach((address, index) => {
-    // Handle both string format and enhanced object format
-    const fullAddress = typeof address === 'string' ? address : address.fullAddress || address;
-    const businessContext = typeof address === 'object' ? address.businessContext : null;
-    const isMainLocation = typeof address === 'object' ? address.isMainLocation : false;
-    
-    cards.push(
-      <View key={`address-${index}`} style={[styles.dataCard, { backgroundColor: colors.surface }]}>
-        <View style={styles.cardHeader}>
-          <View style={[styles.cardIconContainer, { backgroundColor: '#FF9800' + '20' }]}>
-            <Ionicons name="location" size={22} color="#FF9800" />
-          </View>
-          <View style={styles.cardTitleContainer}>
+  // Address cards - simple
+  if (entities.addresses && entities.addresses.length > 0) {
+    entities.addresses.forEach((address, index) => {
+      cards.push(
+        <View key={`address-${index}`} style={[styles.dataCard, { backgroundColor: colors.surface }]}>
+          <View style={styles.cardHeader}>
+            <View style={[styles.cardIconContainer, { backgroundColor: '#FF9800' + '20' }]}>
+              <Ionicons name="location" size={22} color="#FF9800" />
+            </View>
             <Text style={[styles.cardTitle, { color: colors.text }]}>
-              {t('result.address')} {isMainLocation && '(Main)'}
+              {t('result.address')}
             </Text>
-            {businessContext && (
-              <Text style={[styles.cardSubtitle, { color: colors.textSecondary }]}>
-                {businessContext}
-              </Text>
-            )}
           </View>
-        </View>
-        <Text style={[styles.cardValue, { color: colors.text }]} numberOfLines={3}>
-          {fullAddress}
-        </Text>
-        <TouchableOpacity 
-          style={[styles.cardAction, { backgroundColor: '#FF9800' }]}
-          onPress={() => onActionPress('address', fullAddress)}
-          activeOpacity={0.8}
-        >
-          <Ionicons name="map" size={18} color="white" />
-          <Text style={styles.cardActionText}>
-            {t('result.openInMaps')}
+          <Text style={[styles.cardValue, { color: colors.text }]} numberOfLines={3}>
+            {address}
           </Text>
-        </TouchableOpacity>
-      </View>
-    );
-  });
-  // Prefer refined address objects if present
-  addressObjects.forEach((addr, index) => {
-    cards.push(
-      <View key={`addrObj-${index}`} style={[styles.dataCard, { backgroundColor: colors.surface }]}> 
-        <View style={styles.cardHeader}>
-          <View style={[styles.cardIconContainer, { backgroundColor: '#FF9800' + '20' }]}>
-            <Ionicons name="location" size={22} color="#FF9800" />
-          </View>
-          <View style={styles.cardTitleContainer}>
-            <Text style={[styles.cardTitle, { color: colors.text }]}>
-              {t('result.address')} {addr.isMainLocation ? '(Main)' : ''}
+          <TouchableOpacity 
+            style={[styles.cardAction, { backgroundColor: '#FF9800' }]}
+            onPress={() => onActionPress('address', address)}
+            activeOpacity={0.8}
+          >
+            <Ionicons name="map" size={18} color="white" />
+            <Text style={styles.cardActionText}>
+              {t('result.openInMaps')}
             </Text>
-            {!!addr.businessContext && (
-              <Text style={[styles.cardSubtitle, { color: colors.textSecondary }]}>
-                {addr.businessContext}
-              </Text>
-            )}
-          </View>
+          </TouchableOpacity>
         </View>
-        <Text style={[styles.cardValue, { color: colors.text }]} numberOfLines={3}>
-          {addr.fullAddress}
-        </Text>
-        <TouchableOpacity 
-          style={[styles.cardAction, { backgroundColor: '#FF9800' }]}
-          onPress={() => onActionPress('address', addr.fullAddress)}
-          activeOpacity={0.8}
-        >
-          <Ionicons name="map" size={18} color="white" />
-          <Text style={styles.cardActionText}>
-            {t('result.openInMaps')}
-          </Text>
-        </TouchableOpacity>
-      </View>
-    );
-  });
+      );
+    });
+  }
 
-  // Expense cards
-  const expenses = entities.expenses || [];
-  expenses.forEach((exp, idx) => {
-    cards.push(
-      <View key={`expense-${idx}`} style={[styles.dataCard, { backgroundColor: colors.surface }]}> 
-        <View style={styles.cardHeader}>
-          <View style={[styles.cardIconContainer, { backgroundColor: '#8E44AD' + '20' }]}>
-            <Ionicons name="card" size={22} color="#8E44AD" />
-          </View>
-          <View style={styles.cardTitleContainer}>
-            <Text style={[styles.cardTitle, { color: colors.text }]}> {t('result.expense')}
-            </Text>
-            {!!exp.merchant && (
-              <Text style={[styles.cardSubtitle, { color: colors.textSecondary }]}>
-                {exp.merchant}
-              </Text>
-            )}
-          </View>
-        </View>
-        <Text style={[styles.cardValue, { color: colors.text }]}>
-          {exp.amount ? `${exp.amount} ${exp.currency || ''}` : ''} {exp.date ? `• ${exp.date}` : ''}
-        </Text>
-        <TouchableOpacity 
-          style={[styles.cardAction, { backgroundColor: '#8E44AD' }]}
-          onPress={() => onActionPress('expense', exp)}
-          activeOpacity={0.8}
-        >
-          <Ionicons name="checkmark-circle" size={18} color="white" />
-          <Text style={styles.cardActionText}>
-            {t('result.saveAsExpense')}
-          </Text>
-        </TouchableOpacity>
-      </View>
-    );
-  });
-
-  // Event cards
-  const events = entities.events || [];
-  events.forEach((ev, idx) => {
-    cards.push(
-      <View key={`event-${idx}`} style={[styles.dataCard, { backgroundColor: colors.surface }]}> 
-        <View style={styles.cardHeader}>
-          <View style={[styles.cardIconContainer, { backgroundColor: '#2E86C1' + '20' }]}>
-            <Ionicons name="calendar" size={22} color="#2E86C1" />
-          </View>
-          <View style={styles.cardTitleContainer}>
-            <Text style={[styles.cardTitle, { color: colors.text }]}>
-              {t('result.event')}
-            </Text>
-            {!!ev.title && (
-              <Text style={[styles.cardSubtitle, { color: colors.textSecondary }]}>
-                {ev.title}
-              </Text>
-            )}
-          </View>
-        </View>
-        <Text style={[styles.cardValue, { color: colors.text }]}>
-          {ev.start ? `${ev.start}` : ''} {ev.venue ? `• ${ev.venue}` : ''}
-        </Text>
-        <TouchableOpacity 
-          style={[styles.cardAction, { backgroundColor: '#2E86C1' }]}
-          onPress={() => onActionPress('event', ev)}
-          activeOpacity={0.8}
-        >
-          <Ionicons name="add-circle" size={18} color="white" />
-          <Text style={styles.cardActionText}>
-            {t('result.addToCalendar')}
-          </Text>
-        </TouchableOpacity>
-      </View>
-    );
-  });
   
   // URL cards
   if (entities.urls && entities.urls.length > 0) {
@@ -754,7 +624,7 @@ export default function ResultScreen() {
   };
 
   // Handle entity action
-  const handleEntityAction = async (type, value) => {
+  const handleEntityAction = (type, value) => {
     try {
       switch (type) {
         case 'phone':
@@ -769,18 +639,6 @@ export default function ResultScreen() {
         case 'address':
           Linking.openURL(`https://maps.google.com/?q=${encodeURIComponent(value)}`);
           break;
-        case 'event': {
-          const payload = typeof value === 'object' ? value : {};
-          const actionPayload = { ...fields, ...payload };
-          await executeAction('calendar', actionPayload);
-          break;
-        }
-        case 'expense': {
-          const payload = typeof value === 'object' ? value : {};
-          const actionPayload = { ...fields, ...payload };
-          await executeAction('expense', actionPayload);
-          break;
-        }
         default:
           Clipboard.setString(value);
           Toast.show({
@@ -892,203 +750,6 @@ export default function ResultScreen() {
     }
   };
 
-  const renderFields = () => {
-    if (!job || !job.type) return null;
-
-    switch (job.type) {
-      case 'event':
-        return (
-          <>
-            <FieldInput
-              label={t('fields.title')}
-              value={fields.title || ''}
-              onChangeText={(value) => handleFieldChange('title', value)}
-              colors={colors}
-              isRTL={isRTL}
-              editable={editing}
-            />
-            <View style={styles.fieldRow}>
-              <View style={styles.fieldHalf}>
-            <FieldInput
-              label={t('fields.date')}
-              value={fields.date || ''}
-              onChangeText={(value) => handleFieldChange('date', value)}
-              colors={colors}
-              isRTL={isRTL}
-            />
-              </View>
-              <View style={styles.fieldHalf}>
-            <FieldInput
-              label={t('fields.time')}
-              value={fields.time || ''}
-              onChangeText={(value) => handleFieldChange('time', value)}
-              colors={colors}
-              isRTL={isRTL}
-            />
-              </View>
-            </View>
-            <FieldInput
-              label={t('fields.location')}
-              value={fields.location || ''}
-              onChangeText={(value) => handleFieldChange('location', value)}
-              colors={colors}
-              isRTL={isRTL}
-              editable={editing}
-            />
-          </>
-        );
-
-      case 'expense':
-        return (
-          <>
-            <FieldInput
-              label={t('fields.merchant')}
-              value={fields.merchant || ''}
-              onChangeText={(value) => handleFieldChange('merchant', value)}
-              colors={colors}
-              isRTL={isRTL}
-              editable={editing}
-            />
-            <View style={styles.fieldRow}>
-              <View style={styles.fieldHalf}>
-            <FieldInput
-              label={t('fields.amount')}
-              value={fields.amount?.toString() || ''}
-              onChangeText={(value) => handleFieldChange('amount', parseFloat(value) || 0)}
-              keyboardType="numeric"
-              colors={colors}
-              isRTL={isRTL}
-            />
-              </View>
-              <View style={styles.fieldHalf}>
-            <FieldInput
-              label={t('fields.currency')}
-              value={fields.currency || ''}
-              onChangeText={(value) => handleFieldChange('currency', value)}
-              colors={colors}
-              isRTL={isRTL}
-            />
-              </View>
-            </View>
-            <FieldInput
-              label={t('fields.date')}
-              value={fields.date || ''}
-              onChangeText={(value) => handleFieldChange('date', value)}
-              colors={colors}
-              isRTL={isRTL}
-              editable={editing}
-            />
-          </>
-        );
-
-      case 'contact':
-        return (
-          <>
-            <FieldInput
-              label={t('fields.name')}
-              value={fields.name || ''}
-              onChangeText={(value) => handleFieldChange('name', value)}
-              colors={colors}
-              isRTL={isRTL}
-              editable={editing}
-            />
-            <FieldInput
-              label={t('fields.phone')}
-              value={fields.phone || ''}
-              onChangeText={(value) => handleFieldChange('phone', value)}
-              keyboardType="phone-pad"
-              colors={colors}
-              isRTL={isRTL}
-              editable={editing}
-            />
-          </>
-        );
-
-      case 'address':
-        return (
-          <>
-            <FieldInput
-              label={t('fields.title')}
-              value={fields.title || ''}
-              onChangeText={(value) => handleFieldChange('title', value)}
-              colors={colors}
-              isRTL={isRTL}
-              editable={editing}
-            />
-            <FieldInput
-              label={t('fields.address')}
-              value={fields.full || ''}
-              onChangeText={(value) => handleFieldChange('full', value)}
-              multiline
-              colors={colors}
-              isRTL={isRTL}
-              editable={editing}
-            />
-          </>
-        );
-        
-      case 'note':
-        return (
-          <>
-            <FieldInput
-              label={t('fields.title')}
-              value={fields.title || ''}
-              onChangeText={(value) => handleFieldChange('title', value)}
-              colors={colors}
-              isRTL={isRTL}
-              editable={editing}
-            />
-            <FieldInput
-              label={t('fields.category')}
-              value={fields.category || ''}
-              onChangeText={(value) => handleFieldChange('category', value)}
-              colors={colors}
-              isRTL={isRTL}
-              editable={editing}
-            />
-            <StructuredContent
-              content={fields.content || ''}
-              onChangeText={(value) => handleFieldChange('content', value)}
-              colors={colors}
-              isRTL={isRTL}
-              editable={editing}
-            />
-          </>
-        );
-        
-      case 'document':
-        return (
-          <>
-            <FieldInput
-              label={t('fields.title')}
-              value={fields.title || ''}
-              onChangeText={(value) => handleFieldChange('title', value)}
-              colors={colors}
-              isRTL={isRTL}
-              editable={editing}
-            />
-            <FieldInput
-              label={t('fields.category')}
-              value={fields.category || ''}
-              onChangeText={(value) => handleFieldChange('category', value)}
-              colors={colors}
-              isRTL={isRTL}
-              editable={editing}
-            />
-            <StructuredContent
-              content={fields.content || ''}
-              onChangeText={(value) => handleFieldChange('content', value)}
-              colors={colors}
-              isRTL={isRTL}
-              editable={editing}
-            />
-          </>
-        );
-
-      default:
-        return null;
-    }
-  };
 
   if (loading) {
     return (
@@ -1124,9 +785,9 @@ export default function ResultScreen() {
           borderBottomColor: colors.border
         }
       ]}>
-        <TouchableOpacity
+            <TouchableOpacity
           style={styles.headerButton}
-          onPress={() => router.back()}
+              onPress={() => router.back()}
           activeOpacity={0.7}
         >
           <Ionicons
@@ -1134,7 +795,7 @@ export default function ResultScreen() {
             size={24}
             color={colors.text}
           />
-        </TouchableOpacity>
+            </TouchableOpacity>
         
         <Text style={[
           styles.headerTitle, 
@@ -1145,9 +806,9 @@ export default function ResultScreen() {
           {job?.summary || fields.title || t('result.title')}
         </Text>
         
-        <TouchableOpacity
+            <TouchableOpacity
           style={styles.headerButton}
-          onPress={() => setEditing(!editing)}
+              onPress={() => setEditing(!editing)}
           activeOpacity={0.7}
         >
           <Ionicons
@@ -1155,8 +816,8 @@ export default function ResultScreen() {
             size={24}
             color={colors.primary}
           />
-        </TouchableOpacity>
-      </View>
+            </TouchableOpacity>
+        </View>
 
       <KeyboardAvoidingView 
         behavior={Platform.OS === 'ios' ? 'padding' : 'height'}
@@ -1183,15 +844,15 @@ export default function ResultScreen() {
               <View style={styles.imageOverlay}>
                 <View style={[styles.expandIcon, { backgroundColor: 'rgba(0,0,0,0.6)' }]}>
                   <Ionicons name="expand" size={16} color="white" />
-                </View>
-              </View>
+            </View>
+          </View>
             </TouchableOpacity>
               
               {/* Type Badge */}
               <View style={[styles.typeBadge, { backgroundColor: colors.primary }]}>
                 <Ionicons name={getTypeIcon(job.type)} size={14} color="white" />
                 <Text style={styles.typeBadgeText}>{t(`types.${job.type}`)}</Text>
-              </View>
+          </View>
             </View>
           )}
           
@@ -1227,8 +888,8 @@ export default function ResultScreen() {
                 <Ionicons name="layers" size={20} color={colors.primary} />
                 <Text style={[styles.multiTypeTitle, { color: colors.text }]}>
                   {t('result.multipleTypesDetected')}
-                </Text>
-              </View>
+            </Text>
+          </View>
               <ScrollView horizontal showsHorizontalScrollIndicator={false} style={styles.typesList}>
                 {job.detectedTypes.map((detectedType, index) => {
                   const isSelected = selectedType ? selectedType.type === detectedType.type : job.type === detectedType.type;
@@ -1278,26 +939,6 @@ export default function ResultScreen() {
           </View>
           )}
 
-          {/* Data Card */}
-          <View style={[styles.dataCard, { backgroundColor: colors.surface }]}>
-            <View style={styles.cardHeader}>
-              <Text style={[styles.cardTitle, { color: colors.text }]}>Information</Text>
-              <View style={[styles.editBadge, { backgroundColor: editing ? colors.success + '20' : colors.primary + '20' }]}>
-                <Ionicons 
-                  name={editing ? "create" : "eye"} 
-                  size={14} 
-                  color={editing ? colors.success : colors.primary} 
-                />
-                <Text style={[styles.editBadgeText, { color: editing ? colors.success : colors.primary }]}>
-                  {editing ? 'Editing' : 'View Only'}
-            </Text>
-              </View>
-          </View>
-
-          <View style={styles.fieldsContainer}>
-            {renderFields()}
-          </View>
-          </View>
 
           {/* Bottom Spacing */}
           <View style={{ height: 100 }} />
@@ -1633,17 +1274,10 @@ const styles = StyleSheet.create({
     justifyContent: 'center',
     marginRight: SPACING.small,
   },
-  cardTitleContainer: {
-    flex: 1,
-  },
   cardTitle: {
     fontSize: 16,
     fontWeight: '700',
-  },
-  cardSubtitle: {
-    fontSize: 12,
-    fontWeight: '500',
-    marginTop: 2,
+    flex: 1,
   },
   cardValue: {
     fontSize: 16,

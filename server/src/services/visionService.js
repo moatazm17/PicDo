@@ -278,18 +278,13 @@ class VisionService {
         structuredData.businessInfo.categories.push(text.trim());
       }
       
-      // Extract addresses - smarter: avoid single-word fragments like 'شارع' or district-only words
-      const addressIndicators = /(street|road|ave|avenue|st\.|rd\.|city|district|حي|مدينة|محافظة|طريق|شارع|مقابل|بجوار|تقاطع)/i;
-      if (addressIndicators.test(text)) {
-        const cleaned = text.trim();
-        // Filter out very short/fragment texts
-        const arabicLetters = /[\u0600-\u06FF]/;
-        if (cleaned.length >= 10 && /\s/.test(cleaned)) {
-          // Avoid obvious fragments like single words 'شارع' or 'صالحية'
-          const words = cleaned.split(/\s+/);
-          if (words.length >= 2 && cleaned !== 'شارع' && cleaned !== 'صالحية') {
-            structuredData.addresses.push(cleaned);
-          }
+      // Simple address detection - just look for location indicators
+      if (text.includes('street') || text.includes('road') || text.includes('شارع') || 
+          text.includes('طريق') || text.includes('حي') || text.includes('مدينة') ||
+          text.includes('مقابل') || text.includes('بجوار')) {
+        // Only add if it's more than just a single word
+        if (text.trim().length > 5 && text.includes(' ')) {
+          structuredData.addresses.push(text.trim());
         }
       }
     });
@@ -298,24 +293,8 @@ class VisionService {
     structuredData.phoneNumbers = [...new Set(structuredData.phoneNumbers)];
     structuredData.emails = [...new Set(structuredData.emails)];
     structuredData.urls = [...new Set(structuredData.urls)];
-    // Split multi-address blocks by common separators/newlines and clean
-    const splitSeparators = /\n|\u2013|\u2014|—|–|•|\||,|\s-\s| - | · |\s•\s/;
-    const splitAddresses = [];
-    [...new Set(structuredData.addresses)].forEach(addr => {
-      const parts = addr.split(splitSeparators)
-        .map(p => p.trim())
-        .filter(p => p && p.length >= 10 && /\s/.test(p) && p !== 'شارع' && p !== 'صالحية');
-      if (parts.length > 1) {
-        parts.forEach(p => splitAddresses.push(p));
-      } else {
-        splitAddresses.push(addr);
-      }
-    });
-
-    // Deduplicate and remove contained substrings (keep longest addresses)
-    structuredData.addresses = [...new Set(splitAddresses)]
-      .sort((a,b) => b.length - a.length)
-      .filter((addr, idx, arr) => !arr.some((other, j) => j < idx && other.includes(addr)));
+    // Simple deduplication
+    structuredData.addresses = [...new Set(structuredData.addresses)];
     structuredData.businessInfo.hours = [...new Set(structuredData.businessInfo.hours)];
     structuredData.businessInfo.ratings = [...new Set(structuredData.businessInfo.ratings)];
     structuredData.businessInfo.categories = [...new Set(structuredData.businessInfo.categories)];

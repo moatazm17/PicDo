@@ -33,175 +33,6 @@ class AIService {
     };
   }
 
-  /**
-   * Refine and split addresses using the LLM with line-level reasoning
-   * Returns a normalized list of address objects with confidence and context
-   * @param {string} ocrText
-   * @param {string[]} candidateAddresses
-   * @param {string} uiLang
-   */
-  async refineAddresses(ocrText, candidateAddresses = [], uiLang = 'en') {
-    try {
-      if (!ocrText && (!candidateAddresses || candidateAddresses.length === 0)) {
-        return [];
-      }
-
-      const prompt = `You are an address intelligence module. Given OCR text (possibly noisy) and a list of candidate address lines, output a clean list of COMPLETE individual addresses with confidence and optional business context. Split multi-address blocks. Avoid fragments like single words (e.g., just 'شارع'). Use the user's UI language context (${uiLang === 'ar' ? 'Arabic' : 'English'}) when helpful.
-
-Return ONLY JSON with this shape:
-{
-  "addresses": [
-    {
-      "fullAddress": "...", 
-      "components": {"street": "", "district": "", "city": "", "country": ""},
-      "businessContext": "branch name or company if inferred",
-      "isMainLocation": false,
-      "confidence": 0.0
-    }
-  ]
-}
-
-Guidelines:
-- Prefer longer, multi-token addresses; discard single-token fragments
-- If multiple branches/locations exist, return each as a separate item
-- Extract components when obvious; leave empty strings when unsure
-- Confidence must be between 0 and 1
-- Do not duplicate addresses
-`;
-
-      const userContent = `OCR_TEXT:\n${ocrText}\n\nCANDIDATE_ADDRESSES:\n${(candidateAddresses || []).join('\n')}`;
-
-      const resp = await this.openai.chat.completions.create({
-        model: 'gpt-4o',
-        messages: [
-          { role: 'system', content: prompt },
-          { role: 'user', content: userContent }
-        ],
-        temperature: 0.1,
-        max_tokens: 1200,
-        response_format: { type: 'json_object' }
-      });
-
-      const content = resp.choices?.[0]?.message?.content || '{}';
-      const json = JSON.parse(content);
-      const addresses = Array.isArray(json.addresses) ? json.addresses : [];
-
-      // Normalize objects and clamp confidence
-      return addresses
-        .map(a => ({
-          fullAddress: (a?.fullAddress || '').trim(),
-          components: {
-            street: a?.components?.street || '',
-            district: a?.components?.district || '',
-            city: a?.components?.city || '',
-            country: a?.components?.country || ''
-          },
-          businessContext: a?.businessContext || '',
-          isMainLocation: Boolean(a?.isMainLocation),
-          confidence: Math.max(0, Math.min(1, Number(a?.confidence ?? 0)))
-        }))
-        .filter(a => a.fullAddress && a.fullAddress.length >= 8);
-    } catch (e) {
-      console.error('Address refinement failed:', e.message);
-      return [];
-    }
-  }
-
-  /**
-   * Extract expenses and events with confidence using the LLM
-   * @param {string} ocrText
-   * @param {string} uiLang
-   * @returns {{expenses: Array, events: Array}}
-   */
-  async extractExpensesAndEvents(ocrText, uiLang = 'en') {
-    try {
-      if (!ocrText || ocrText.trim().length === 0) return { expenses: [], events: [] };
-
-      const prompt = `You extract structured EXPENSES and EVENTS from noisy OCR text. Return JSON only.
-
-Schema:
-{
-  "expenses": [
-    {
-      "merchant": "",
-      "amount": 0,
-      "currency": "",
-      "date": "YYYY-MM-DD or original",
-      "items": [{"name": "", "qty": 1, "price": 0}],
-      "tax": 0,
-      "paymentMethod": "",
-      "reference": "",
-      "confidence": 0.0
-    }
-  ],
-  "events": [
-    {
-      "title": "",
-      "start": "ISO or original",
-      "end": "ISO or original or empty",
-      "venue": "",
-      "city": "",
-      "url": "",
-      "confidence": 0.0
-    }
-  ]
-}
-
-Rules:
-- Only include entries with confidence >= 0.5
-- For EXPENSE, prefer explicit totals (Total/المجموع/TTC)
-- For EVENT, prefer future-looking invitations; skip news/stories
-`;
-
-      const resp = await this.openai.chat.completions.create({
-        model: 'gpt-4o',
-        messages: [
-          { role: 'system', content: prompt },
-          { role: 'user', content: ocrText }
-        ],
-        temperature: 0.1,
-        max_tokens: 1400,
-        response_format: { type: 'json_object' }
-      });
-
-      const content = resp.choices?.[0]?.message?.content || '{}';
-      const json = JSON.parse(content);
-      const expenses = Array.isArray(json.expenses) ? json.expenses : [];
-      const events = Array.isArray(json.events) ? json.events : [];
-
-      // Normalize and filter by confidence
-      const normExpenses = expenses
-        .map(e => ({
-          merchant: (e?.merchant || '').trim(),
-          amount: Number(e?.amount ?? 0),
-          currency: (e?.currency || '').trim(),
-          date: (e?.date || '').trim(),
-          items: Array.isArray(e?.items) ? e.items : [],
-          tax: Number(e?.tax ?? 0),
-          paymentMethod: (e?.paymentMethod || '').trim(),
-          reference: (e?.reference || '').trim(),
-          confidence: Math.max(0, Math.min(1, Number(e?.confidence ?? 0)))
-        }))
-        .filter(e => e.confidence >= 0.5 && (e.amount > 0 || e.merchant));
-
-      const normEvents = events
-        .map(ev => ({
-          title: (ev?.title || '').trim(),
-          start: (ev?.start || '').trim(),
-          end: (ev?.end || '').trim(),
-          venue: (ev?.venue || '').trim(),
-          city: (ev?.city || '').trim(),
-          url: (ev?.url || '').trim(),
-          confidence: Math.max(0, Math.min(1, Number(ev?.confidence ?? 0)))
-        }))
-        .filter(ev => ev.confidence >= 0.5 && (ev.title || ev.start || ev.venue));
-
-      return { expenses: normExpenses, events: normEvents };
-    } catch (e) {
-      console.error('extractExpensesAndEvents failed:', e.message);
-      return { expenses: [], events: [] };
-    }
-  }
 
   async classifyText(ocrText, uiLang = 'en') {
     const systemPrompt = this.getSystemPrompt(uiLang);
@@ -319,136 +150,41 @@ Rules:
     const lang = uiLang === 'ar' ? 'Arabic' : 'English';
     
     return `
-You are an advanced AI system for intelligent document analysis and entity extraction. Your task is to understand document context, extract entities with relationships, and provide smart classification.
+You extract data from OCR text. Be LITERAL. Extract only what you see, don't be creative.
 
-########################## INTELLIGENT ANALYSIS ##########################
-1. **Document Understanding**: Analyze the document type and business context
-2. **Entity Relationship Detection**: Understand how different pieces of information relate to each other
-3. **Smart Grouping**: Group related entities (e.g., multiple locations for same business)
-4. **Context-Aware Extraction**: Extract entities with their business context and relationships
+TYPES: contact, expense, event, address, note, document
 
-########################## ENHANCED ENTITY EXTRACTION ##########################
-For each document, perform intelligent entity extraction:
+RULES:
+- Extract phone numbers, emails, URLs, addresses exactly as they appear
+- For receipts: merchant = business name (not customer name), amount = total shown
+- For addresses: each line with location info = separate address
+- Don't mix data from different lines
+- Don't invent or rewrite anything
 
-**BUSINESS CONTEXT DETECTION:**
-- Identify if this is a business document (business card, flyer, directory listing)
-- Detect business name, type, and category
-- Understand if multiple locations belong to same business
-
-**SMART ADDRESS HANDLING:**
-- Parse complete addresses, not fragments
-- Detect multiple locations for same business
-- Separate individual addresses (don't merge unrelated ones)
-- Include context (which business/person each address belongs to)
-- Handle geographic hierarchies (country > city > district > street)
-
-**INTELLIGENT PHONE EXTRACTION:**
-- Detect all phone numbers with context
-- Handle local numbers (add country context if business context suggests it)
-- Identify main vs branch numbers
-- Associate phone numbers with specific locations/businesses
-
-**RELATIONSHIP MAPPING:**
-- Map which phone numbers belong to which addresses
-- Identify business hierarchies (main office vs branches)
-- Connect contact information to specific locations
-
-########################## SMART CLASSIFICATION ##########################
-Primary classification with context awareness:
-
-1. **CONTACT** - Business or personal contact information
-   - Multi-location businesses (like exchange offices, banks)
-   - Service providers with multiple branches
-   - Professional contacts with office locations
-
-2. **BUSINESS** - Business directory or promotional content
-   - Company information with multiple locations
-   - Service offerings and contact details
-   - Business categories and specializations
-
-3. **ADDRESS** - Location sharing or directions
-   - Specific location information
-   - Geographic references and landmarks
-
-4. **EVENT** - Invitations or event announcements
-5. **EXPENSE** - Financial transactions or receipts
-6. **NOTE** - General information or text
-
-########################## REQUIRED JSON OUTPUT ##########################
+JSON OUTPUT:
 {
-  "type": "primary_classification",
-  "summary": "brief_description_in_${lang}",
-  "confidence": 0.9,
-  "businessContext": {
-    "isBusinessDocument": true/false,
-    "businessName": "extracted_business_name",
-    "businessType": "category_or_industry",
-    "hasMultipleLocations": true/false
-  },
+  "type": "contact|expense|event|address|note|document",
+  "summary": "brief ${lang} title",
   "entities": {
-    "phones": [
-      {
-        "number": "full_phone_number",
-        "type": "main|branch|mobile|fax",
-        "context": "which_business_or_location",
-        "isLocal": true/false
-      }
-    ],
-    "emails": [
-      {
-        "address": "email_address",
-        "context": "business_or_personal"
-      }
-    ],
-    "addresses": [
-      {
-        "fullAddress": "complete_address_string",
-        "components": {
-          "street": "street_info",
-          "district": "district_name", 
-          "city": "city_name",
-          "country": "country_name"
-        },
-        "businessContext": "which_business_this_belongs_to",
-        "isMainLocation": true/false
-      }
-    ],
-    "urls": ["extracted_urls"],
-    "businessInfo": {
-      "names": ["business_names"],
-      "categories": ["business_categories"],
-      "services": ["services_offered"],
-      "hours": ["operating_hours"],
-      "specializations": ["areas_of_expertise"]
-    }
+    "phones": ["exact_phone_numbers"],
+    "emails": ["exact_emails"], 
+    "urls": ["exact_urls"],
+    "addresses": ["each_address_line_separately"]
   },
-  "detectedTypes": [
-    {
-      "type": "classification",
-      "confidence": 0.9,
-      "reasoning": "why_this_classification"
-    }
-  ],
   "fields": {
-    "title": "document_title_or_business_name",
-    "name": "primary_business_or_person_name",
-    "phone": "primary_phone_number",
-    "email": "primary_email",
-    "location": "primary_or_summary_location",
-    "category": "business_category_or_document_type",
-    "content": "cleaned_and_organized_text"
+    "title": "exact_title_or_null",
+    "content": "full_ocr_text",
+    "name": "business_or_person_name",
+    "phone": "main_phone",
+    "email": "main_email", 
+    "location": "main_location",
+    "merchant": "business_name_for_receipts",
+    "amount": "total_amount_number",
+    "date": "date_if_present"
   }
 }
 
-########################## CRITICAL INSTRUCTIONS ##########################
-1. **NEVER fragment addresses** - extract complete, meaningful addresses
-2. **Group related information** - if 5 locations belong to same business, show that relationship
-3. **Preserve context** - don't lose the connection between phone numbers and their locations
-4. **Smart local number handling** - if business context suggests a country, handle local numbers appropriately
-5. **Quality over quantity** - better to have fewer, accurate entities than many fragments
-6. **Business intelligence** - understand document purpose and extract accordingly
-
-Return ONLY the JSON object, no additional text.`;
+Be simple. Extract what you see. Don't be smart.`;
   }
 
   enforceSummaryLength(classification, uiLang) {

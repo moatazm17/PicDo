@@ -489,31 +489,6 @@ async function processJobAsync(job, imageBuffer, wantThumb, uiLang) {
       }
     }
 
-    // Address refinement: use OCR text + current candidate addresses
-    try {
-      const candidates = Array.isArray(job.entities.addresses) ? job.entities.addresses : [];
-      const refined = await aiService.refineAddresses(ocrResult.text, candidates, uiLang);
-      if (refined.length > 0) {
-        // Replace raw addresses with refined full strings and keep enhanced objects under a separate key
-        job.entities.addresses = refined.map(a => a.fullAddress);
-        job.entities.addressObjects = refined; // optional richer structure for UI later
-      }
-    } catch (e) {
-      console.error(`Job ${job.jobId}: Address refinement error:`, e.message);
-    }
-    
-    // Extract expenses and events via model with confidence
-    try {
-      const { expenses, events } = await aiService.extractExpensesAndEvents(ocrResult.text, uiLang);
-      if (expenses?.length) {
-        job.entities.expenses = expenses;
-      }
-      if (events?.length) {
-        job.entities.events = events;
-      }
-    } catch (e) {
-      console.error(`Job ${job.jobId}: Expense/Event extraction error:`, e.message);
-    }
 
     // Split text into blocks if not already done
     job.textBlocks = classification.textBlocks || 
