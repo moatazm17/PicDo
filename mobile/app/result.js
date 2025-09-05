@@ -34,94 +34,35 @@ import { extractEntities, splitTextBlocks, getEntityIcon, getEntityAction } from
 
 const { width, height } = Dimensions.get('window');
 
-// Full Text with Smart Sections UI Component
-const FullTextWithSections = ({ text, entities, onActionPress, colors, isRTL }) => {
-  const { t } = useTranslation();
-  const [expanded, setExpanded] = useState(false);
+// Simple Entities Strip - Just show the key data
+const EntitiesStrip = ({ entities, onActionPress, colors }) => {
+  if (!entities) return null;
   
-  if (!text) return null;
-  
-  // Get all entities for highlighting
-  const allEntities = [
-    ...(entities.phones || []).map(item => ({ type: 'phone', value: item })),
-    ...(entities.emails || []).map(item => ({ type: 'email', value: item })),
-    ...(entities.urls || []).map(item => ({ type: 'url', value: item })),
-    ...(entities.addresses || []).map(item => ({ type: 'address', value: item }))
+  const allItems = [
+    ...(entities.phones || []).map(item => ({ type: 'phone', value: item, icon: 'call' })),
+    ...(entities.emails || []).map(item => ({ type: 'email', value: item, icon: 'mail' })),
+    ...(entities.urls || []).map(item => ({ type: 'url', value: item, icon: 'globe' })),
+    ...(entities.addresses || []).slice(0, 1).map(item => ({ type: 'address', value: item, icon: 'location' }))
   ];
   
-  // Show preview text (first 100 characters)
-  const previewText = text.length > 100 ? text.substring(0, 100) + '...' : text;
+  if (allItems.length === 0) return null;
   
   return (
-    <View style={[styles.fullTextContainer, { backgroundColor: colors.surface }]}>
-      <TouchableOpacity 
-        style={[styles.fullTextHeader, { backgroundColor: colors.primary + '05' }]}
-        onPress={() => setExpanded(!expanded)}
-      >
-        <View style={styles.fullTextTitleContainer}>
-          <Ionicons name="document-text" size={16} color={colors.primary} />
-          <Text style={[styles.fullTextTitle, { color: colors.text }]}>
-            {t('result.fullText')}
-          </Text>
-        </View>
-        <View style={styles.expandButtonContainer}>
-          <Text style={[styles.expandButtonText, { color: colors.primary }]}>
-            {expanded ? t('common.collapse') : t('common.expand')}
-          </Text>
-          <Ionicons 
-            name={expanded ? "chevron-up" : "chevron-down"}
-            size={16}
-            color={colors.primary}
-          />
-        </View>
-      </TouchableOpacity>
-      
-      {!expanded && (
-        <View style={styles.fullTextPreview}>
-          <Text style={[styles.previewText, { color: colors.textSecondary }]} numberOfLines={2}>
-            {previewText}
-          </Text>
-        </View>
-      )}
-      
-      {expanded && (
-        <View style={styles.fullTextContent}>
-          <ScrollView style={styles.textScrollView} showsVerticalScrollIndicator={false}>
-            <Text style={[styles.fullTextBody, { color: colors.text }]}>
-              {text}
+    <View style={[styles.entitiesStrip, { backgroundColor: colors.surface }]}>
+      <ScrollView horizontal showsHorizontalScrollIndicator={false} contentContainerStyle={styles.entitiesContent}>
+        {allItems.map((item, index) => (
+          <TouchableOpacity
+            key={index}
+            style={[styles.entityButton, { backgroundColor: colors.primary + '10' }]}
+            onPress={() => onActionPress(item.type, item.value)}
+          >
+            <Ionicons name={item.icon} size={16} color={colors.primary} />
+            <Text style={[styles.entityButtonText, { color: colors.text }]} numberOfLines={1}>
+              {item.value}
             </Text>
-          </ScrollView>
-          
-          <View style={styles.fullTextActions}>
-            <TouchableOpacity 
-              style={[styles.fullTextAction, { backgroundColor: colors.primary + '10' }]}
-              onPress={() => {
-                Clipboard.setString(text);
-                Toast.show({
-                  type: 'success',
-                  text1: t('common.copied'),
-                  visibilityTime: 2000,
-                });
-              }}
-            >
-              <Ionicons name="copy-outline" size={14} color={colors.primary} />
-              <Text style={[styles.fullTextActionText, { color: colors.primary }]}>
-                {t('common.copy')}
-              </Text>
-            </TouchableOpacity>
-            
-            <TouchableOpacity 
-              style={[styles.fullTextAction, { backgroundColor: colors.primary + '10' }]}
-              onPress={() => Linking.openURL(`mailto:?body=${encodeURIComponent(text)}`)}
-            >
-              <Ionicons name="share-outline" size={14} color={colors.primary} />
-              <Text style={[styles.fullTextActionText, { color: colors.primary }]}>
-                {t('common.share')}
-              </Text>
-            </TouchableOpacity>
-          </View>
-        </View>
-      )}
+          </TouchableOpacity>
+        ))}
+      </ScrollView>
     </View>
   );
 };
@@ -137,183 +78,6 @@ const getEntityColor = (type, colors) => {
   }
 };
 
-// Smart Sections Component
-const SmartSections = ({ entities, fields, onActionPress, colors, isRTL }) => {
-  const { t } = useTranslation();
-  const router = useRouter();
-  
-  // Group entities by type
-  const sections = [];
-  
-  // Add phone section if there are phones
-  if (entities.phones && entities.phones.length > 0) {
-    sections.push({
-      id: 'phones',
-      title: t('result.phoneNumbers'),
-      icon: 'call',
-      items: entities.phones,
-      action: (item) => onActionPress('phone', item)
-    });
-  }
-  
-  // Add email section if there are emails
-  if (entities.emails && entities.emails.length > 0) {
-    sections.push({
-      id: 'emails',
-      title: t('result.emailAddresses'),
-      icon: 'mail',
-      items: entities.emails,
-      action: (item) => onActionPress('email', item)
-    });
-  }
-  
-  // Add address section if there are addresses
-  if (entities.addresses && entities.addresses.length > 0) {
-    sections.push({
-      id: 'addresses',
-      title: t('result.addresses'),
-      icon: 'location',
-      items: entities.addresses,
-      action: (item) => onActionPress('address', item)
-    });
-  }
-  
-  // Add URL section if there are URLs
-  if (entities.urls && entities.urls.length > 0) {
-    sections.push({
-      id: 'urls',
-      title: t('result.websites'),
-      icon: 'globe',
-      items: entities.urls,
-      action: (item) => onActionPress('url', item)
-    });
-  }
-  
-  // Add business info section if available
-  if (entities.businessInfo && 
-     (entities.businessInfo.ratings?.length > 0 || 
-      entities.businessInfo.hours?.length > 0 || 
-      entities.businessInfo.categories?.length > 0)) {
-    
-    const businessItems = [];
-    
-    if (entities.businessInfo.ratings?.length > 0) {
-      businessItems.push({
-        id: 'rating',
-        icon: 'star',
-        text: entities.businessInfo.ratings[0]
-      });
-    }
-    
-    if (entities.businessInfo.hours?.length > 0) {
-      businessItems.push({
-        id: 'hours',
-        icon: 'time',
-        text: entities.businessInfo.hours[0]
-      });
-    }
-    
-    if (entities.businessInfo.categories?.length > 0) {
-      businessItems.push({
-        id: 'category',
-        icon: 'pricetag',
-        text: entities.businessInfo.categories[0]
-      });
-    }
-    
-    sections.push({
-      id: 'business',
-      title: t('result.businessInfo'),
-      icon: 'business',
-      items: businessItems,
-      isBusinessInfo: true
-    });
-  }
-  
-  if (sections.length === 0) return null;
-  
-  return (
-    <View style={styles.smartSectionsContainer}>
-      <ScrollView 
-        horizontal 
-        showsHorizontalScrollIndicator={false}
-        contentContainerStyle={styles.sectionsScrollView}
-      >
-        {sections.map(section => (
-          <View 
-            key={section.id}
-            style={[styles.smartSection, { backgroundColor: colors.surface }]}
-          >
-            <View style={[styles.sectionHeader, { backgroundColor: colors.primary + '08' }]}>
-              <Ionicons name={section.icon} size={16} color={colors.primary} />
-              <Text style={[styles.sectionTitle, { color: colors.text }]}>
-                {section.title}
-              </Text>
-              {section.items.length > 0 && !section.isBusinessInfo && (
-                <View style={[styles.countBadge, { backgroundColor: colors.primary }]}>
-                  <Text style={styles.countBadgeText}>{section.items.length}</Text>
-                </View>
-              )}
-            </View>
-            
-            <View style={styles.sectionContent}>
-              {section.isBusinessInfo ? (
-                // Render business info items
-                section.items.slice(0, 2).map(item => (
-                  <View key={item.id} style={styles.businessInfoItem}>
-                    <Ionicons name={item.icon} size={14} color={colors.primary} style={styles.businessInfoIcon} />
-                    <Text 
-                      style={[styles.businessInfoText, { color: colors.text }]}
-                      numberOfLines={2}
-                    >
-                      {item.text}
-                    </Text>
-                  </View>
-                ))
-              ) : (
-                // Render regular entity items
-                section.items.slice(0, 2).map((item, index) => (
-                  <TouchableOpacity 
-                    key={index}
-                    style={styles.entityItem}
-                    onPress={() => section.action(item)}
-                  >
-                    <Text 
-                      style={[styles.entityItemText, { color: colors.text }]}
-                      numberOfLines={1}
-                    >
-                      {item}
-                    </Text>
-                    <View style={[styles.entityItemAction, { backgroundColor: colors.primary + '15' }]}>
-                      <Ionicons name={section.icon} size={12} color={colors.primary} />
-                    </View>
-                  </TouchableOpacity>
-                ))
-              )}
-              
-              {!section.isBusinessInfo && section.items.length > 2 && (
-                <TouchableOpacity 
-                  style={[styles.viewMoreButton, { borderColor: colors.primary + '30' }]}
-                  onPress={() => {
-                    // Navigate to view all screen for this section type
-                    router.push({
-                      pathname: `/All${section.id.charAt(0).toUpperCase() + section.id.slice(1)}`,
-                      params: { items: JSON.stringify(section.items) }
-                    });
-                  }}
-                >
-                  <Text style={[styles.viewMoreText, { color: colors.primary }]}>
-                    +{section.items.length - 2} {t('common.more')}
-                  </Text>
-                </TouchableOpacity>
-              )}
-            </View>
-          </View>
-        ))}
-      </ScrollView>
-    </View>
-  );
-};
 
 // Entity chip component
 const EntityChip = ({ entity, type, colors, onPress }) => (
@@ -1090,25 +854,12 @@ export default function ResultScreen() {
             </View>
           )}
           
-          {/* Full Text Component - Shows all OCR text with highlighted entities */}
-          {!editing && job.fields && job.fields.content && (
-            <FullTextWithSections 
-              text={job.fields.content}
-              entities={entities || {}}
-              onActionPress={handleEntityAction}
-              colors={colors}
-              isRTL={isRTL}
-            />
-          )}
-          
-          {/* Smart Sections - Shows organized entities */}
+          {/* Simple Entities Strip - Shows key extracted data */}
           {!editing && entities && Object.keys(entities).some(key => entities[key]?.length > 0) && (
-            <SmartSections 
+            <EntitiesStrip 
               entities={entities}
-              fields={fields}
               onActionPress={handleEntityAction}
               colors={colors}
-              isRTL={isRTL}
             />
           )}
 
@@ -1447,185 +1198,29 @@ const styles = StyleSheet.create({
     paddingLeft: 4,
   },
 
-  // Full Text with Smart Sections Styles
-  fullTextContainer: {
+  // Simple Entities Strip Styles
+  entitiesStrip: {
     marginHorizontal: SPACING.medium,
-    marginBottom: SPACING.small,
-    borderRadius: BORDER_RADIUS.medium,
-    overflow: 'hidden',
-  },
-  fullTextHeader: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    justifyContent: 'space-between',
-    paddingHorizontal: SPACING.medium,
-    paddingVertical: SPACING.small,
-    backgroundColor: 'rgba(0,0,0,0.02)',
-  },
-  fullTextTitleContainer: {
-    flexDirection: 'row',
-    alignItems: 'center',
-  },
-  fullTextTitle: {
-    fontSize: 15,
-    fontWeight: '600',
-    marginLeft: SPACING.small,
-  },
-  fullTextPreview: {
-    paddingHorizontal: SPACING.medium,
-    paddingVertical: SPACING.small,
-  },
-  previewText: {
-    fontSize: 14,
-    lineHeight: 18,
-  },
-  expandButtonContainer: {
-    flexDirection: 'row',
-    alignItems: 'center',
-  },
-  expandButtonText: {
-    fontSize: 13,
-    fontWeight: '500',
-    marginRight: 4,
-  },
-  fullTextContent: {
-    padding: SPACING.medium,
-  },
-  textScrollView: {
-    maxHeight: 150,
-    marginBottom: SPACING.small,
-  },
-  fullTextBody: {
-    fontSize: 14,
-    lineHeight: 20,
-  },
-  textContainer: {
-    flexDirection: 'row',
-    flexWrap: 'wrap',
-    lineHeight: 20,
-  },
-  fullTextActions: {
-    flexDirection: 'row',
-    marginTop: SPACING.small,
-    paddingTop: SPACING.small,
-    borderTopWidth: 1,
-    borderTopColor: 'rgba(0,0,0,0.05)',
-  },
-  fullTextAction: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    paddingHorizontal: 10,
-    paddingVertical: 6,
-    borderRadius: 12,
-    marginRight: 8,
-  },
-  fullTextActionText: {
-    fontSize: 13,
-    fontWeight: '500',
-    marginLeft: 4,
-  },
-  highlightedEntity: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    paddingHorizontal: 6,
-    paddingVertical: 2,
-    borderRadius: 6,
-    margin: 1,
-  },
-  entityIcon: {
-    marginRight: 3,
-  },
-  entityText: {
-    fontSize: 14,
-    fontWeight: '500',
-  },
-  
-  // Smart Sections Styles - Horizontal scroll design
-  smartSectionsContainer: {
     marginBottom: SPACING.medium,
-  },
-  sectionsScrollView: {
-    paddingLeft: SPACING.medium,
-  },
-  smartSection: {
-    width: 280,
-    marginRight: SPACING.medium,
     borderRadius: BORDER_RADIUS.medium,
-    overflow: 'hidden',
+    paddingVertical: SPACING.small,
   },
-  sectionHeader: {
+  entitiesContent: {
+    paddingHorizontal: SPACING.medium,
+  },
+  entityButton: {
     flexDirection: 'row',
     alignItems: 'center',
     paddingHorizontal: SPACING.medium,
     paddingVertical: SPACING.small,
-    backgroundColor: 'rgba(0,0,0,0.02)',
+    borderRadius: BORDER_RADIUS.medium,
+    marginRight: SPACING.small,
+    maxWidth: 200,
   },
-  sectionTitle: {
-    fontSize: 15,
-    fontWeight: '600',
+  entityButtonText: {
+    fontSize: 14,
     marginLeft: SPACING.small,
     flex: 1,
-  },
-  sectionContent: {
-    padding: SPACING.medium,
-  },
-  entityItem: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    justifyContent: 'space-between',
-    paddingVertical: SPACING.small,
-    marginBottom: SPACING.small,
-  },
-  entityItemText: {
-    fontSize: 14,
-    flex: 1,
-    marginRight: SPACING.small,
-  },
-  entityItemAction: {
-    width: 32,
-    height: 32,
-    borderRadius: 16,
-    alignItems: 'center',
-    justifyContent: 'center',
-  },
-  viewMoreButton: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    justifyContent: 'center',
-    marginTop: SPACING.small,
-    paddingVertical: 8,
-    borderRadius: BORDER_RADIUS.small,
-    borderWidth: 1,
-  },
-  viewMoreText: {
-    fontSize: 13,
-    fontWeight: '500',
-    marginRight: SPACING.small,
-  },
-  businessInfoItem: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    marginBottom: SPACING.small,
-  },
-  businessInfoIcon: {
-    marginRight: SPACING.small,
-  },
-  businessInfoText: {
-    fontSize: 14,
-    flex: 1,
-  },
-  countBadge: {
-    minWidth: 20,
-    height: 20,
-    borderRadius: 10,
-    alignItems: 'center',
-    justifyContent: 'center',
-    paddingHorizontal: 6,
-  },
-  countBadgeText: {
-    fontSize: 12,
-    fontWeight: '600',
-    color: 'white',
   },
   
   // Action Button
