@@ -225,21 +225,13 @@ class VisionService {
     
     // Process each text block
     allText.forEach(text => {
-      // Extract phone numbers - simplified to avoid regex stack depth issues
-      let phoneMatches = text.match(/\+?[0-9]{7,15}/g);
-      // Also allow short unified numbers like '2046' when context suggests it
-      if (!phoneMatches || phoneMatches.length === 0) {
-        const unifiedIndicators = /(الرقم\s*الموحد|Unified\s*Number|Call|للاستفسار)/i;
-        const shortMatches = text.match(/\b\d{3,6}\b/g);
-        if (unifiedIndicators.test(text) && shortMatches) {
-          phoneMatches = shortMatches;
-        }
-      }
+      // Extract phone numbers – capture full formatted numbers with spaces/dashes/parentheses
+      const phoneMatches = text.match(/(?:\+?\d[\d\s\-()]{6,}\d)/g);
       if (phoneMatches) {
-        phoneMatches.forEach(phone => {
-          // Only add if it looks like a valid phone (at least 7 digits)
-          if (phone.replace(/\D/g, '').length >= 7 || /\b\d{3,6}\b/.test(phone)) {
-            structuredData.phoneNumbers.push(phone.trim());
+        phoneMatches.forEach(raw => {
+          const digits = raw.replace(/\D/g, '');
+          if (digits.length >= 7) {
+            structuredData.phoneNumbers.push(raw.trim());
           }
         });
       }

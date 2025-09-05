@@ -459,35 +459,27 @@ async function processJobAsync(job, imageBuffer, wantThumb, uiLang) {
     job.classification = classification;
     job.detectedTypes = classification.detectedTypes || [];
     
-    // Merge AI-detected entities with OCR-detected entities
-    if (!job.entities) {
-      job.entities = classification.entities || {
-        phones: [],
-        emails: [],
-        urls: [],
-        dates: [],
-        amounts: [],
-        addresses: []
-      };
-    } else if (classification.entities) {
-      // Add AI-detected entities
-      job.entities.dates = classification.entities.dates || [];
-      job.entities.amounts = classification.entities.amounts || [];
-      
-      // Add any additional phones/emails/urls detected by AI
-      if (classification.entities.phones) {
-        job.entities.phones = [...new Set([...job.entities.phones, ...classification.entities.phones])];
-      }
-      if (classification.entities.emails) {
-        job.entities.emails = [...new Set([...job.entities.emails, ...classification.entities.emails])];
-      }
-      if (classification.entities.urls) {
-        job.entities.urls = [...new Set([...job.entities.urls, ...classification.entities.urls])];
-      }
-      if (classification.entities.addresses) {
-        job.entities.addresses = [...new Set([...job.entities.addresses, ...classification.entities.addresses])];
-      }
-    }
+    // Prefer AI entities; fallback to Vision
+    const visionPhones = (job.entities?.phones || []).filter(p => (p || '').replace(/\D/g, '').length >= 7);
+    const aiPhones = (classification.entities?.phones || []);
+    const visionEmails = job.entities?.emails || [];
+    const aiEmails = classification.entities?.emails || [];
+    const visionUrls = job.entities?.urls || [];
+    const aiUrls = classification.entities?.urls || [];
+    const visionAddresses = job.entities?.addresses || [];
+    const aiAddresses = classification.entities?.addresses || [];
+
+    job.entities = {
+      phones: [...new Set([...(aiPhones || []), ...visionPhones])],
+      emails: [...new Set([...(aiEmails || []), ...visionEmails])],
+      urls:   [...new Set([...(aiUrls || []), ...visionUrls])],
+      dates:  classification.entities?.dates || job.entities?.dates || [],
+      amounts: classification.entities?.amounts || job.entities?.amounts || [],
+      addresses: [...new Set([...(aiAddresses || []), ...visionAddresses])],
+      businessInfo: job.entities?.businessInfo || {}
+    };
+
+    console.log(`Job ${job.jobId}: Final phones:`, JSON.stringify(job.entities.phones));
 
 
     // Split text into blocks if not already done
