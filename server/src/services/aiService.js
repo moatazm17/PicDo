@@ -175,6 +175,7 @@ JSON OUTPUT:
   "fields": {
     "title": "exact_title_or_null",
     "content": "full_ocr_text",
+    "category": "business|travel|personal|receipt|etc",
     "name": "business_or_person_name",
     "phone": "main_phone",
     "email": "main_email", 
@@ -237,9 +238,11 @@ Be simple. Extract what you see. Don't be smart.`;
       }];
     }
     
-    // Extract entities from the content
-    const content = classification.fields.content || '';
-    classification.entities = this.extractEntities(content);
+    // Use AI-extracted entities if present, otherwise fallback to regex
+    if (!classification.entities) {
+      const content = classification.fields.content || '';
+      classification.entities = this.extractEntities(content);
+    }
     
     // Split content into blocks
     classification.textBlocks = this.splitTextBlocks(content);
@@ -271,9 +274,10 @@ Be simple. Extract what you see. Don't be smart.`;
       throw new Error('fields.title must be a non-empty string or null');
     }
     
-    // Category must be present
-    if (typeof classification.fields.category !== 'string' || classification.fields.category.trim() === '') {
-      throw new Error('fields.category must be a non-empty string');
+    // Category can be null for simple extractions
+    if (classification.fields.category !== null && 
+        (typeof classification.fields.category !== 'string' || classification.fields.category.trim() === '')) {
+      classification.fields.category = null;
     }
     
     // Confidence must be a number between 0 and 1
