@@ -8,33 +8,35 @@ import { useTranslation } from 'react-i18next';
 import { useTheme } from '../src/contexts/ThemeContext';
 import { SPACING, BORDER_RADIUS } from '../src/constants/config';
 
-export default function AllPhonesScreen() {
+export default function AllAddressesScreen() {
   const { t } = useTranslation();
   const { colors } = useTheme();
   const router = useRouter();
   const params = useLocalSearchParams();
   
-  // Get all phone numbers from route params
-  const phones = params.items ? JSON.parse(params.items) : [];
+  // Get all addresses from route params
+  const addresses = params.items ? JSON.parse(params.items) : [];
   
-  const handleCall = (phone) => {
+  const handleOpenMaps = (address) => {
     try {
-      Linking.openURL(`tel:${phone}`);
+      Linking.openURL(`https://maps.google.com/?q=${encodeURIComponent(address)}`);
     } catch (error) {
-      console.error('Error making call:', error);
+      console.error('Error opening maps:', error);
     }
   };
   
   const renderItem = ({ item }) => (
     <TouchableOpacity 
-      style={[styles.phoneItem, { backgroundColor: colors.surface }]}
-      onPress={() => handleCall(item)}
+      style={[styles.addressItem, { backgroundColor: colors.surface }]}
+      onPress={() => handleOpenMaps(item)}
     >
-      <View style={styles.phoneInfo}>
-        <Text style={[styles.phoneNumber, { color: colors.text }]}>{item}</Text>
+      <View style={styles.addressInfo}>
+        <Text style={[styles.addressText, { color: colors.text }]} numberOfLines={2}>
+          {item}
+        </Text>
       </View>
-      <View style={[styles.callButton, { backgroundColor: colors.primary + '15' }]}>
-        <Ionicons name="call" size={20} color={colors.primary} />
+      <View style={[styles.mapButton, { backgroundColor: colors.primary + '15' }]}>
+        <Ionicons name="location" size={20} color={colors.primary} />
       </View>
     </TouchableOpacity>
   );
@@ -49,15 +51,15 @@ export default function AllPhonesScreen() {
           <Ionicons name="arrow-back" size={24} color={colors.text} />
         </TouchableOpacity>
         <Text style={[styles.headerTitle, { color: colors.text }]}>
-          {t('result.allPhoneNumbers')}
+          {t('result.allAddresses')}
         </Text>
         <View style={styles.placeholder} />
       </View>
       
       <FlatList
-        data={phones}
+        data={addresses}
         renderItem={renderItem}
-        keyExtractor={(item, index) => `phone-${index}`}
+        keyExtractor={(item, index) => `address-${index}`}
         contentContainerStyle={styles.listContent}
         ListEmptyComponent={
           <View style={styles.emptyContainer}>
@@ -96,7 +98,7 @@ const styles = StyleSheet.create({
   listContent: {
     padding: SPACING.medium,
   },
-  phoneItem: {
+  addressItem: {
     flexDirection: 'row',
     alignItems: 'center',
     justifyContent: 'space-between',
@@ -109,14 +111,15 @@ const styles = StyleSheet.create({
     shadowRadius: 2,
     elevation: 1,
   },
-  phoneInfo: {
+  addressInfo: {
     flex: 1,
+    marginRight: SPACING.small,
   },
-  phoneNumber: {
+  addressText: {
     fontSize: 16,
     fontWeight: '500',
   },
-  callButton: {
+  mapButton: {
     width: 40,
     height: 40,
     borderRadius: 20,

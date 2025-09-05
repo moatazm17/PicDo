@@ -34,6 +34,306 @@ import { extractEntities, splitTextBlocks, getEntityIcon, getEntityAction } from
 
 const { width, height } = Dimensions.get('window');
 
+// Full Text with Smart Sections UI Component
+const FullTextWithSections = ({ text, entities, onActionPress, colors, isRTL }) => {
+  const { t } = useTranslation();
+  const [expanded, setExpanded] = useState(true);
+  
+  if (!text) return null;
+  
+  // Get all entities for highlighting
+  const allEntities = [
+    ...(entities.phones || []).map(item => ({ type: 'phone', value: item })),
+    ...(entities.emails || []).map(item => ({ type: 'email', value: item })),
+    ...(entities.urls || []).map(item => ({ type: 'url', value: item })),
+    ...(entities.addresses || []).map(item => ({ type: 'address', value: item }))
+  ];
+  
+  // Highlight entities in text
+  const highlightEntities = (text) => {
+    if (!text || allEntities.length === 0) return text;
+    
+    // Sort entities by length (longest first) to avoid nested highlights
+    const sortedEntities = [...allEntities].sort((a, b) => b.value.length - a.value.length);
+    
+    let result = text;
+    sortedEntities.forEach(entity => {
+      if (result.includes(entity.value)) {
+        const parts = result.split(entity.value);
+        result = parts.join(`[${entity.type}:${entity.value}]`);
+      }
+    });
+    
+    return result;
+  };
+  
+  // Render highlighted text
+  const renderHighlightedText = () => {
+    const highlightedText = highlightEntities(text);
+    const parts = highlightedText.split(/\[([^:]+):([^\]]+)\]/);
+    
+    const elements = [];
+    for (let i = 0; i < parts.length; i += 3) {
+      // Add regular text
+      if (parts[i]) {
+        elements.push(
+          <Text key={`text-${i}`} style={[styles.fullTextContent, { color: colors.text }]}>
+            {parts[i]}
+          </Text>
+        );
+      }
+      
+      // Add highlighted entity
+      if (parts[i + 1] && parts[i + 2]) {
+        const type = parts[i + 1];
+        const value = parts[i + 2];
+        
+        elements.push(
+          <TouchableOpacity
+            key={`entity-${i}`}
+            style={[styles.highlightedEntity, { backgroundColor: getEntityColor(type, colors) }]}
+            onPress={() => onActionPress(type, value)}
+          >
+            <Ionicons name={getEntityIcon(type)} size={14} color={colors.primary} style={styles.entityIcon} />
+            <Text style={[styles.entityText, { color: colors.text }]}>
+              {value}
+            </Text>
+          </TouchableOpacity>
+        );
+      }
+    }
+    
+    return elements;
+  };
+  
+  return (
+    <View style={[styles.fullTextContainer, { backgroundColor: colors.surface }]}>
+      <TouchableOpacity 
+        style={styles.fullTextHeader}
+        onPress={() => setExpanded(!expanded)}
+      >
+        <View style={styles.fullTextTitleContainer}>
+          <Ionicons name="document-text" size={18} color={colors.primary} />
+          <Text style={[styles.fullTextTitle, { color: colors.text }]}>
+            {t('result.fullText')}
+          </Text>
+        </View>
+        <Ionicons 
+          name={expanded ? "chevron-up" : "chevron-down"}
+          size={20}
+          color={colors.textSecondary}
+        />
+      </TouchableOpacity>
+      
+      {expanded && (
+        <View style={styles.fullTextContent}>
+          <View style={styles.textContainer}>
+            {renderHighlightedText()}
+          </View>
+          
+          <View style={styles.fullTextActions}>
+            <TouchableOpacity 
+              style={[styles.fullTextAction, { backgroundColor: colors.primary + '15' }]}
+              onPress={() => Clipboard.setString(text)}
+            >
+              <Ionicons name="copy" size={16} color={colors.primary} />
+              <Text style={[styles.fullTextActionText, { color: colors.primary }]}>
+                {t('common.copy')}
+              </Text>
+            </TouchableOpacity>
+            
+            <TouchableOpacity 
+              style={[styles.fullTextAction, { backgroundColor: colors.primary + '15' }]}
+              onPress={() => Linking.openURL(`mailto:?body=${encodeURIComponent(text)}`)}
+            >
+              <Ionicons name="share" size={16} color={colors.primary} />
+              <Text style={[styles.fullTextActionText, { color: colors.primary }]}>
+                {t('common.share')}
+              </Text>
+            </TouchableOpacity>
+          </View>
+        </View>
+      )}
+    </View>
+  );
+};
+
+// Helper function to get entity color
+const getEntityColor = (type, colors) => {
+  switch (type) {
+    case 'phone': return colors.primary + '15';
+    case 'email': return colors.success + '15';
+    case 'url': return colors.info + '15';
+    case 'address': return colors.warning + '15';
+    default: return colors.primary + '10';
+  }
+};
+
+// Smart Sections Component
+const SmartSections = ({ entities, fields, onActionPress, colors, isRTL }) => {
+  const { t } = useTranslation();
+  const router = useRouter();
+  
+  // Group entities by type
+  const sections = [];
+  
+  // Add phone section if there are phones
+  if (entities.phones && entities.phones.length > 0) {
+    sections.push({
+      id: 'phones',
+      title: t('result.phoneNumbers'),
+      icon: 'call',
+      items: entities.phones,
+      action: (item) => onActionPress('phone', item)
+    });
+  }
+  
+  // Add email section if there are emails
+  if (entities.emails && entities.emails.length > 0) {
+    sections.push({
+      id: 'emails',
+      title: t('result.emailAddresses'),
+      icon: 'mail',
+      items: entities.emails,
+      action: (item) => onActionPress('email', item)
+    });
+  }
+  
+  // Add address section if there are addresses
+  if (entities.addresses && entities.addresses.length > 0) {
+    sections.push({
+      id: 'addresses',
+      title: t('result.addresses'),
+      icon: 'location',
+      items: entities.addresses,
+      action: (item) => onActionPress('address', item)
+    });
+  }
+  
+  // Add URL section if there are URLs
+  if (entities.urls && entities.urls.length > 0) {
+    sections.push({
+      id: 'urls',
+      title: t('result.websites'),
+      icon: 'globe',
+      items: entities.urls,
+      action: (item) => onActionPress('url', item)
+    });
+  }
+  
+  // Add business info section if available
+  if (entities.businessInfo && 
+     (entities.businessInfo.ratings?.length > 0 || 
+      entities.businessInfo.hours?.length > 0 || 
+      entities.businessInfo.categories?.length > 0)) {
+    
+    const businessItems = [];
+    
+    if (entities.businessInfo.ratings?.length > 0) {
+      businessItems.push({
+        id: 'rating',
+        icon: 'star',
+        text: entities.businessInfo.ratings[0]
+      });
+    }
+    
+    if (entities.businessInfo.hours?.length > 0) {
+      businessItems.push({
+        id: 'hours',
+        icon: 'time',
+        text: entities.businessInfo.hours[0]
+      });
+    }
+    
+    if (entities.businessInfo.categories?.length > 0) {
+      businessItems.push({
+        id: 'category',
+        icon: 'pricetag',
+        text: entities.businessInfo.categories[0]
+      });
+    }
+    
+    sections.push({
+      id: 'business',
+      title: t('result.businessInfo'),
+      icon: 'business',
+      items: businessItems,
+      isBusinessInfo: true
+    });
+  }
+  
+  if (sections.length === 0) return null;
+  
+  return (
+    <View style={styles.smartSectionsContainer}>
+      {sections.map(section => (
+        <View 
+          key={section.id}
+          style={[styles.smartSection, { backgroundColor: colors.surface }]}
+        >
+          <View style={styles.sectionHeader}>
+            <Ionicons name={section.icon} size={18} color={colors.primary} />
+            <Text style={[styles.sectionTitle, { color: colors.text }]}>
+              {section.title} {section.items.length > 0 && !section.isBusinessInfo && `(${section.items.length})`}
+            </Text>
+          </View>
+          
+          <View style={styles.sectionContent}>
+            {section.isBusinessInfo ? (
+              // Render business info items
+              section.items.map(item => (
+                <View key={item.id} style={styles.businessInfoItem}>
+                  <Ionicons name={item.icon} size={16} color={colors.primary} style={styles.businessInfoIcon} />
+                  <Text style={[styles.businessInfoText, { color: colors.text }]}>
+                    {item.text}
+                  </Text>
+                </View>
+              ))
+            ) : (
+              // Render regular entity items
+              section.items.slice(0, 3).map((item, index) => (
+                <TouchableOpacity 
+                  key={index}
+                  style={styles.entityItem}
+                  onPress={() => section.action(item)}
+                >
+                  <Text 
+                    style={[styles.entityItemText, { color: colors.text }]}
+                    numberOfLines={2}
+                  >
+                    {item}
+                  </Text>
+                  <View style={[styles.entityItemAction, { backgroundColor: colors.primary + '15' }]}>
+                    <Ionicons name={section.icon} size={14} color={colors.primary} />
+                  </View>
+                </TouchableOpacity>
+              ))
+            )}
+            
+            {!section.isBusinessInfo && section.items.length > 3 && (
+              <TouchableOpacity 
+                style={[styles.viewMoreButton, { borderColor: colors.primary }]}
+                onPress={() => {
+                  // Navigate to view all screen for this section type
+                  router.push({
+                    pathname: `/All${section.id.charAt(0).toUpperCase() + section.id.slice(1)}`,
+                    params: { items: section.items }
+                  });
+                }}
+              >
+                <Text style={[styles.viewMoreText, { color: colors.primary }]}>
+                  {t('common.viewAll')} ({section.items.length})
+                </Text>
+                <Ionicons name="chevron-forward" size={16} color={colors.primary} />
+              </TouchableOpacity>
+            )}
+          </View>
+        </View>
+      ))}
+    </View>
+  );
+};
+
 // Entity chip component
 const EntityChip = ({ entity, type, colors, onPress }) => (
   <TouchableOpacity 
@@ -339,7 +639,7 @@ export default function ResultScreen() {
       // Don't go back immediately on error - let user retry
       setTimeout(() => {
         if (loading) return; // Don't auto-back if retry succeeded
-        router.back();
+      router.back();
       }, 4000);
     } finally {
       setLoading(false);
@@ -355,12 +655,12 @@ export default function ResultScreen() {
       // Update the job on the server with new field values
       await apiService.updateJob(job.jobId, { fields });
       
-      setJob(prev => ({ ...prev, fields }));
-      setEditing(false);
+    setJob(prev => ({ ...prev, fields }));
+    setEditing(false);
       
-      Toast.show({
-        type: 'success',
-        text1: t('common.success'),
+    Toast.show({
+      type: 'success',
+      text1: t('common.success'),
         text2: t('result.fieldsSaved'),
       });
     } catch (error) {
@@ -379,12 +679,49 @@ export default function ResultScreen() {
     }
   };
 
+  // Handle entity action
+  const handleEntityAction = (type, value) => {
+    try {
+      switch (type) {
+        case 'phone':
+          Linking.openURL(`tel:${value}`);
+          break;
+        case 'email':
+          Linking.openURL(`mailto:${value}`);
+          break;
+        case 'url':
+          Linking.openURL(value.startsWith('http') ? value : `https://${value}`);
+          break;
+        case 'address':
+          Linking.openURL(`https://maps.google.com/?q=${encodeURIComponent(value)}`);
+          break;
+        default:
+          Clipboard.setString(value);
+          Toast.show({
+            type: 'success',
+            text1: t('common.copied'),
+            visibilityTime: 2000,
+          });
+      }
+    } catch (error) {
+      console.error('Error handling entity action:', error);
+      Toast.show({
+        type: 'error',
+        text1: t('common.error'),
+        text2: error.message,
+      });
+    }
+  };
+
   const handleAction = async () => {
     try {
       setActionLoading(true);
       
       let actionType;
-      switch (job.type) {
+      // Use the selected type if available, otherwise use job.type
+      const typeToUse = selectedType ? selectedType.type : job.type;
+      
+      switch (typeToUse) {
         case 'event':
           actionType = 'calendar';
           break;
@@ -486,22 +823,22 @@ export default function ResultScreen() {
             />
             <View style={styles.fieldRow}>
               <View style={styles.fieldHalf}>
-                <FieldInput
-                  label={t('fields.date')}
-                  value={fields.date || ''}
-                  onChangeText={(value) => handleFieldChange('date', value)}
-                  colors={colors}
-                  isRTL={isRTL}
-                />
+            <FieldInput
+              label={t('fields.date')}
+              value={fields.date || ''}
+              onChangeText={(value) => handleFieldChange('date', value)}
+              colors={colors}
+              isRTL={isRTL}
+            />
               </View>
               <View style={styles.fieldHalf}>
-                <FieldInput
-                  label={t('fields.time')}
-                  value={fields.time || ''}
-                  onChangeText={(value) => handleFieldChange('time', value)}
-                  colors={colors}
-                  isRTL={isRTL}
-                />
+            <FieldInput
+              label={t('fields.time')}
+              value={fields.time || ''}
+              onChangeText={(value) => handleFieldChange('time', value)}
+              colors={colors}
+              isRTL={isRTL}
+            />
               </View>
             </View>
             <FieldInput
@@ -528,23 +865,23 @@ export default function ResultScreen() {
             />
             <View style={styles.fieldRow}>
               <View style={styles.fieldHalf}>
-                <FieldInput
-                  label={t('fields.amount')}
-                  value={fields.amount?.toString() || ''}
-                  onChangeText={(value) => handleFieldChange('amount', parseFloat(value) || 0)}
-                  keyboardType="numeric"
-                  colors={colors}
-                  isRTL={isRTL}
-                />
+            <FieldInput
+              label={t('fields.amount')}
+              value={fields.amount?.toString() || ''}
+              onChangeText={(value) => handleFieldChange('amount', parseFloat(value) || 0)}
+              keyboardType="numeric"
+              colors={colors}
+              isRTL={isRTL}
+            />
               </View>
               <View style={styles.fieldHalf}>
-                <FieldInput
-                  label={t('fields.currency')}
-                  value={fields.currency || ''}
-                  onChangeText={(value) => handleFieldChange('currency', value)}
-                  colors={colors}
-                  isRTL={isRTL}
-                />
+            <FieldInput
+              label={t('fields.currency')}
+              value={fields.currency || ''}
+              onChangeText={(value) => handleFieldChange('currency', value)}
+              colors={colors}
+              isRTL={isRTL}
+            />
               </View>
             </View>
             <FieldInput
@@ -604,7 +941,7 @@ export default function ResultScreen() {
           </>
         );
         
-              case 'note':
+      case 'note':
         return (
           <>
             <FieldInput
@@ -735,7 +1072,7 @@ export default function ResultScreen() {
         </TouchableOpacity>
       </View>
 
-      <KeyboardAvoidingView
+      <KeyboardAvoidingView 
         behavior={Platform.OS === 'ios' ? 'padding' : 'height'}
         style={styles.keyboardView}
       >
@@ -752,8 +1089,8 @@ export default function ResultScreen() {
               onPress={() => setShowFullImage(true)}
               activeOpacity={0.95}
             >
-              <Image
-                source={{ uri: `data:image/jpeg;base64,${job.thumb}` }}
+            <Image
+              source={{ uri: `data:image/jpeg;base64,${job.thumb}` }}
                 style={styles.image}
                 resizeMode="contain"
               />
@@ -785,7 +1122,7 @@ export default function ResultScreen() {
                 {job.detectedTypes.map((detectedType, index) => {
                   const isSelected = selectedType ? selectedType.type === detectedType.type : job.type === detectedType.type;
                   return (
-                    <TouchableOpacity
+            <TouchableOpacity
                       key={index}
                       style={[
                         styles.typeOption,
@@ -814,7 +1151,7 @@ export default function ResultScreen() {
                         { color: isSelected ? 'white' : colors.text }
                       ]}>
                         {t(`types.${detectedType.type}`)}
-                      </Text>
+              </Text>
                       {detectedType.confidence && (
                         <Text style={[
                           styles.typeConfidence,
@@ -823,11 +1160,11 @@ export default function ResultScreen() {
                           {Math.round(detectedType.confidence * 100)}%
                         </Text>
                       )}
-                    </TouchableOpacity>
+            </TouchableOpacity>
                   );
                 })}
               </ScrollView>
-            </View>
+          </View>
           )}
 
           {/* Data Card */}
@@ -842,13 +1179,13 @@ export default function ResultScreen() {
                 />
                 <Text style={[styles.editBadgeText, { color: editing ? colors.success : colors.primary }]}>
                   {editing ? 'Editing' : 'View Only'}
-                </Text>
+            </Text>
               </View>
-            </View>
-            
-            <View style={styles.fieldsContainer}>
-              {renderFields()}
-            </View>
+          </View>
+
+          <View style={styles.fieldsContainer}>
+            {renderFields()}
+          </View>
           </View>
 
           {/* Bottom Spacing */}
@@ -872,21 +1209,21 @@ export default function ResultScreen() {
             <LinearGradient
               colors={[colors.primary, colors.primary + 'DD']}
               style={styles.actionGradient}
-            >
-              {actionLoading ? (
+          >
+            {actionLoading ? (
                 <Text style={styles.actionText}>{t('common.loading')}</Text>
-              ) : (
+            ) : (
                 <View style={styles.actionContent}>
-                  <Ionicons
+                <Ionicons
                     name={editing ? "checkmark-circle" : getTypeIcon(job.type)}
-                    size={24}
-                    color="white"
-                  />
+                  size={24}
+                  color="white"
+                />
                   <Text style={styles.actionText}>
-                    {editing ? t('common.save') : getActionText(job.type)}
-                  </Text>
+                  {editing ? t('common.save') : getActionText(job.type)}
+                </Text>
                 </View>
-              )}
+            )}
             </LinearGradient>
           </TouchableOpacity>
         </View>
@@ -1107,6 +1444,149 @@ const styles = StyleSheet.create({
     paddingLeft: 4,
   },
 
+  // Full Text with Smart Sections Styles
+  fullTextContainer: {
+    marginHorizontal: SPACING.medium,
+    marginBottom: SPACING.medium,
+    borderRadius: BORDER_RADIUS.large,
+    shadowColor: '#000',
+    shadowOffset: { width: 0, height: 2 },
+    shadowOpacity: 0.05,
+    shadowRadius: 8,
+    elevation: 2,
+  },
+  fullTextHeader: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    justifyContent: 'space-between',
+    padding: SPACING.medium,
+    borderBottomWidth: 1,
+    borderBottomColor: 'rgba(0,0,0,0.05)',
+  },
+  fullTextTitleContainer: {
+    flexDirection: 'row',
+    alignItems: 'center',
+  },
+  fullTextTitle: {
+    fontSize: 16,
+    fontWeight: '600',
+    marginLeft: SPACING.small,
+  },
+  fullTextContent: {
+    padding: SPACING.medium,
+  },
+  textContainer: {
+    flexDirection: 'row',
+    flexWrap: 'wrap',
+  },
+  fullTextActions: {
+    flexDirection: 'row',
+    marginTop: SPACING.medium,
+  },
+  fullTextAction: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    paddingHorizontal: 12,
+    paddingVertical: 8,
+    borderRadius: 16,
+    marginRight: 8,
+  },
+  fullTextActionText: {
+    fontSize: 14,
+    fontWeight: '500',
+    marginLeft: 6,
+  },
+  highlightedEntity: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    paddingHorizontal: 8,
+    paddingVertical: 4,
+    borderRadius: 8,
+    margin: 2,
+  },
+  entityIcon: {
+    marginRight: 4,
+  },
+  entityText: {
+    fontSize: 14,
+  },
+  
+  // Smart Sections Styles
+  smartSectionsContainer: {
+    marginBottom: SPACING.medium,
+  },
+  smartSection: {
+    marginHorizontal: SPACING.medium,
+    marginBottom: SPACING.medium,
+    borderRadius: BORDER_RADIUS.large,
+    shadowColor: '#000',
+    shadowOffset: { width: 0, height: 2 },
+    shadowOpacity: 0.05,
+    shadowRadius: 8,
+    elevation: 2,
+  },
+  sectionHeader: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    padding: SPACING.medium,
+    borderBottomWidth: 1,
+    borderBottomColor: 'rgba(0,0,0,0.05)',
+  },
+  sectionTitle: {
+    fontSize: 16,
+    fontWeight: '600',
+    marginLeft: SPACING.small,
+  },
+  sectionContent: {
+    padding: SPACING.medium,
+  },
+  entityItem: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    justifyContent: 'space-between',
+    paddingVertical: SPACING.small,
+    borderBottomWidth: 1,
+    borderBottomColor: 'rgba(0,0,0,0.05)',
+  },
+  entityItemText: {
+    fontSize: 14,
+    flex: 1,
+    marginRight: SPACING.small,
+  },
+  entityItemAction: {
+    width: 28,
+    height: 28,
+    borderRadius: 14,
+    alignItems: 'center',
+    justifyContent: 'center',
+  },
+  viewMoreButton: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    justifyContent: 'center',
+    marginTop: SPACING.medium,
+    paddingVertical: SPACING.small,
+    borderRadius: BORDER_RADIUS.medium,
+    borderWidth: 1,
+  },
+  viewMoreText: {
+    fontSize: 14,
+    fontWeight: '500',
+    marginRight: SPACING.small,
+  },
+  businessInfoItem: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    marginBottom: SPACING.small,
+  },
+  businessInfoIcon: {
+    marginRight: SPACING.small,
+  },
+  businessInfoText: {
+    fontSize: 14,
+    flex: 1,
+  },
+  
   // Action Button
   actionContainer: {
     paddingHorizontal: 20,
