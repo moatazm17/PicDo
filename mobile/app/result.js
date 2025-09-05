@@ -173,6 +173,7 @@ const DataCards = ({ entities, onActionPress, colors }) => {
   
   // Address cards - handle both simple array and enhanced object format
   const addresses = entities.addresses || [];
+  const addressObjects = entities.addressObjects || [];
   addresses.forEach((address, index) => {
     // Handle both string format and enhanced object format
     const fullAddress = typeof address === 'string' ? address : address.fullAddress || address;
@@ -207,6 +208,114 @@ const DataCards = ({ entities, onActionPress, colors }) => {
           <Ionicons name="map" size={18} color="white" />
           <Text style={styles.cardActionText}>
             {t('result.openInMaps')}
+          </Text>
+        </TouchableOpacity>
+      </View>
+    );
+  });
+  // Prefer refined address objects if present
+  addressObjects.forEach((addr, index) => {
+    cards.push(
+      <View key={`addrObj-${index}`} style={[styles.dataCard, { backgroundColor: colors.surface }]}> 
+        <View style={styles.cardHeader}>
+          <View style={[styles.cardIconContainer, { backgroundColor: '#FF9800' + '20' }]}>
+            <Ionicons name="location" size={22} color="#FF9800" />
+          </View>
+          <View style={styles.cardTitleContainer}>
+            <Text style={[styles.cardTitle, { color: colors.text }]}>
+              {t('result.address')} {addr.isMainLocation ? '(Main)' : ''}
+            </Text>
+            {!!addr.businessContext && (
+              <Text style={[styles.cardSubtitle, { color: colors.textSecondary }]}>
+                {addr.businessContext}
+              </Text>
+            )}
+          </View>
+        </View>
+        <Text style={[styles.cardValue, { color: colors.text }]} numberOfLines={3}>
+          {addr.fullAddress}
+        </Text>
+        <TouchableOpacity 
+          style={[styles.cardAction, { backgroundColor: '#FF9800' }]}
+          onPress={() => onActionPress('address', addr.fullAddress)}
+          activeOpacity={0.8}
+        >
+          <Ionicons name="map" size={18} color="white" />
+          <Text style={styles.cardActionText}>
+            {t('result.openInMaps')}
+          </Text>
+        </TouchableOpacity>
+      </View>
+    );
+  });
+
+  // Expense cards
+  const expenses = entities.expenses || [];
+  expenses.forEach((exp, idx) => {
+    cards.push(
+      <View key={`expense-${idx}`} style={[styles.dataCard, { backgroundColor: colors.surface }]}> 
+        <View style={styles.cardHeader}>
+          <View style={[styles.cardIconContainer, { backgroundColor: '#8E44AD' + '20' }]}>
+            <Ionicons name="card" size={22} color="#8E44AD" />
+          </View>
+          <View style={styles.cardTitleContainer}>
+            <Text style={[styles.cardTitle, { color: colors.text }]}> {t('result.expense')}
+            </Text>
+            {!!exp.merchant && (
+              <Text style={[styles.cardSubtitle, { color: colors.textSecondary }]}>
+                {exp.merchant}
+              </Text>
+            )}
+          </View>
+        </View>
+        <Text style={[styles.cardValue, { color: colors.text }]}>
+          {exp.amount ? `${exp.amount} ${exp.currency || ''}` : ''} {exp.date ? `• ${exp.date}` : ''}
+        </Text>
+        <TouchableOpacity 
+          style={[styles.cardAction, { backgroundColor: '#8E44AD' }]}
+          onPress={() => onActionPress('expense', exp)}
+          activeOpacity={0.8}
+        >
+          <Ionicons name="checkmark-circle" size={18} color="white" />
+          <Text style={styles.cardActionText}>
+            {t('result.saveAsExpense')}
+          </Text>
+        </TouchableOpacity>
+      </View>
+    );
+  });
+
+  // Event cards
+  const events = entities.events || [];
+  events.forEach((ev, idx) => {
+    cards.push(
+      <View key={`event-${idx}`} style={[styles.dataCard, { backgroundColor: colors.surface }]}> 
+        <View style={styles.cardHeader}>
+          <View style={[styles.cardIconContainer, { backgroundColor: '#2E86C1' + '20' }]}>
+            <Ionicons name="calendar" size={22} color="#2E86C1" />
+          </View>
+          <View style={styles.cardTitleContainer}>
+            <Text style={[styles.cardTitle, { color: colors.text }]}>
+              {t('result.event')}
+            </Text>
+            {!!ev.title && (
+              <Text style={[styles.cardSubtitle, { color: colors.textSecondary }]}>
+                {ev.title}
+              </Text>
+            )}
+          </View>
+        </View>
+        <Text style={[styles.cardValue, { color: colors.text }]}>
+          {ev.start ? `${ev.start}` : ''} {ev.venue ? `• ${ev.venue}` : ''}
+        </Text>
+        <TouchableOpacity 
+          style={[styles.cardAction, { backgroundColor: '#2E86C1' }]}
+          onPress={() => onActionPress('event', ev)}
+          activeOpacity={0.8}
+        >
+          <Ionicons name="add-circle" size={18} color="white" />
+          <Text style={styles.cardActionText}>
+            {t('result.addToCalendar')}
           </Text>
         </TouchableOpacity>
       </View>
@@ -645,7 +754,7 @@ export default function ResultScreen() {
   };
 
   // Handle entity action
-  const handleEntityAction = (type, value) => {
+  const handleEntityAction = async (type, value) => {
     try {
       switch (type) {
         case 'phone':
@@ -660,6 +769,18 @@ export default function ResultScreen() {
         case 'address':
           Linking.openURL(`https://maps.google.com/?q=${encodeURIComponent(value)}`);
           break;
+        case 'event': {
+          const payload = typeof value === 'object' ? value : {};
+          const actionPayload = { ...fields, ...payload };
+          await executeAction('calendar', actionPayload);
+          break;
+        }
+        case 'expense': {
+          const payload = typeof value === 'object' ? value : {};
+          const actionPayload = { ...fields, ...payload };
+          await executeAction('expense', actionPayload);
+          break;
+        }
         default:
           Clipboard.setString(value);
           Toast.show({
@@ -1075,9 +1196,9 @@ export default function ResultScreen() {
           )}
           
           {/* Full Text Section */}
-          {!editing && job.fields && job.fields.content && (
+          {!editing && (job?.fields?.content || job?.ocrText) && (
             <FullTextSection 
-              text={job.fields.content}
+              text={job.fields?.content || job.ocrText}
               colors={colors}
             />
           )}

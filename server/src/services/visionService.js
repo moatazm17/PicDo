@@ -226,11 +226,19 @@ class VisionService {
     // Process each text block
     allText.forEach(text => {
       // Extract phone numbers - simplified to avoid regex stack depth issues
-      const phoneMatches = text.match(/\+?[0-9]{7,15}/g);
+      let phoneMatches = text.match(/\+?[0-9]{7,15}/g);
+      // Also allow short unified numbers like '2046' when context suggests it
+      if (!phoneMatches || phoneMatches.length === 0) {
+        const unifiedIndicators = /(الرقم\s*الموحد|Unified\s*Number|Call|للاستفسار)/i;
+        const shortMatches = text.match(/\b\d{3,6}\b/g);
+        if (unifiedIndicators.test(text) && shortMatches) {
+          phoneMatches = shortMatches;
+        }
+      }
       if (phoneMatches) {
         phoneMatches.forEach(phone => {
           // Only add if it looks like a valid phone (at least 7 digits)
-          if (phone.replace(/\D/g, '').length >= 7) {
+          if (phone.replace(/\D/g, '').length >= 7 || /\b\d{3,6}\b/.test(phone)) {
             structuredData.phoneNumbers.push(phone.trim());
           }
         });
@@ -270,10 +278,19 @@ class VisionService {
         structuredData.businessInfo.categories.push(text.trim());
       }
       
-      // Extract addresses - simplified to avoid regex stack depth issues
-      if (text.includes('street') || text.includes('road') || text.includes('شارع') || 
-          text.includes('طريق') || text.includes('حي') || text.includes('مدينة')) {
-        structuredData.addresses.push(text.trim());
+      // Extract addresses - smarter: avoid single-word fragments like 'شارع' or district-only words
+      const addressIndicators = /(street|road|ave|avenue|st\.|rd\.|city|district|حي|مدينة|محافظة|طريق|شارع|مقابل|بجوار|تقاطع)/i;
+      if (addressIndicators.test(text)) {
+        const cleaned = text.trim();
+        // Filter out very short/fragment texts
+        const arabicLetters = /[\u0600-\u06FF]/;
+        if (cleaned.length >= 10 && /\s/.test(cleaned)) {
+          // Avoid obvious fragments like single words 'شارع' or 'صالحية'
+          const words = cleaned.split(/\s+/);
+          if (words.length >= 2 && cleaned !== 'شارع' && cleaned !== 'صالحية') {
+            structuredData.addresses.push(cleaned);
+          }
+        }
       }
     });
     
@@ -281,7 +298,24 @@ class VisionService {
     structuredData.phoneNumbers = [...new Set(structuredData.phoneNumbers)];
     structuredData.emails = [...new Set(structuredData.emails)];
     structuredData.urls = [...new Set(structuredData.urls)];
-    structuredData.addresses = [...new Set(structuredData.addresses)];
+    // Split multi-address blocks by common separators/newlines and clean
+    const splitSeparators = /\n|\u2013|\u2014|—|–|•|\||,|\s-\s| - | · |\s•\s/;
+    const splitAddresses = [];
+    [...new Set(structuredData.addresses)].forEach(addr => {
+      const parts = addr.split(splitSeparators)
+        .map(p => p.trim())
+        .filter(p => p && p.length >= 10 && /\s/.test(p) && p !== 'شارع' && p !== 'صالحية');
+      if (parts.length > 1) {
+        parts.forEach(p => splitAddresses.push(p));
+      } else {
+        splitAddresses.push(addr);
+      }
+    });
+
+    // Deduplicate and remove contained substrings (keep longest addresses)
+    structuredData.addresses = [...new Set(splitAddresses)]
+      .sort((a,b) => b.length - a.length)
+      .filter((addr, idx, arr) => !arr.some((other, j) => j < idx && other.includes(addr)));
     structuredData.businessInfo.hours = [...new Set(structuredData.businessInfo.hours)];
     structuredData.businessInfo.ratings = [...new Set(structuredData.businessInfo.ratings)];
     structuredData.businessInfo.categories = [...new Set(structuredData.businessInfo.categories)];

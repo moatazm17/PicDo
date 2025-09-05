@@ -33,6 +33,176 @@ class AIService {
     };
   }
 
+  /**
+   * Refine and split addresses using the LLM with line-level reasoning
+   * Returns a normalized list of address objects with confidence and context
+   * @param {string} ocrText
+   * @param {string[]} candidateAddresses
+   * @param {string} uiLang
+   */
+  async refineAddresses(ocrText, candidateAddresses = [], uiLang = 'en') {
+    try {
+      if (!ocrText && (!candidateAddresses || candidateAddresses.length === 0)) {
+        return [];
+      }
+
+      const prompt = `You are an address intelligence module. Given OCR text (possibly noisy) and a list of candidate address lines, output a clean list of COMPLETE individual addresses with confidence and optional business context. Split multi-address blocks. Avoid fragments like single words (e.g., just 'شارع'). Use the user's UI language context (${uiLang === 'ar' ? 'Arabic' : 'English'}) when helpful.
+
+Return ONLY JSON with this shape:
+{
+  "addresses": [
+    {
+      "fullAddress": "...", 
+      "components": {"street": "", "district": "", "city": "", "country": ""},
+      "businessContext": "branch name or company if inferred",
+      "isMainLocation": false,
+      "confidence": 0.0
+    }
+  ]
+}
+
+Guidelines:
+- Prefer longer, multi-token addresses; discard single-token fragments
+- If multiple branches/locations exist, return each as a separate item
+- Extract components when obvious; leave empty strings when unsure
+- Confidence must be between 0 and 1
+- Do not duplicate addresses
+`;
+
+      const userContent = `OCR_TEXT:\n${ocrText}\n\nCANDIDATE_ADDRESSES:\n${(candidateAddresses || []).join('\n')}`;
+
+      const resp = await this.openai.chat.completions.create({
+        model: 'gpt-4o',
+        messages: [
+          { role: 'system', content: prompt },
+          { role: 'user', content: userContent }
+        ],
+        temperature: 0.1,
+        max_tokens: 1200,
+        response_format: { type: 'json_object' }
+      });
+
+      const content = resp.choices?.[0]?.message?.content || '{}';
+      const json = JSON.parse(content);
+      const addresses = Array.isArray(json.addresses) ? json.addresses : [];
+
+      // Normalize objects and clamp confidence
+      return addresses
+        .map(a => ({
+          fullAddress: (a?.fullAddress || '').trim(),
+          components: {
+            street: a?.components?.street || '',
+            district: a?.components?.district || '',
+            city: a?.components?.city || '',
+            country: a?.components?.country || ''
+          },
+          businessContext: a?.businessContext || '',
+          isMainLocation: Boolean(a?.isMainLocation),
+          confidence: Math.max(0, Math.min(1, Number(a?.confidence ?? 0)))
+        }))
+        .filter(a => a.fullAddress && a.fullAddress.length >= 8);
+    } catch (e) {
+      console.error('Address refinement failed:', e.message);
+      return [];
+    }
+  }
+
+  /**
+   * Extract expenses and events with confidence using the LLM
+   * @param {string} ocrText
+   * @param {string} uiLang
+   * @returns {{expenses: Array, events: Array}}
+   */
+  async extractExpensesAndEvents(ocrText, uiLang = 'en') {
+    try {
+      if (!ocrText || ocrText.trim().length === 0) return { expenses: [], events: [] };
+
+      const prompt = `You extract structured EXPENSES and EVENTS from noisy OCR text. Return JSON only.
+
+Schema:
+{
+  "expenses": [
+    {
+      "merchant": "",
+      "amount": 0,
+      "currency": "",
+      "date": "YYYY-MM-DD or original",
+      "items": [{"name": "", "qty": 1, "price": 0}],
+      "tax": 0,
+      "paymentMethod": "",
+      "reference": "",
+      "confidence": 0.0
+    }
+  ],
+  "events": [
+    {
+      "title": "",
+      "start": "ISO or original",
+      "end": "ISO or original or empty",
+      "venue": "",
+      "city": "",
+      "url": "",
+      "confidence": 0.0
+    }
+  ]
+}
+
+Rules:
+- Only include entries with confidence >= 0.5
+- For EXPENSE, prefer explicit totals (Total/المجموع/TTC)
+- For EVENT, prefer future-looking invitations; skip news/stories
+`;
+
+      const resp = await this.openai.chat.completions.create({
+        model: 'gpt-4o',
+        messages: [
+          { role: 'system', content: prompt },
+          { role: 'user', content: ocrText }
+        ],
+        temperature: 0.1,
+        max_tokens: 1400,
+        response_format: { type: 'json_object' }
+      });
+
+      const content = resp.choices?.[0]?.message?.content || '{}';
+      const json = JSON.parse(content);
+      const expenses = Array.isArray(json.expenses) ? json.expenses : [];
+      const events = Array.isArray(json.events) ? json.events : [];
+
+      // Normalize and filter by confidence
+      const normExpenses = expenses
+        .map(e => ({
+          merchant: (e?.merchant || '').trim(),
+          amount: Number(e?.amount ?? 0),
+          currency: (e?.currency || '').trim(),
+          date: (e?.date || '').trim(),
+          items: Array.isArray(e?.items) ? e.items : [],
+          tax: Number(e?.tax ?? 0),
+          paymentMethod: (e?.paymentMethod || '').trim(),
+          reference: (e?.reference || '').trim(),
+          confidence: Math.max(0, Math.min(1, Number(e?.confidence ?? 0)))
+        }))
+        .filter(e => e.confidence >= 0.5 && (e.amount > 0 || e.merchant));
+
+      const normEvents = events
+        .map(ev => ({
+          title: (ev?.title || '').trim(),
+          start: (ev?.start || '').trim(),
+          end: (ev?.end || '').trim(),
+          venue: (ev?.venue || '').trim(),
+          city: (ev?.city || '').trim(),
+          url: (ev?.url || '').trim(),
+          confidence: Math.max(0, Math.min(1, Number(ev?.confidence ?? 0)))
+        }))
+        .filter(ev => ev.confidence >= 0.5 && (ev.title || ev.start || ev.venue));
+
+      return { expenses: normExpenses, events: normEvents };
+    } catch (e) {
+      console.error('extractExpensesAndEvents failed:', e.message);
+      return { expenses: [], events: [] };
+    }
+  }
+
   async classifyText(ocrText, uiLang = 'en') {
     const systemPrompt = this.getSystemPrompt(uiLang);
     
@@ -57,6 +227,17 @@ class AIService {
       console.log('OpenAI API: Response sample:', content.substring(0, 200) + (content.length > 200 ? '...' : ''));
       
       let classification = JSON.parse(content);
+
+      // Normalize types to lowercase to avoid validation errors like 'CONTACT'
+      if (classification && typeof classification.type === 'string') {
+        classification.type = classification.type.toLowerCase();
+      }
+      if (Array.isArray(classification?.detectedTypes)) {
+        classification.detectedTypes = classification.detectedTypes.map(dt => ({
+          ...dt,
+          type: typeof dt?.type === 'string' ? dt.type.toLowerCase() : dt?.type
+        }));
+      }
       
       // Validate the response structure
       this.validateClassification(classification);
