@@ -5,8 +5,9 @@
 
 // Regular expressions for entity extraction - simplified to avoid stack depth issues
 const PATTERNS = {
-  // International phone number formats - simplified
-  PHONE: /\+?[0-9]{7,15}/g,
+  // Phone numbers: capture full sequences with spaces/dashes/parentheses
+  // Examples: +966 58 144 6325, +1 (650) 555-1234, 055 123 4567
+  PHONE: /(?:\+?\d[\d\s\-()]{6,}\d)/g,
   
   // Email addresses - simplified
   EMAIL: /[a-zA-Z0-9._%+-]+@[a-zA-Z0-9.-]+\.[a-zA-Z]{2,}/g,
