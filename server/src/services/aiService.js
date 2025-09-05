@@ -13,8 +13,8 @@ class AIService {
     
     // Regular expressions for entity extraction
     this.PATTERNS = {
-      // International phone number formats
-      PHONE: /(?:(?:\+|00)[1-9]\d{0,3}[\s.-]?)?(?:\(\d{1,4}\)[\s.-]?)?\d{1,4}[\s.-]?\d{1,4}[\s.-]?\d{1,9}/g,
+      // Simple phone number pattern - match complete numbers only
+      PHONE: /\+\d{10,15}|\b\d{10,15}\b/g,
       
       // Email addresses
       EMAIL: /[a-zA-Z0-9._%+-]+@[a-zA-Z0-9.-]+\.[a-zA-Z]{2,}/g,
@@ -165,6 +165,7 @@ JSON OUTPUT:
 {
   "type": "contact|expense|event|address|note|document",
   "summary": "brief ${lang} title",
+  "confidence": 0.9,
   "entities": {
     "phones": ["exact_phone_numbers"],
     "emails": ["exact_emails"], 
