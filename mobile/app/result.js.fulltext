@@ -1,0 +1,298 @@
+// Full Text + Smart Sections UI Component
+const FullTextWithSections = ({ text, entities, onActionPress, colors, isRTL }) => {
+  const { t } = useTranslation();
+  const [expanded, setExpanded] = useState(true);
+  
+  if (!text) return null;
+  
+  // Get all entities for highlighting
+  const allEntities = [
+    ...(entities.phones || []).map(item => ({ type: 'phone', value: item })),
+    ...(entities.emails || []).map(item => ({ type: 'email', value: item })),
+    ...(entities.urls || []).map(item => ({ type: 'url', value: item })),
+    ...(entities.addresses || []).map(item => ({ type: 'address', value: item }))
+  ];
+  
+  // Highlight entities in text
+  const highlightEntities = (text) => {
+    if (!text || allEntities.length === 0) return text;
+    
+    // Sort entities by length (longest first) to avoid nested highlights
+    const sortedEntities = [...allEntities].sort((a, b) => b.value.length - a.value.length);
+    
+    let result = text;
+    sortedEntities.forEach(entity => {
+      if (result.includes(entity.value)) {
+        const parts = result.split(entity.value);
+        result = parts.join(`[${entity.type}:${entity.value}]`);
+      }
+    });
+    
+    return result;
+  };
+  
+  // Render highlighted text
+  const renderHighlightedText = () => {
+    const highlightedText = highlightEntities(text);
+    const parts = highlightedText.split(/\[([^:]+):([^\]]+)\]/);
+    
+    const elements = [];
+    for (let i = 0; i < parts.length; i += 3) {
+      // Add regular text
+      if (parts[i]) {
+        elements.push(
+          <Text key={`text-${i}`} style={[styles.fullTextContent, { color: colors.text }]}>
+            {parts[i]}
+          </Text>
+        );
+      }
+      
+      // Add highlighted entity
+      if (parts[i + 1] && parts[i + 2]) {
+        const type = parts[i + 1];
+        const value = parts[i + 2];
+        
+        elements.push(
+          <TouchableOpacity
+            key={`entity-${i}`}
+            style={[styles.highlightedEntity, { backgroundColor: getEntityColor(type, colors) }]}
+            onPress={() => onActionPress(type, value)}
+          >
+            <Ionicons name={getEntityIcon(type)} size={14} color={colors.primary} style={styles.entityIcon} />
+            <Text style={[styles.entityText, { color: colors.text }]}>
+              {value}
+            </Text>
+          </TouchableOpacity>
+        );
+      }
+    }
+    
+    return elements;
+  };
+  
+  return (
+    <View style={[styles.fullTextContainer, { backgroundColor: colors.surface }]}>
+      <TouchableOpacity 
+        style={styles.fullTextHeader}
+        onPress={() => setExpanded(!expanded)}
+      >
+        <View style={styles.fullTextTitleContainer}>
+          <Ionicons name="document-text" size={18} color={colors.primary} />
+          <Text style={[styles.fullTextTitle, { color: colors.text }]}>
+            {t('result.fullText')}
+          </Text>
+        </View>
+        <Ionicons 
+          name={expanded ? "chevron-up" : "chevron-down"}
+          size={20}
+          color={colors.textSecondary}
+        />
+      </TouchableOpacity>
+      
+      {expanded && (
+        <View style={styles.fullTextContent}>
+          <View style={styles.textContainer}>
+            {renderHighlightedText()}
+          </View>
+          
+          <View style={styles.fullTextActions}>
+            <TouchableOpacity 
+              style={[styles.fullTextAction, { backgroundColor: colors.primary + '15' }]}
+              onPress={() => Clipboard.setString(text)}
+            >
+              <Ionicons name="copy" size={16} color={colors.primary} />
+              <Text style={[styles.fullTextActionText, { color: colors.primary }]}>
+                {t('common.copy')}
+              </Text>
+            </TouchableOpacity>
+            
+            <TouchableOpacity 
+              style={[styles.fullTextAction, { backgroundColor: colors.primary + '15' }]}
+              onPress={() => Linking.openURL(`mailto:?body=${encodeURIComponent(text)}`)}
+            >
+              <Ionicons name="share" size={16} color={colors.primary} />
+              <Text style={[styles.fullTextActionText, { color: colors.primary }]}>
+                {t('common.share')}
+              </Text>
+            </TouchableOpacity>
+          </View>
+        </View>
+      )}
+    </View>
+  );
+};
+
+// Helper function to get entity color
+const getEntityColor = (type, colors) => {
+  switch (type) {
+    case 'phone': return colors.primary + '15';
+    case 'email': return colors.success + '15';
+    case 'url': return colors.info + '15';
+    case 'address': return colors.warning + '15';
+    default: return colors.primary + '10';
+  }
+};
+
+// Smart Sections Component
+const SmartSections = ({ entities, fields, onActionPress, colors, isRTL }) => {
+  const { t } = useTranslation();
+  
+  // Group entities by type
+  const sections = [];
+  
+  // Add phone section if there are phones
+  if (entities.phones && entities.phones.length > 0) {
+    sections.push({
+      id: 'phones',
+      title: t('result.phoneNumbers'),
+      icon: 'call',
+      items: entities.phones,
+      action: (item) => onActionPress('phone', item)
+    });
+  }
+  
+  // Add email section if there are emails
+  if (entities.emails && entities.emails.length > 0) {
+    sections.push({
+      id: 'emails',
+      title: t('result.emailAddresses'),
+      icon: 'mail',
+      items: entities.emails,
+      action: (item) => onActionPress('email', item)
+    });
+  }
+  
+  // Add address section if there are addresses
+  if (entities.addresses && entities.addresses.length > 0) {
+    sections.push({
+      id: 'addresses',
+      title: t('result.addresses'),
+      icon: 'location',
+      items: entities.addresses,
+      action: (item) => onActionPress('address', item)
+    });
+  }
+  
+  // Add URL section if there are URLs
+  if (entities.urls && entities.urls.length > 0) {
+    sections.push({
+      id: 'urls',
+      title: t('result.websites'),
+      icon: 'globe',
+      items: entities.urls,
+      action: (item) => onActionPress('url', item)
+    });
+  }
+  
+  // Add business info section if available
+  if (entities.businessInfo && 
+     (entities.businessInfo.ratings?.length > 0 || 
+      entities.businessInfo.hours?.length > 0 || 
+      entities.businessInfo.categories?.length > 0)) {
+    
+    const businessItems = [];
+    
+    if (entities.businessInfo.ratings?.length > 0) {
+      businessItems.push({
+        id: 'rating',
+        icon: 'star',
+        text: entities.businessInfo.ratings[0]
+      });
+    }
+    
+    if (entities.businessInfo.hours?.length > 0) {
+      businessItems.push({
+        id: 'hours',
+        icon: 'time',
+        text: entities.businessInfo.hours[0]
+      });
+    }
+    
+    if (entities.businessInfo.categories?.length > 0) {
+      businessItems.push({
+        id: 'category',
+        icon: 'pricetag',
+        text: entities.businessInfo.categories[0]
+      });
+    }
+    
+    sections.push({
+      id: 'business',
+      title: t('result.businessInfo'),
+      icon: 'business',
+      items: businessItems,
+      isBusinessInfo: true
+    });
+  }
+  
+  if (sections.length === 0) return null;
+  
+  return (
+    <View style={styles.smartSectionsContainer}>
+      {sections.map(section => (
+        <View 
+          key={section.id}
+          style={[styles.smartSection, { backgroundColor: colors.surface }]}
+        >
+          <View style={styles.sectionHeader}>
+            <Ionicons name={section.icon} size={18} color={colors.primary} />
+            <Text style={[styles.sectionTitle, { color: colors.text }]}>
+              {section.title} {section.items.length > 0 && !section.isBusinessInfo && `(${section.items.length})`}
+            </Text>
+          </View>
+          
+          <View style={styles.sectionContent}>
+            {section.isBusinessInfo ? (
+              // Render business info items
+              section.items.map(item => (
+                <View key={item.id} style={styles.businessInfoItem}>
+                  <Ionicons name={item.icon} size={16} color={colors.primary} style={styles.businessInfoIcon} />
+                  <Text style={[styles.businessInfoText, { color: colors.text }]}>
+                    {item.text}
+                  </Text>
+                </View>
+              ))
+            ) : (
+              // Render regular entity items
+              section.items.slice(0, 3).map((item, index) => (
+                <TouchableOpacity 
+                  key={index}
+                  style={styles.entityItem}
+                  onPress={() => section.action(item)}
+                >
+                  <Text 
+                    style={[styles.entityItemText, { color: colors.text }]}
+                    numberOfLines={2}
+                  >
+                    {item}
+                  </Text>
+                  <View style={[styles.entityItemAction, { backgroundColor: colors.primary + '15' }]}>
+                    <Ionicons name={section.icon} size={14} color={colors.primary} />
+                  </View>
+                </TouchableOpacity>
+              ))
+            )}
+            
+            {!section.isBusinessInfo && section.items.length > 3 && (
+              <TouchableOpacity 
+                style={[styles.viewMoreButton, { borderColor: colors.primary }]}
+                onPress={() => {
+                  // Navigate to view all screen for this section type
+                  router.push({
+                    pathname: `/All${section.id.charAt(0).toUpperCase() + section.id.slice(1)}`,
+                    params: { items: section.items }
+                  });
+                }}
+              >
+                <Text style={[styles.viewMoreText, { color: colors.primary }]}>
+                  {t('common.viewAll')} ({section.items.length})
+                </Text>
+                <Ionicons name="chevron-forward" size={16} color={colors.primary} />
+              </TouchableOpacity>
+            )}
+          </View>
+        </View>
+      ))}
+    </View>
+  );
+};

@@ -1,0 +1,220 @@
+  // Handle entity action
+  const handleEntityAction = (type, value) => {
+    try {
+      switch (type) {
+        case 'phone':
+          Linking.openURL(`tel:${value}`);
+          break;
+        case 'email':
+          Linking.openURL(`mailto:${value}`);
+          break;
+        case 'url':
+          Linking.openURL(value.startsWith('http') ? value : `https://${value}`);
+          break;
+        case 'address':
+          Linking.openURL(`https://maps.google.com/?q=${encodeURIComponent(value)}`);
+          break;
+        default:
+          Clipboard.setString(value);
+          Toast.show({
+            type: 'success',
+            text1: t('common.copied'),
+            visibilityTime: 2000,
+          });
+      }
+    } catch (error) {
+      console.error('Error handling entity action:', error);
+      Toast.show({
+        type: 'error',
+        text1: t('common.error'),
+        text2: error.message,
+      });
+    }
+  };
+
+  return (
+    <SafeAreaView style={[styles.container, { backgroundColor: colors.background }]}>
+      {/* Clean Header */}
+      <View style={[
+        styles.header, 
+        { 
+          backgroundColor: colors.surface, 
+          borderBottomColor: colors.border
+        }
+      ]}>
+        <TouchableOpacity
+          style={styles.headerButton}
+          onPress={() => router.back()}
+          activeOpacity={0.7}
+        >
+          <Ionicons
+            name="arrow-back"
+            size={24}
+            color={colors.text}
+          />
+        </TouchableOpacity>
+        
+        <Text style={[styles.headerTitle, { color: colors.text }]}>
+          {job?.summary || t('result.result')}
+        </Text>
+        
+        <TouchableOpacity
+          style={styles.headerButton}
+          onPress={() => setEditing(!editing)}
+          activeOpacity={0.7}
+        >
+          <Ionicons
+            name={editing ? "eye" : "create"}
+            size={24}
+            color={colors.text}
+          />
+        </TouchableOpacity>
+      </View>
+
+      <KeyboardAvoidingView
+        behavior={Platform.OS === 'ios' ? 'padding' : 'height'}
+        style={styles.keyboardView}
+      >
+        <ScrollView
+          style={styles.scrollView}
+          contentContainerStyle={styles.scrollContent}
+          showsVerticalScrollIndicator={false}
+        >
+          {/* Image Card */}
+          {job?.thumb && (
+            <View style={[styles.imageCard, { backgroundColor: colors.surface }]}>
+              <TouchableOpacity 
+                style={styles.imageContainer}
+                onPress={() => setShowFullImage(true)}
+                activeOpacity={0.95}
+              >
+                <Image
+                  source={{ uri: `data:image/jpeg;base64,${job.thumb}` }}
+                  style={styles.image}
+                  resizeMode="contain"
+                />
+                <View style={styles.imageOverlay}>
+                  <View style={[styles.expandIcon, { backgroundColor: 'rgba(0,0,0,0.6)' }]}>
+                    <Ionicons name="expand" size={16} color="white" />
+                  </View>
+                </View>
+              </TouchableOpacity>
+            </View>
+          )}
+          
+          {/* Full Text Component - Shows all OCR text with highlighted entities */}
+          {!editing && job?.ocrText && (
+            <FullTextWithSections 
+              text={job.ocrText}
+              entities={job.entities || {}}
+              onActionPress={handleEntityAction}
+              colors={colors}
+              isRTL={isRTL}
+            />
+          )}
+          
+          {/* Smart Sections - Shows organized entities */}
+          {!editing && job?.entities && (
+            <SmartSections 
+              entities={job.entities}
+              fields={fields}
+              onActionPress={handleEntityAction}
+              colors={colors}
+              isRTL={isRTL}
+            />
+          )}
+          
+          {/* Data Card - Only show when editing */}
+          {editing && (
+            <View style={[styles.dataCard, { backgroundColor: colors.surface }]}>
+              <View style={styles.cardHeader}>
+                <Text style={[styles.cardTitle, { color: colors.text }]}>
+                  {t('result.editFields')}
+                </Text>
+                <View style={[styles.editBadge, { backgroundColor: colors.success + '20' }]}>
+                  <Ionicons 
+                    name="create" 
+                    size={14} 
+                    color={colors.success} 
+                  />
+                  <Text style={[styles.editBadgeText, { color: colors.success }]}>
+                    {t('result.editing')}
+                  </Text>
+                </View>
+              </View>
+              
+              <View style={styles.fieldsContainer}>
+                {renderFields()}
+              </View>
+            </View>
+          )}
+
+          {/* Bottom Spacing */}
+          <View style={{ height: 100 }} />
+        </ScrollView>
+
+        {/* Action Button */}
+        <View style={styles.actionContainer}>
+          <TouchableOpacity
+            style={[
+              styles.actionButton,
+              {
+                backgroundColor: colors.primary,
+                opacity: actionLoading ? 0.7 : 1,
+              },
+            ]}
+            onPress={editing ? handleSave : handleAction}
+            disabled={actionLoading}
+            activeOpacity={0.9}
+          >
+            <LinearGradient
+              colors={[colors.primary, colors.primary + 'DD']}
+              style={styles.actionGradient}
+            >
+              {actionLoading ? (
+                <Text style={styles.actionText}>{t('common.loading')}</Text>
+              ) : (
+                <View style={styles.actionContent}>
+                  <Ionicons
+                    name={editing ? "checkmark-circle" : getTypeIcon(selectedType?.type || job?.type)}
+                    size={24}
+                    color="white"
+                  />
+                  <Text style={styles.actionText}>
+                    {editing ? t('common.save') : getActionText(selectedType?.type || job?.type)}
+                  </Text>
+                </View>
+              )}
+            </LinearGradient>
+          </TouchableOpacity>
+        </View>
+      </KeyboardAvoidingView>
+
+      {/* Full Screen Image Modal */}
+      <Modal
+        visible={showFullImage}
+        transparent={true}
+        animationType="fade"
+        onRequestClose={() => setShowFullImage(false)}
+      >
+        <View style={styles.fullScreenImage}>
+          <TouchableOpacity
+            style={styles.closeButton}
+            onPress={() => setShowFullImage(false)}
+          >
+            <Ionicons name="close-circle" size={32} color="white" />
+          </TouchableOpacity>
+          
+          <Image
+            source={{ uri: `data:image/jpeg;base64,${job?.thumb}` }}
+            style={styles.fullImage}
+            resizeMode="contain"
+          />
+          
+          <Text style={styles.modalInfoText}>
+            {t('result.tapToClose')}
+          </Text>
+        </View>
+      </Modal>
+    </SafeAreaView>
+  );
