@@ -42,13 +42,13 @@ class AIService {
       console.log('OpenAI API: Input text sample:', ocrText.substring(0, 100) + (ocrText.length > 100 ? '...' : ''));
       
       const response = await this.openai.chat.completions.create({
-        model: 'gpt-4o-mini',
+        model: 'gpt-4o',
         messages: [
           { role: 'system', content: systemPrompt },
-          { role: 'user', content: `Here is the OCR text from a screenshot. Please classify it according to the instructions:\n\n${ocrText}` }
+          { role: 'user', content: `Analyze this OCR text from a screenshot and provide intelligent entity extraction with relationship detection:\n\n${ocrText}` }
         ],
-        temperature: 0.05, // Reduced temperature for more deterministic outputs
-        max_tokens: 1000,
+        temperature: 0.1, // Slightly higher for better reasoning
+        max_tokens: 2000, // More tokens for detailed analysis
         response_format: { type: 'json_object' }
       });
 
@@ -97,133 +97,136 @@ class AIService {
     const lang = uiLang === 'ar' ? 'Arabic' : 'English';
     
     return `
-You are an intelligent OCR-content processor. Your task is to clean noisy OCR text, classify it, generate a concise summary, and extract all relevant fields. **Return JSON only. No prose.**
+You are an advanced AI system for intelligent document analysis and entity extraction. Your task is to understand document context, extract entities with relationships, and provide smart classification.
 
-########################## NOISE FILTERING ##########################
-1. **Ignore all UI and decoration:** Remove browser tabs, social media buttons, ads, navigation menus, "Like | Comment | Share", timestamps ("3 س"), and header/footer elements. Focus on the main content users care about.
-2. **Strip out repeated headers, footers, and unrelated interface text** before classification.
+########################## INTELLIGENT ANALYSIS ##########################
+1. **Document Understanding**: Analyze the document type and business context
+2. **Entity Relationship Detection**: Understand how different pieces of information relate to each other
+3. **Smart Grouping**: Group related entities (e.g., multiple locations for same business)
+4. **Context-Aware Extraction**: Extract entities with their business context and relationships
 
-######################### TYPE DETECTION #########################
-Classify the cleaned content using these **priority-based, context-aware rules** (check in order):
+########################## ENHANCED ENTITY EXTRACTION ##########################
+For each document, perform intelligent entity extraction:
 
-1. **CONTACT (highest priority)**
-   - Indicators: phone numbers, emails, phrases like "call us", contact hours, Dr./Mr./Ms.
-   - Context: personal or business contact details (e.g. doctors, service hotlines).
-   - Extract: \`name\` (company/person), \`phone\`, \`email\`, \`location\` (if present).
+**BUSINESS CONTEXT DETECTION:**
+- Identify if this is a business document (business card, flyer, directory listing)
+- Detect business name, type, and category
+- Understand if multiple locations belong to same business
 
-2. **EXPENSE**
-   - Indicators: currency symbols (e.g., $, €, £, ج.م), "Total" lines, itemized lists, transaction confirmations, bank names.
-   - Context: receipts, bills, transfers, payments.
-   - Extract: \`merchant\` (store or bank), \`amount\` (total or transaction amount), \`name\` (recipient or payer), \`date\` and \`time\`.
+**SMART ADDRESS HANDLING:**
+- Parse complete addresses, not fragments
+- Detect multiple locations for same business
+- Separate individual addresses (don't merge unrelated ones)
+- Include context (which business/person each address belongs to)
+- Handle geographic hierarchies (country > city > district > street)
 
-3. **EVENT**
-   - Indicators: **future** dates with invitation language ("Join us", "ستقام", "will be held"), venue/location details, official event names.
-   - Context: actual invitations to upcoming events or appointments. **Do not classify past experiences or news about events** as events.
-   - Extract: \`date\`, \`time\`, \`location\`, \`title\`, and any URLs.
-   - If the content recounts a **past** event or story ("ذهبت إلى…", "I attended…"), classify as \`note\` instead.
+**INTELLIGENT PHONE EXTRACTION:**
+- Detect all phone numbers with context
+- Handle local numbers (add country context if business context suggests it)
+- Identify main vs branch numbers
+- Associate phone numbers with specific locations/businesses
 
-4. **ADDRESS**
-   - Indicators: street numbers, city names, postal codes, map-like structures.
-   - Context: sharing addresses or directions.
-   - Extract: \`location\`, plus any names or landmark details.
+**RELATIONSHIP MAPPING:**
+- Map which phone numbers belong to which addresses
+- Identify business hierarchies (main office vs branches)
+- Connect contact information to specific locations
 
-5. **DOCUMENT**
-   - Indicators: formal tone, headlines, publication names, official language, news or procedural content.
-   - Context: news articles, official announcements, instructions, recipes, formal documents.
-   - Extract: \`title\`, \`date\` (if present), and assign a specific \`category\` (e.g., "news", "recipe", "manual").
+########################## SMART CLASSIFICATION ##########################
+Primary classification with context awareness:
 
-6. **NOTE (fallback)**
-   - Includes: personal stories, social media posts, lists, informal content.
-   - Context: informal narratives ("I went…", "We had a great time"), social posts. **All social media content** (detected via usernames, "posted", personal tone) should be classified as a note, even if it mentions events.
-   - Extract the full \`content\`, with \`category\` such as "social media", "personal note", or other relevant description.
+1. **CONTACT** - Business or personal contact information
+   - Multi-location businesses (like exchange offices, banks)
+   - Service providers with multiple branches
+   - Professional contacts with office locations
 
-**Social Media Detection (overrides Event):**  
-If the content contains usernames, timestamps, emoji, or personal narrative tone, it is a social media post → \`type: "note"\`, \`category: "social media"\`.
+2. **BUSINESS** - Business directory or promotional content
+   - Company information with multiple locations
+   - Service offerings and contact details
+   - Business categories and specializations
 
-######################### SUMMARY GENERATION #########################
-- **Language:** use ${lang} summaries.
-- **Length:** 2–4 words, max 40 characters.
-- **Specificity:** include names, amounts, locations, or key nouns (e.g., "محمد رمضان نيويورك", "تحويل محمد 560").
-- **Avoid general phrases:** Do not use generic summaries like "معاملة البنك" or "تأكيد معاملة".
+3. **ADDRESS** - Location sharing or directions
+   - Specific location information
+   - Geographic references and landmarks
 
-Example outputs for guidance (${lang} UI):
-${uiLang === 'ar' ? 
-  '• Social post → summary: "محمد رمضان نيويورك", category: "social media"\n• Bank transfer → summary: "تحويل محمد 560", merchant: "البنك العربي"\n• Contact info → summary: "خدمة WE", name: "WE", phone: "111"' :
-  '• Social post → summary: "Mohamed NYC Trip", category: "social media"\n• Bank transfer → summary: "Transfer Mohamed 560", merchant: "Arab Bank"\n• Contact info → summary: "WE Service", name: "WE", phone: "111"'
-}
+4. **EVENT** - Invitations or event announcements
+5. **EXPENSE** - Financial transactions or receipts
+6. **NOTE** - General information or text
 
-######################### FIELD EXTRACTION #########################
-Return the cleaned main content in \`fields.content\` and fill these fields (null if not present):
-
-- \`title\`: original headline or document title.
-- \`content\`: full cleaned text (original language).
-- \`category\`: content category (e.g. "social media", "news", "bank transfer", "contact info").
-- \`date\`: primary date (in natural language or ISO).
-- \`amount\`: transaction or receipt total.
-- \`location\`: place names or address.
-- \`name\`: names of people or companies (e.g., payee, bank, service provider).
-- \`phone\`: phone number(s) (include only the main one).
-- \`email\`: email address(es).
-- \`merchant\`: store or bank name for expenses (null for other types).
-
-######################### IMPORTANT: DETECT ALL TYPES #########################
-**CRITICAL**: Analyze the content for ALL possible types. Many texts contain multiple types of information. You MUST return ALL detected types in the "detectedTypes" array.
-
-**Examples of multi-type content:**
-- Exchange office with branches → Contact (phone) + Address (locations) + Note (business info)
-- Travel agency ad → Contact (phone) + Event (tour) + Note (ad content)
-- Restaurant menu → Contact (phone/address) + Note (menu items) + Document (menu)
-- Bank statement → Expense (transactions) + Contact (bank info) + Document (statement)
-
-**ALWAYS check for:**
-1. Contact info (phone/email) → add as "contact" type
-2. Addresses/locations → add as "address" type  
-3. Business info/descriptions → add as "note" type
-4. Financial data → add as "expense" type
-5. Event details → add as "event" type
-6. Formal documents → add as "document" type
-
-**Minimum 2 types per response** unless the content is extremely simple.
-
-######################### RESPONSE FORMAT #########################
-Return EXACTLY this JSON structure. The "detectedTypes" array is REQUIRED and must contain at least 2 types:
+########################## REQUIRED JSON OUTPUT ##########################
 {
-  "type": "contact|expense|event|address|note|document", // primary/most confident type
-  "summary": "2–4 words in ${lang}",
-  "fields": {
-    "title": "original title or headline",
-    "content": "cleaned main text",
-    "category": "specific category",
-    "date": "date if present or null",
-    "amount": "amount if present or null",
-    "location": "location if present or null",
-    "name": "person or company name if present or null",
-    "phone": "primary phone if present or null",
-    "email": "email if present or null",
-    "merchant": "merchant/bank if present or null"
+  "type": "primary_classification",
+  "summary": "brief_description_in_${lang}",
+  "confidence": 0.9,
+  "businessContext": {
+    "isBusinessDocument": true/false,
+    "businessName": "extracted_business_name",
+    "businessType": "category_or_industry",
+    "hasMultipleLocations": true/false
   },
-  "detectedTypes": [ // REQUIRED: Include ALL possible types detected (minimum 2)
+  "entities": {
+    "phones": [
+      {
+        "number": "full_phone_number",
+        "type": "main|branch|mobile|fax",
+        "context": "which_business_or_location",
+        "isLocal": true/false
+      }
+    ],
+    "emails": [
+      {
+        "address": "email_address",
+        "context": "business_or_personal"
+      }
+    ],
+    "addresses": [
+      {
+        "fullAddress": "complete_address_string",
+        "components": {
+          "street": "street_info",
+          "district": "district_name", 
+          "city": "city_name",
+          "country": "country_name"
+        },
+        "businessContext": "which_business_this_belongs_to",
+        "isMainLocation": true/false
+      }
+    ],
+    "urls": ["extracted_urls"],
+    "businessInfo": {
+      "names": ["business_names"],
+      "categories": ["business_categories"],
+      "services": ["services_offered"],
+      "hours": ["operating_hours"],
+      "specializations": ["areas_of_expertise"]
+    }
+  },
+  "detectedTypes": [
     {
-      "type": "contact",
+      "type": "classification",
       "confidence": 0.9,
-      "data": { "name": "...", "phone": "...", "email": "..." }
-    },
-    {
-      "type": "event", // Example: if text mentions travel/tours, it could be an event
-      "confidence": 0.7,
-      "data": { "title": "...", "date": "...", "location": "..." }
-    },
-    {
-      "type": "note", // Example: if it's also a social media post or ad
-      "confidence": 0.6,
-      "data": { "content": "...", "category": "travel ad" }
+      "reasoning": "why_this_classification"
     }
   ],
-  "confidence": 0.9
+  "fields": {
+    "title": "document_title_or_business_name",
+    "name": "primary_business_or_person_name",
+    "phone": "primary_phone_number",
+    "email": "primary_email",
+    "location": "primary_or_summary_location",
+    "category": "business_category_or_document_type",
+    "content": "cleaned_and_organized_text"
+  }
 }
 
-Do not output anything else—**JSON only**.
-`;
+########################## CRITICAL INSTRUCTIONS ##########################
+1. **NEVER fragment addresses** - extract complete, meaningful addresses
+2. **Group related information** - if 5 locations belong to same business, show that relationship
+3. **Preserve context** - don't lose the connection between phone numbers and their locations
+4. **Smart local number handling** - if business context suggests a country, handle local numbers appropriately
+5. **Quality over quantity** - better to have fewer, accurate entities than many fragments
+6. **Business intelligence** - understand document purpose and extract accordingly
+
+Return ONLY the JSON object, no additional text.`;
   }
 
   enforceSummaryLength(classification, uiLang) {

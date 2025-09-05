@@ -98,36 +98,47 @@ const DataCards = ({ entities, onActionPress, colors }) => {
   
   const cards = [];
   
-  // Phone number cards
-  if (entities.phones && entities.phones.length > 0) {
-    entities.phones.forEach((phone, index) => {
-      cards.push(
-        <View key={`phone-${index}`} style={[styles.dataCard, { backgroundColor: colors.surface }]}>
-          <View style={styles.cardHeader}>
-            <View style={[styles.cardIconContainer, { backgroundColor: '#4CAF50' + '20' }]}>
-              <Ionicons name="call" size={22} color="#4CAF50" />
-            </View>
+  // Phone number cards - handle both simple array and enhanced object format
+  const phones = entities.phones || [];
+  phones.forEach((phone, index) => {
+    // Handle both string format and enhanced object format
+    const phoneNumber = typeof phone === 'string' ? phone : phone.number || phone;
+    const phoneContext = typeof phone === 'object' ? phone.context : null;
+    const phoneType = typeof phone === 'object' ? phone.type : 'main';
+    
+    cards.push(
+      <View key={`phone-${index}`} style={[styles.dataCard, { backgroundColor: colors.surface }]}>
+        <View style={styles.cardHeader}>
+          <View style={[styles.cardIconContainer, { backgroundColor: '#4CAF50' + '20' }]}>
+            <Ionicons name="call" size={22} color="#4CAF50" />
+          </View>
+          <View style={styles.cardTitleContainer}>
             <Text style={[styles.cardTitle, { color: colors.text }]}>
               {t('result.phoneNumber')}
             </Text>
+            {phoneContext && (
+              <Text style={[styles.cardSubtitle, { color: colors.textSecondary }]}>
+                {phoneContext}
+              </Text>
+            )}
           </View>
-          <Text style={[styles.cardValue, { color: colors.text }]}>
-            {phone}
-          </Text>
-          <TouchableOpacity 
-            style={[styles.cardAction, { backgroundColor: '#4CAF50' }]}
-            onPress={() => onActionPress('phone', phone)}
-            activeOpacity={0.8}
-          >
-            <Ionicons name="call" size={18} color="white" />
-            <Text style={styles.cardActionText}>
-              {t('result.call')}
-            </Text>
-          </TouchableOpacity>
         </View>
-      );
-    });
-  }
+        <Text style={[styles.cardValue, { color: colors.text }]}>
+          {phoneNumber}
+        </Text>
+        <TouchableOpacity 
+          style={[styles.cardAction, { backgroundColor: '#4CAF50' }]}
+          onPress={() => onActionPress('phone', phoneNumber)}
+          activeOpacity={0.8}
+        >
+          <Ionicons name="call" size={18} color="white" />
+          <Text style={styles.cardActionText}>
+            {t('result.call')}
+          </Text>
+        </TouchableOpacity>
+      </View>
+    );
+  });
   
   // Email cards
   if (entities.emails && entities.emails.length > 0) {
@@ -160,36 +171,47 @@ const DataCards = ({ entities, onActionPress, colors }) => {
     });
   }
   
-  // Address cards
-  if (entities.addresses && entities.addresses.length > 0) {
-    entities.addresses.forEach((address, index) => {
-      cards.push(
-        <View key={`address-${index}`} style={[styles.dataCard, { backgroundColor: colors.surface }]}>
-          <View style={styles.cardHeader}>
-            <View style={[styles.cardIconContainer, { backgroundColor: '#FF9800' + '20' }]}>
-              <Ionicons name="location" size={22} color="#FF9800" />
-            </View>
-            <Text style={[styles.cardTitle, { color: colors.text }]}>
-              {t('result.address')}
-            </Text>
+  // Address cards - handle both simple array and enhanced object format
+  const addresses = entities.addresses || [];
+  addresses.forEach((address, index) => {
+    // Handle both string format and enhanced object format
+    const fullAddress = typeof address === 'string' ? address : address.fullAddress || address;
+    const businessContext = typeof address === 'object' ? address.businessContext : null;
+    const isMainLocation = typeof address === 'object' ? address.isMainLocation : false;
+    
+    cards.push(
+      <View key={`address-${index}`} style={[styles.dataCard, { backgroundColor: colors.surface }]}>
+        <View style={styles.cardHeader}>
+          <View style={[styles.cardIconContainer, { backgroundColor: '#FF9800' + '20' }]}>
+            <Ionicons name="location" size={22} color="#FF9800" />
           </View>
-          <Text style={[styles.cardValue, { color: colors.text }]} numberOfLines={3}>
-            {address}
-          </Text>
-          <TouchableOpacity 
-            style={[styles.cardAction, { backgroundColor: '#FF9800' }]}
-            onPress={() => onActionPress('address', address)}
-            activeOpacity={0.8}
-          >
-            <Ionicons name="map" size={18} color="white" />
-            <Text style={styles.cardActionText}>
-              {t('result.openInMaps')}
+          <View style={styles.cardTitleContainer}>
+            <Text style={[styles.cardTitle, { color: colors.text }]}>
+              {t('result.address')} {isMainLocation && '(Main)'}
             </Text>
-          </TouchableOpacity>
+            {businessContext && (
+              <Text style={[styles.cardSubtitle, { color: colors.textSecondary }]}>
+                {businessContext}
+              </Text>
+            )}
+          </View>
         </View>
-      );
-    });
-  }
+        <Text style={[styles.cardValue, { color: colors.text }]} numberOfLines={3}>
+          {fullAddress}
+        </Text>
+        <TouchableOpacity 
+          style={[styles.cardAction, { backgroundColor: '#FF9800' }]}
+          onPress={() => onActionPress('address', fullAddress)}
+          activeOpacity={0.8}
+        >
+          <Ionicons name="map" size={18} color="white" />
+          <Text style={styles.cardActionText}>
+            {t('result.openInMaps')}
+          </Text>
+        </TouchableOpacity>
+      </View>
+    );
+  });
   
   // URL cards
   if (entities.urls && entities.urls.length > 0) {
@@ -1490,10 +1512,17 @@ const styles = StyleSheet.create({
     justifyContent: 'center',
     marginRight: SPACING.small,
   },
+  cardTitleContainer: {
+    flex: 1,
+  },
   cardTitle: {
     fontSize: 16,
     fontWeight: '700',
-    flex: 1,
+  },
+  cardSubtitle: {
+    fontSize: 12,
+    fontWeight: '500',
+    marginTop: 2,
   },
   cardValue: {
     fontSize: 16,

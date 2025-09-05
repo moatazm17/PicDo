@@ -13,7 +13,7 @@ async function ensureSummaryInUiLang(payload, uiLang, openai) {
   if (uiLang === 'ar' && (!payload.summary || !AR_REGEX.test(payload.summary))) {
     console.log('Summary not in Arabic, translating...');
     const t = await openai.chat.completions.create({
-      model: 'gpt-4o-mini',
+      model: 'gpt-4o',
       messages: [
         { role: 'system', content: 'Translate the following phrase into Arabic. Reply with the translation only.' },
         { role: 'user', content: payload.summary || payload.fields?.title || 'بدون عنوان' }
@@ -27,7 +27,7 @@ async function ensureSummaryInUiLang(payload, uiLang, openai) {
   if (uiLang === 'en' && payload.summary && AR_REGEX.test(payload.summary)) {
     console.log('Summary in Arabic but UI is English, translating...');
     const t = await openai.chat.completions.create({
-      model: 'gpt-4o-mini',
+      model: 'gpt-4o',
       messages: [
         { role: 'system', content: 'Translate the following phrase into English. Reply with the translation only.' },
         { role: 'user', content: payload.summary }
