@@ -52,7 +52,10 @@ const FullTextSection = ({ text, colors }) => {
       
       <View style={styles.fullTextActions}>
         <TouchableOpacity 
-          style={[styles.textAction, { backgroundColor: colors.primary + '15' }]}
+          style={[styles.textAction, { 
+            backgroundColor: colors.primary + '10',
+            borderColor: colors.primary + '30'
+          }]}
           onPress={() => {
             Clipboard.setString(text);
             Toast.show({
@@ -61,18 +64,23 @@ const FullTextSection = ({ text, colors }) => {
               visibilityTime: 2000,
             });
           }}
+          activeOpacity={0.7}
         >
-          <Ionicons name="copy-outline" size={16} color={colors.primary} />
+          <Ionicons name="copy-outline" size={18} color={colors.primary} />
           <Text style={[styles.textActionText, { color: colors.primary }]}>
             {t('common.copy')}
           </Text>
         </TouchableOpacity>
         
         <TouchableOpacity 
-          style={[styles.textAction, { backgroundColor: colors.primary + '15' }]}
+          style={[styles.textAction, { 
+            backgroundColor: colors.primary + '10',
+            borderColor: colors.primary + '30'
+          }]}
           onPress={() => Linking.openURL(`mailto:?body=${encodeURIComponent(text)}`)}
+          activeOpacity={0.7}
         >
-          <Ionicons name="share-outline" size={16} color={colors.primary} />
+          <Ionicons name="share-outline" size={18} color={colors.primary} />
           <Text style={[styles.textActionText, { color: colors.primary }]}>
             {t('common.share')}
           </Text>
@@ -517,12 +525,18 @@ export default function ResultScreen() {
       setJob(response);
       setFields(response.fields || {});
       
-      // Extract entities from the content
-      if (response.fields && response.fields.content) {
+      // Use server-extracted entities first, fallback to client-side extraction
+      if (response.entities) {
+        console.log('Using server entities:', response.entities);
+        setEntities(response.entities);
+      } else if (response.fields && response.fields.content) {
+        console.log('Fallback to client-side entity extraction');
         const extractedEntities = extractEntities(response.fields.content);
         setEntities(extractedEntities);
-        
-        // Split content into blocks
+      }
+      
+      // Split content into blocks
+      if (response.fields && response.fields.content) {
         const blocks = splitTextBlocks(response.fields.content);
         setTextBlocks(blocks);
         
@@ -1398,27 +1412,35 @@ const styles = StyleSheet.create({
     paddingLeft: 4,
   },
 
-  // Full Text Card Styles
+  // Full Text Card Styles - Enhanced
   fullTextCard: {
     marginHorizontal: SPACING.medium,
     marginBottom: SPACING.medium,
-    borderRadius: BORDER_RADIUS.medium,
+    borderRadius: 16,
     padding: SPACING.medium,
     shadowColor: '#000',
-    shadowOffset: { width: 0, height: 2 },
-    shadowOpacity: 0.05,
-    shadowRadius: 8,
-    elevation: 2,
+    shadowOffset: { width: 0, height: 4 },
+    shadowOpacity: 0.1,
+    shadowRadius: 12,
+    elevation: 5,
+    borderWidth: 1,
+    borderColor: 'rgba(0,0,0,0.05)',
   },
   fullTextTitle: {
-    fontSize: 16,
-    fontWeight: '600',
-    marginBottom: SPACING.small,
+    fontSize: 18,
+    fontWeight: '700',
+    marginBottom: SPACING.medium,
+    color: '#1a1a1a',
   },
   fullTextContent: {
-    fontSize: 15,
-    lineHeight: 22,
+    fontSize: 16,
+    lineHeight: 24,
     marginBottom: SPACING.medium,
+    padding: SPACING.small,
+    backgroundColor: 'rgba(0,0,0,0.02)',
+    borderRadius: 8,
+    borderLeftWidth: 3,
+    borderLeftColor: '#6366f1',
   },
   fullTextActions: {
     flexDirection: 'row',
@@ -1428,14 +1450,15 @@ const styles = StyleSheet.create({
     flexDirection: 'row',
     alignItems: 'center',
     paddingHorizontal: SPACING.medium,
-    paddingVertical: SPACING.small,
-    borderRadius: BORDER_RADIUS.medium,
+    paddingVertical: 12,
+    borderRadius: 12,
     flex: 1,
     justifyContent: 'center',
+    borderWidth: 1.5,
   },
   textActionText: {
     fontSize: 14,
-    fontWeight: '500',
+    fontWeight: '600',
     marginLeft: SPACING.small,
   },
   
