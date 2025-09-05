@@ -78,6 +78,13 @@ const resources = {
         allAddresses: 'All Addresses',
         allWebsites: 'All Websites',
         allEmails: 'All Email Addresses',
+        phoneNumber: 'Phone Number',
+        email: 'Email',
+        address: 'Address',
+        website: 'Website',
+        note: 'Note',
+        call: 'Call',
+        open: 'Open',
       },
       
       // History
@@ -283,6 +290,13 @@ const resources = {
         allAddresses: 'جميع العناوين',
         allWebsites: 'جميع مواقع الويب',
         allEmails: 'جميع عناوين البريد الإلكتروني',
+        phoneNumber: 'رقم الهاتف',
+        email: 'البريد الإلكتروني',
+        address: 'العنوان',
+        website: 'الموقع الإلكتروني',
+        note: 'ملاحظة',
+        call: 'اتصال',
+        open: 'فتح',
       },
       
       // History

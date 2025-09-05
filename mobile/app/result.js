@@ -34,35 +34,204 @@ import { extractEntities, splitTextBlocks, getEntityIcon, getEntityAction } from
 
 const { width, height } = Dimensions.get('window');
 
-// Simple Entities Strip - Just show the key data
-const EntitiesStrip = ({ entities, onActionPress, colors }) => {
-  if (!entities) return null;
+// Full Text Section with Copy & Share
+const FullTextSection = ({ text, colors }) => {
+  const { t } = useTranslation();
   
-  const allItems = [
-    ...(entities.phones || []).map(item => ({ type: 'phone', value: item, icon: 'call' })),
-    ...(entities.emails || []).map(item => ({ type: 'email', value: item, icon: 'mail' })),
-    ...(entities.urls || []).map(item => ({ type: 'url', value: item, icon: 'globe' })),
-    ...(entities.addresses || []).slice(0, 1).map(item => ({ type: 'address', value: item, icon: 'location' }))
-  ];
-  
-  if (allItems.length === 0) return null;
+  if (!text) return null;
   
   return (
-    <View style={[styles.entitiesStrip, { backgroundColor: colors.surface }]}>
-      <ScrollView horizontal showsHorizontalScrollIndicator={false} contentContainerStyle={styles.entitiesContent}>
-        {allItems.map((item, index) => (
-          <TouchableOpacity
-            key={index}
-            style={[styles.entityButton, { backgroundColor: colors.primary + '10' }]}
-            onPress={() => onActionPress(item.type, item.value)}
+    <View style={[styles.fullTextCard, { backgroundColor: colors.surface }]}>
+      <Text style={[styles.fullTextTitle, { color: colors.text }]}>
+        {t('result.fullText')}
+      </Text>
+      
+      <Text style={[styles.fullTextContent, { color: colors.text }]}>
+        {text}
+      </Text>
+      
+      <View style={styles.fullTextActions}>
+        <TouchableOpacity 
+          style={[styles.textAction, { backgroundColor: colors.primary + '15' }]}
+          onPress={() => {
+            Clipboard.setString(text);
+            Toast.show({
+              type: 'success',
+              text1: t('common.copied'),
+              visibilityTime: 2000,
+            });
+          }}
+        >
+          <Ionicons name="copy-outline" size={16} color={colors.primary} />
+          <Text style={[styles.textActionText, { color: colors.primary }]}>
+            {t('common.copy')}
+          </Text>
+        </TouchableOpacity>
+        
+        <TouchableOpacity 
+          style={[styles.textAction, { backgroundColor: colors.primary + '15' }]}
+          onPress={() => Linking.openURL(`mailto:?body=${encodeURIComponent(text)}`)}
+        >
+          <Ionicons name="share-outline" size={16} color={colors.primary} />
+          <Text style={[styles.textActionText, { color: colors.primary }]}>
+            {t('common.share')}
+          </Text>
+        </TouchableOpacity>
+      </View>
+    </View>
+  );
+};
+
+// Individual Data Cards
+const DataCards = ({ entities, onActionPress, colors }) => {
+  const { t } = useTranslation();
+  
+  if (!entities) return null;
+  
+  const cards = [];
+  
+  // Phone number cards
+  if (entities.phones && entities.phones.length > 0) {
+    entities.phones.forEach((phone, index) => {
+      cards.push(
+        <View key={`phone-${index}`} style={[styles.dataCard, { backgroundColor: colors.surface }]}>
+          <View style={styles.cardHeader}>
+            <Ionicons name="call" size={20} color={colors.primary} />
+            <Text style={[styles.cardTitle, { color: colors.text }]}>
+              {t('result.phoneNumber')}
+            </Text>
+          </View>
+          <Text style={[styles.cardValue, { color: colors.text }]}>
+            {phone}
+          </Text>
+          <TouchableOpacity 
+            style={[styles.cardAction, { backgroundColor: colors.primary }]}
+            onPress={() => onActionPress('phone', phone)}
           >
-            <Ionicons name={item.icon} size={16} color={colors.primary} />
-            <Text style={[styles.entityButtonText, { color: colors.text }]} numberOfLines={1}>
-              {item.value}
+            <Ionicons name="call" size={16} color="white" />
+            <Text style={styles.cardActionText}>
+              {t('result.call')}
             </Text>
           </TouchableOpacity>
-        ))}
-      </ScrollView>
+        </View>
+      );
+    });
+  }
+  
+  // Email cards
+  if (entities.emails && entities.emails.length > 0) {
+    entities.emails.forEach((email, index) => {
+      cards.push(
+        <View key={`email-${index}`} style={[styles.dataCard, { backgroundColor: colors.surface }]}>
+          <View style={styles.cardHeader}>
+            <Ionicons name="mail" size={20} color={colors.primary} />
+            <Text style={[styles.cardTitle, { color: colors.text }]}>
+              {t('result.email')}
+            </Text>
+          </View>
+          <Text style={[styles.cardValue, { color: colors.text }]}>
+            {email}
+          </Text>
+          <TouchableOpacity 
+            style={[styles.cardAction, { backgroundColor: colors.primary }]}
+            onPress={() => onActionPress('email', email)}
+          >
+            <Ionicons name="mail" size={16} color="white" />
+            <Text style={styles.cardActionText}>
+              {t('result.email')}
+            </Text>
+          </TouchableOpacity>
+        </View>
+      );
+    });
+  }
+  
+  // Address cards
+  if (entities.addresses && entities.addresses.length > 0) {
+    entities.addresses.forEach((address, index) => {
+      cards.push(
+        <View key={`address-${index}`} style={[styles.dataCard, { backgroundColor: colors.surface }]}>
+          <View style={styles.cardHeader}>
+            <Ionicons name="location" size={20} color={colors.primary} />
+            <Text style={[styles.cardTitle, { color: colors.text }]}>
+              {t('result.address')}
+            </Text>
+          </View>
+          <Text style={[styles.cardValue, { color: colors.text }]} numberOfLines={3}>
+            {address}
+          </Text>
+          <TouchableOpacity 
+            style={[styles.cardAction, { backgroundColor: colors.primary }]}
+            onPress={() => onActionPress('address', address)}
+          >
+            <Ionicons name="map" size={16} color="white" />
+            <Text style={styles.cardActionText}>
+              {t('result.openInMaps')}
+            </Text>
+          </TouchableOpacity>
+        </View>
+      );
+    });
+  }
+  
+  // URL cards
+  if (entities.urls && entities.urls.length > 0) {
+    entities.urls.forEach((url, index) => {
+      cards.push(
+        <View key={`url-${index}`} style={[styles.dataCard, { backgroundColor: colors.surface }]}>
+          <View style={styles.cardHeader}>
+            <Ionicons name="globe" size={20} color={colors.primary} />
+            <Text style={[styles.cardTitle, { color: colors.text }]}>
+              {t('result.website')}
+            </Text>
+          </View>
+          <Text style={[styles.cardValue, { color: colors.text }]} numberOfLines={2}>
+            {url}
+          </Text>
+          <TouchableOpacity 
+            style={[styles.cardAction, { backgroundColor: colors.primary }]}
+            onPress={() => onActionPress('url', url)}
+          >
+            <Ionicons name="open" size={16} color="white" />
+            <Text style={styles.cardActionText}>
+              {t('common.open')}
+            </Text>
+          </TouchableOpacity>
+        </View>
+      );
+    });
+  }
+  
+  return cards.length > 0 ? <View>{cards}</View> : null;
+};
+
+// Save Note Card (when no specific data found)
+const SaveNoteCard = ({ text, colors }) => {
+  const { t } = useTranslation();
+  
+  return (
+    <View style={[styles.dataCard, { backgroundColor: colors.surface }]}>
+      <View style={styles.cardHeader}>
+        <Ionicons name="document-text" size={20} color={colors.primary} />
+        <Text style={[styles.cardTitle, { color: colors.text }]}>
+          {t('result.note')}
+        </Text>
+      </View>
+      <Text style={[styles.cardValue, { color: colors.text }]} numberOfLines={3}>
+        {text}
+      </Text>
+      <TouchableOpacity 
+        style={[styles.cardAction, { backgroundColor: colors.primary }]}
+        onPress={() => {
+          // Handle save note action
+          console.log('Save note:', text);
+        }}
+      >
+        <Ionicons name="save" size={16} color="white" />
+        <Text style={styles.cardActionText}>
+          {t('result.saveNote')}
+        </Text>
+      </TouchableOpacity>
     </View>
   );
 };
@@ -854,13 +1023,29 @@ export default function ResultScreen() {
             </View>
           )}
           
-          {/* Simple Entities Strip - Shows key extracted data */}
-          {!editing && entities && Object.keys(entities).some(key => entities[key]?.length > 0) && (
-            <EntitiesStrip 
+          {/* Full Text Section */}
+          {!editing && job.fields && job.fields.content && (
+            <FullTextSection 
+              text={job.fields.content}
+              colors={colors}
+            />
+          )}
+          
+          {/* Individual Data Cards */}
+          {!editing && entities && Object.keys(entities).some(key => entities[key]?.length > 0) ? (
+            <DataCards 
               entities={entities}
               onActionPress={handleEntityAction}
               colors={colors}
             />
+          ) : (
+            /* Save Note Card when no specific data found */
+            !editing && job.fields && job.fields.content && (
+              <SaveNoteCard 
+                text={job.fields.content}
+                colors={colors}
+              />
+            )
           )}
 
           {/* Multiple Types Detected Card */}
@@ -1198,29 +1383,86 @@ const styles = StyleSheet.create({
     paddingLeft: 4,
   },
 
-  // Simple Entities Strip Styles
-  entitiesStrip: {
+  // Full Text Card Styles
+  fullTextCard: {
     marginHorizontal: SPACING.medium,
     marginBottom: SPACING.medium,
     borderRadius: BORDER_RADIUS.medium,
-    paddingVertical: SPACING.small,
+    padding: SPACING.medium,
+    shadowColor: '#000',
+    shadowOffset: { width: 0, height: 2 },
+    shadowOpacity: 0.05,
+    shadowRadius: 8,
+    elevation: 2,
   },
-  entitiesContent: {
-    paddingHorizontal: SPACING.medium,
+  fullTextTitle: {
+    fontSize: 16,
+    fontWeight: '600',
+    marginBottom: SPACING.small,
   },
-  entityButton: {
+  fullTextContent: {
+    fontSize: 15,
+    lineHeight: 22,
+    marginBottom: SPACING.medium,
+  },
+  fullTextActions: {
+    flexDirection: 'row',
+    gap: SPACING.small,
+  },
+  textAction: {
     flexDirection: 'row',
     alignItems: 'center',
     paddingHorizontal: SPACING.medium,
     paddingVertical: SPACING.small,
     borderRadius: BORDER_RADIUS.medium,
-    marginRight: SPACING.small,
-    maxWidth: 200,
-  },
-  entityButtonText: {
-    fontSize: 14,
-    marginLeft: SPACING.small,
     flex: 1,
+    justifyContent: 'center',
+  },
+  textActionText: {
+    fontSize: 14,
+    fontWeight: '500',
+    marginLeft: SPACING.small,
+  },
+  
+  // Data Card Styles
+  dataCard: {
+    marginHorizontal: SPACING.medium,
+    marginBottom: SPACING.medium,
+    borderRadius: BORDER_RADIUS.medium,
+    padding: SPACING.medium,
+    shadowColor: '#000',
+    shadowOffset: { width: 0, height: 2 },
+    shadowOpacity: 0.05,
+    shadowRadius: 8,
+    elevation: 2,
+  },
+  cardHeader: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    marginBottom: SPACING.small,
+  },
+  cardTitle: {
+    fontSize: 16,
+    fontWeight: '600',
+    marginLeft: SPACING.small,
+  },
+  cardValue: {
+    fontSize: 15,
+    lineHeight: 20,
+    marginBottom: SPACING.medium,
+  },
+  cardAction: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    justifyContent: 'center',
+    paddingVertical: SPACING.small,
+    borderRadius: BORDER_RADIUS.medium,
+  },
+  cardActionText: {
+    fontSize: 14,
+    fontWeight: '600',
+    color: 'white',
+    marginLeft: SPACING.small,
   },
   
   // Action Button
