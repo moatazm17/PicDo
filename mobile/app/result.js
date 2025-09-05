@@ -1108,6 +1108,28 @@ export default function ResultScreen() {
               </View>
             </View>
           )}
+          
+          {/* Full Text Component - Shows all OCR text with highlighted entities */}
+          {!editing && job.fields && job.fields.content && (
+            <FullTextWithSections 
+              text={job.fields.content}
+              entities={entities || {}}
+              onActionPress={handleEntityAction}
+              colors={colors}
+              isRTL={isRTL}
+            />
+          )}
+          
+          {/* Smart Sections - Shows organized entities */}
+          {!editing && entities && Object.keys(entities).some(key => entities[key]?.length > 0) && (
+            <SmartSections 
+              entities={entities}
+              fields={fields}
+              onActionPress={handleEntityAction}
+              colors={colors}
+              isRTL={isRTL}
+            />
+          )}
 
           {/* Multiple Types Detected Card */}
           {job.detectedTypes && job.detectedTypes.length > 1 && !editing && (
