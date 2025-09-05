@@ -96,7 +96,9 @@ const DataCards = ({ entities, onActionPress, colors }) => {
       cards.push(
         <View key={`phone-${index}`} style={[styles.dataCard, { backgroundColor: colors.surface }]}>
           <View style={styles.cardHeader}>
-            <Ionicons name="call" size={20} color={colors.primary} />
+            <View style={[styles.cardIconContainer, { backgroundColor: '#4CAF50' + '20' }]}>
+              <Ionicons name="call" size={22} color="#4CAF50" />
+            </View>
             <Text style={[styles.cardTitle, { color: colors.text }]}>
               {t('result.phoneNumber')}
             </Text>
@@ -105,10 +107,11 @@ const DataCards = ({ entities, onActionPress, colors }) => {
             {phone}
           </Text>
           <TouchableOpacity 
-            style={[styles.cardAction, { backgroundColor: colors.primary }]}
+            style={[styles.cardAction, { backgroundColor: '#4CAF50' }]}
             onPress={() => onActionPress('phone', phone)}
+            activeOpacity={0.8}
           >
-            <Ionicons name="call" size={16} color="white" />
+            <Ionicons name="call" size={18} color="white" />
             <Text style={styles.cardActionText}>
               {t('result.call')}
             </Text>
@@ -124,7 +127,9 @@ const DataCards = ({ entities, onActionPress, colors }) => {
       cards.push(
         <View key={`email-${index}`} style={[styles.dataCard, { backgroundColor: colors.surface }]}>
           <View style={styles.cardHeader}>
-            <Ionicons name="mail" size={20} color={colors.primary} />
+            <View style={[styles.cardIconContainer, { backgroundColor: '#2196F3' + '20' }]}>
+              <Ionicons name="mail" size={22} color="#2196F3" />
+            </View>
             <Text style={[styles.cardTitle, { color: colors.text }]}>
               {t('result.email')}
             </Text>
@@ -133,10 +138,11 @@ const DataCards = ({ entities, onActionPress, colors }) => {
             {email}
           </Text>
           <TouchableOpacity 
-            style={[styles.cardAction, { backgroundColor: colors.primary }]}
+            style={[styles.cardAction, { backgroundColor: '#2196F3' }]}
             onPress={() => onActionPress('email', email)}
+            activeOpacity={0.8}
           >
-            <Ionicons name="mail" size={16} color="white" />
+            <Ionicons name="mail" size={18} color="white" />
             <Text style={styles.cardActionText}>
               {t('result.email')}
             </Text>
@@ -152,7 +158,9 @@ const DataCards = ({ entities, onActionPress, colors }) => {
       cards.push(
         <View key={`address-${index}`} style={[styles.dataCard, { backgroundColor: colors.surface }]}>
           <View style={styles.cardHeader}>
-            <Ionicons name="location" size={20} color={colors.primary} />
+            <View style={[styles.cardIconContainer, { backgroundColor: '#FF9800' + '20' }]}>
+              <Ionicons name="location" size={22} color="#FF9800" />
+            </View>
             <Text style={[styles.cardTitle, { color: colors.text }]}>
               {t('result.address')}
             </Text>
@@ -161,10 +169,11 @@ const DataCards = ({ entities, onActionPress, colors }) => {
             {address}
           </Text>
           <TouchableOpacity 
-            style={[styles.cardAction, { backgroundColor: colors.primary }]}
+            style={[styles.cardAction, { backgroundColor: '#FF9800' }]}
             onPress={() => onActionPress('address', address)}
+            activeOpacity={0.8}
           >
-            <Ionicons name="map" size={16} color="white" />
+            <Ionicons name="map" size={18} color="white" />
             <Text style={styles.cardActionText}>
               {t('result.openInMaps')}
             </Text>
@@ -180,7 +189,9 @@ const DataCards = ({ entities, onActionPress, colors }) => {
       cards.push(
         <View key={`url-${index}`} style={[styles.dataCard, { backgroundColor: colors.surface }]}>
           <View style={styles.cardHeader}>
-            <Ionicons name="globe" size={20} color={colors.primary} />
+            <View style={[styles.cardIconContainer, { backgroundColor: '#9C27B0' + '20' }]}>
+              <Ionicons name="globe" size={22} color="#9C27B0" />
+            </View>
             <Text style={[styles.cardTitle, { color: colors.text }]}>
               {t('result.website')}
             </Text>
@@ -189,10 +200,11 @@ const DataCards = ({ entities, onActionPress, colors }) => {
             {url}
           </Text>
           <TouchableOpacity 
-            style={[styles.cardAction, { backgroundColor: colors.primary }]}
+            style={[styles.cardAction, { backgroundColor: '#9C27B0' }]}
             onPress={() => onActionPress('url', url)}
+            activeOpacity={0.8}
           >
-            <Ionicons name="open" size={16} color="white" />
+            <Ionicons name="open" size={18} color="white" />
             <Text style={styles.cardActionText}>
               {t('common.open')}
             </Text>
@@ -212,7 +224,9 @@ const SaveNoteCard = ({ text, colors }) => {
   return (
     <View style={[styles.dataCard, { backgroundColor: colors.surface }]}>
       <View style={styles.cardHeader}>
-        <Ionicons name="document-text" size={20} color={colors.primary} />
+        <View style={[styles.cardIconContainer, { backgroundColor: '#607D8B' + '20' }]}>
+          <Ionicons name="document-text" size={22} color="#607D8B" />
+        </View>
         <Text style={[styles.cardTitle, { color: colors.text }]}>
           {t('result.note')}
         </Text>
@@ -221,13 +235,14 @@ const SaveNoteCard = ({ text, colors }) => {
         {text}
       </Text>
       <TouchableOpacity 
-        style={[styles.cardAction, { backgroundColor: colors.primary }]}
+        style={[styles.cardAction, { backgroundColor: '#607D8B' }]}
         onPress={() => {
           // Handle save note action
           console.log('Save note:', text);
         }}
+        activeOpacity={0.8}
       >
-        <Ionicons name="save" size={16} color="white" />
+        <Ionicons name="save" size={18} color="white" />
         <Text style={styles.cardActionText}>
           {t('result.saveNote')}
         </Text>
@@ -1424,43 +1439,56 @@ const styles = StyleSheet.create({
     marginLeft: SPACING.small,
   },
   
-  // Data Card Styles
+  // Data Card Styles - Modern Design
   dataCard: {
     marginHorizontal: SPACING.medium,
     marginBottom: SPACING.medium,
-    borderRadius: BORDER_RADIUS.medium,
-    padding: SPACING.medium,
+    borderRadius: 16,
+    padding: 0,
     shadowColor: '#000',
-    shadowOffset: { width: 0, height: 2 },
-    shadowOpacity: 0.05,
-    shadowRadius: 8,
-    elevation: 2,
+    shadowOffset: { width: 0, height: 4 },
+    shadowOpacity: 0.1,
+    shadowRadius: 12,
+    elevation: 5,
+    overflow: 'hidden',
   },
   cardHeader: {
     flexDirection: 'row',
     alignItems: 'center',
-    marginBottom: SPACING.small,
+    paddingHorizontal: SPACING.medium,
+    paddingTop: SPACING.medium,
+    paddingBottom: SPACING.small,
+  },
+  cardIconContainer: {
+    width: 40,
+    height: 40,
+    borderRadius: 20,
+    alignItems: 'center',
+    justifyContent: 'center',
+    marginRight: SPACING.small,
   },
   cardTitle: {
     fontSize: 16,
-    fontWeight: '600',
-    marginLeft: SPACING.small,
+    fontWeight: '700',
+    flex: 1,
   },
   cardValue: {
-    fontSize: 15,
-    lineHeight: 20,
-    marginBottom: SPACING.medium,
+    fontSize: 16,
+    lineHeight: 22,
+    fontWeight: '500',
+    paddingHorizontal: SPACING.medium,
+    paddingBottom: SPACING.medium,
   },
   cardAction: {
     flexDirection: 'row',
     alignItems: 'center',
     justifyContent: 'center',
-    paddingVertical: SPACING.small,
-    borderRadius: BORDER_RADIUS.medium,
+    paddingVertical: 16,
+    marginTop: 8,
   },
   cardActionText: {
-    fontSize: 14,
-    fontWeight: '600',
+    fontSize: 16,
+    fontWeight: '700',
     color: 'white',
     marginLeft: SPACING.small,
   },
