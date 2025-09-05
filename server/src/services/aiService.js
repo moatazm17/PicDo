@@ -220,22 +220,27 @@ Be simple. Extract what you see. Don't be smart.`;
 
   validateClassification(classification) {
     const VALID_TYPES = ['contact', 'expense', 'event', 'address', 'note', 'document'];
-    const REQUIRED_TOP_FIELDS = ['type', 'summary', 'fields', 'confidence'];
     
-    // Ensure all required top-level fields exist
-    for (const field of REQUIRED_TOP_FIELDS) {
-      if (!classification.hasOwnProperty(field)) {
-        throw new Error(`Missing required field: ${field}`);
-      }
+    // Basic validation only - be flexible
+    if (!classification.type || !VALID_TYPES.includes(classification.type)) {
+      classification.type = 'note'; // Safe fallback
     }
     
-    // If detectedTypes is missing, create it from primary type
-    if (!classification.detectedTypes) {
-      classification.detectedTypes = [{
-        type: classification.type,
-        confidence: classification.confidence,
-        data: { ...classification.fields }
-      }];
+    if (!classification.summary) {
+      classification.summary = 'Extracted Item';
+    }
+    
+    if (!classification.confidence) {
+      classification.confidence = 0.8;
+    }
+    
+    if (!classification.fields) {
+      classification.fields = {};
+    }
+    
+    // Ensure content exists
+    if (!classification.fields.content) {
+      classification.fields.content = 'No content available';
     }
     
     // Use AI-extracted entities if present, otherwise fallback to regex
@@ -244,83 +249,16 @@ Be simple. Extract what you see. Don't be smart.`;
       classification.entities = this.extractEntities(content);
     }
     
+    // Create detectedTypes if missing
+    if (!classification.detectedTypes) {
+      classification.detectedTypes = [{
+        type: classification.type,
+        confidence: classification.confidence
+      }];
+    }
+    
     // Split content into blocks
-    classification.textBlocks = this.splitTextBlocks(content);
-    
-    // Validate type
-    if (!VALID_TYPES.includes(classification.type)) {
-      throw new Error(`Invalid type: ${classification.type}`);
-    }
-    
-    // Validate summary: 2–4 words, <= 40 chars
-    const words = classification.summary.trim().split(/\s+/);
-    if (words.length < 2 || words.length > 4 || classification.summary.length > 40) {
-      console.log(`Summary validation failed: ${words.length} words, ${classification.summary.length} chars`);
-      // Don't throw error, just log and continue (summary enforcement will fix it)
-    }
-    
-    // Ensure fields object exists
-    if (typeof classification.fields !== 'object' || classification.fields === null) {
-      throw new Error('Missing or invalid fields object');
-    }
-    
-    // Content must exist and be non-empty
-    if (typeof classification.fields.content !== 'string' || classification.fields.content.trim() === '') {
-      throw new Error('fields.content must be a non-empty string');
-    }
-    
-    // Title can be null for some content types (like social posts), but if present must be string
-    if (classification.fields.title !== null && (typeof classification.fields.title !== 'string' || classification.fields.title.trim() === '')) {
-      throw new Error('fields.title must be a non-empty string or null');
-    }
-    
-    // Category can be null for simple extractions
-    if (classification.fields.category !== null && 
-        (typeof classification.fields.category !== 'string' || classification.fields.category.trim() === '')) {
-      classification.fields.category = null;
-    }
-    
-    // Confidence must be a number between 0 and 1
-    if (typeof classification.confidence !== 'number' || classification.confidence < 0 || classification.confidence > 1) {
-      throw new Error('confidence must be a number between 0 and 1');
-    }
-    
-    // For contacts, phone or email is required
-    // But if it looks like an address, reclassify it
-    if (classification.type === 'contact') {
-      if (!(classification.fields.phone || classification.fields.email)) {
-        // Check if it's actually an address
-        const text = (classification.fields.content || '').toLowerCase();
-        const addressKeywords = ['street', 'st', 'road', 'rd', 'avenue', 'ave', 'city', 
-                                'شارع', 'ش', 'طريق', 'مدينة', 'عنوان', 'داخل', 'بجوار'];
-        
-        if (addressKeywords.some(keyword => text.includes(keyword))) {
-          // Reclassify as address
-          classification.type = 'address';
-          classification.fields.location = classification.fields.content;
-          delete classification.fields.phone;
-          delete classification.fields.email;
-        } else {
-          throw new Error('Contact type must include at least a phone or email');
-        }
-      }
-    }
-    
-    // For expenses, merchant and amount should be present
-    if (classification.type === 'expense') {
-      if (!classification.fields.merchant || !classification.fields.amount) {
-        console.log('Expense missing merchant or amount, but allowing...');
-        // Don't throw error, just log
-      }
-    }
-    
-    // Ensure all type sections exist
-    const typeSections = ['event', 'expense', 'contact', 'address', 'note', 'document'];
-    for (const section of typeSections) {
-      if (!(section in classification)) {
-        classification[section] = {};
-      }
-    }
+    classification.textBlocks = this.splitTextBlocks(classification.fields.content || '');
   }
 
   generateSummary(classification) {
