@@ -239,6 +239,9 @@ Rules:
         }));
       }
       
+      // Map unsupported/alias types (e.g., 'business' → contact/note) before validation
+      classification = this.mapAliasTypes(classification);
+      
       // Validate the response structure
       this.validateClassification(classification);
       
@@ -272,6 +275,44 @@ Rules:
         confidence: 0.1
       };
     }
+  }
+
+  /**
+   * Map alias or unsupported types to our canonical set
+   * - 'business' → 'contact' if any phone/email/address present or isBusinessDocument, otherwise 'note'
+   * - Unknown types → 'note'
+   */
+  mapAliasTypes(classification) {
+    if (!classification || !classification.type) return classification;
+
+    const type = String(classification.type).toLowerCase();
+    const VALID_TYPES = new Set(['contact', 'expense', 'event', 'address', 'note', 'document']);
+
+    if (type === 'business') {
+      const hasPhone = Boolean(classification?.fields?.phone) || (classification?.entities?.phones?.length > 0);
+      const hasEmail = Boolean(classification?.fields?.email) || (classification?.entities?.emails?.length > 0);
+      const hasAddr  = (classification?.entities?.addresses?.length > 0);
+      const isBizDoc = Boolean(classification?.businessContext?.isBusinessDocument);
+
+      classification.type = (hasPhone || hasEmail || hasAddr || isBizDoc) ? 'contact' : 'note';
+      // Preserve the idea that this was a business doc
+      if (!classification.fields) classification.fields = {};
+      if (!classification.fields.category) classification.fields.category = 'business';
+
+      // Normalize detectedTypes entries
+      if (Array.isArray(classification.detectedTypes)) {
+        classification.detectedTypes = classification.detectedTypes.map(dt => ({
+          ...dt,
+          type: String(dt?.type || '').toLowerCase() === 'business' ? 'contact' : String(dt?.type || '').toLowerCase()
+        }));
+      }
+      return classification;
+    }
+
+    if (!VALID_TYPES.has(type)) {
+      classification.type = 'note';
+    }
+    return classification;
   }
 
   getSystemPrompt(uiLang) {
