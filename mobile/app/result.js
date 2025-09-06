@@ -96,6 +96,15 @@ const DataCards = ({ entities, onActionPress, colors }) => {
   
   if (!entities) return null;
   
+  try {
+    console.log('[UI] DataCards entities snapshot:', {
+      phones: entities.phones,
+      emails: entities.emails,
+      urls: entities.urls,
+      addresses: entities.addresses
+    });
+  } catch (_) {}
+
   const cards = [];
   
   // Phone number cards - simple
