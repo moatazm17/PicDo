@@ -481,6 +481,13 @@ async function processJobAsync(job, imageBuffer, wantThumb, uiLang) {
 
     console.log(`Job ${job.jobId}: Final phones:`, JSON.stringify(job.entities.phones));
 
+    // Post-process addresses to remove ads/mega-lines/superstrings
+    const beforeAddresses = job.entities.addresses || [];
+    console.log(`Job ${job.jobId}: Addresses before filter:`, JSON.stringify(beforeAddresses));
+    const filteredAddresses = filterAddresses(beforeAddresses);
+    job.entities.addresses = filteredAddresses;
+    console.log(`Job ${job.jobId}: Addresses after filter:`, JSON.stringify(job.entities.addresses));
+
 
     // Split text into blocks if not already done
     job.textBlocks = classification.textBlocks || 
@@ -525,6 +532,44 @@ async function processJobAsync(job, imageBuffer, wantThumb, uiLang) {
     console.log(`Job ${job.jobId}: Status updated to failed: ${errorMessage}`);
     await job.save();
   }
+}
+
+// Lightweight address post-processing to suppress ads/mega-lines and superstrings
+function filterAddresses(addressList) {
+  const normalizeSpaces = (s) => (s || '').replace(/\s+/g, ' ').trim();
+  const countHyphens = (s) => ((s || '').match(/[\-–—]/g) || []).length;
+  const isPromoParagraph = (s) => {
+    if (!s) return false;
+    const punctuationCount = (s.match(/[،,؛;:\.!؟?]/g) || []).length;
+    return s.length > 120 && punctuationCount >= 2;
+  };
+  const hasLocationTokens = (s) => {
+    if (!s) return false;
+    const tokens = [
+      'شارع','طريق','حي','منطقة','مدينة','محافظة','مقابل','بجوار',
+      'Rd','Road','St','Street','Ave','Avenue','Blvd','District','City'
+    ];
+    const lower = s.toLowerCase();
+    return tokens.some(t => s.includes(t) || lower.includes(t.toLowerCase()));
+  };
+
+  let arr = Array.from(new Set((addressList || []).map(normalizeSpaces).filter(Boolean)));
+
+  // Drop ad-like paragraphs
+  arr = arr.filter(a => !isPromoParagraph(a));
+
+  // Drop mega-lines with many hyphen-like separators
+  arr = arr.filter(a => countHyphens(a) < 3);
+
+  // Drop superstrings that contain other shorter accepted addresses
+  arr = arr.filter((a, i) => {
+    return !arr.some((b, j) => j !== i && a !== b && a.includes(b) && b.length >= 10);
+  });
+
+  // Suppress very long lines without clear location tokens
+  arr = arr.filter(a => !(a.length > 80 && !hasLocationTokens(a)));
+
+  return arr;
 }
 
 function extractFieldsByType(classification) {
