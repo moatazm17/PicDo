@@ -90,6 +90,77 @@ const FullTextSection = ({ text, colors }) => {
   );
 };
 
+// Extract quick highlights (amount, date, time) from free text notes
+const extractNoteHighlights = (text) => {
+  if (!text) return {};
+  const highlights = {};
+
+  try {
+    // Amount: prefer patterns near amount keywords, fallback to first currency-like number
+    const amountKeywordRegex = /(amount|total|paid|due|مبلغ|الإجمالي|المجموع)\s*[:\-]?[\s\n]*([\d.,]+)/i;
+    const amountNear = text.match(amountKeywordRegex);
+    if (amountNear && amountNear[2]) {
+      highlights.amount = amountNear[2];
+    } else {
+      const amountRegex = /\b\d{1,3}(?:[\s,]\d{3})*(?:[.,]\d+)?\b/;
+      const amountAny = text.match(amountRegex);
+      if (amountAny) highlights.amount = amountAny[0];
+    }
+
+    // Time: 12h or 24h formats (e.g., 1:01 PM, 13:05)
+    const timeRegex = /\b(\d{1,2}:\d{2}\s?(?:AM|PM)?)\b/i;
+    const timeMatch = text.match(timeRegex);
+    if (timeMatch) highlights.time = timeMatch[1];
+
+    // Date: Month name + day OR dd/mm(/yyyy) OR weekday + month + day
+    const monthNames = '(Jan|Feb|Mar|Apr|May|Jun|Jul|Aug|Sep|Oct|Nov|Dec)';
+    const dateWordRegex = new RegExp(`\\b(?:Sun|Mon|Tue|Wed|Thu|Fri|Sat)?[, ]*${monthNames}\\s+\\d{1,2}(?:,\\s*\\d{2,4})?\\b`, 'i');
+    const dateSlashRegex = /\b\d{1,2}[\/\-]\d{1,2}(?:[\/\-]\d{2,4})?\b/;
+    const dateWord = text.match(dateWordRegex);
+    const dateSlash = text.match(dateSlashRegex);
+    if (dateWord) highlights.date = dateWord[0];
+    else if (dateSlash) highlights.date = dateSlash[0];
+  } catch (_) {}
+
+  return highlights;
+};
+
+// Note Highlights Card
+const NoteHighlights = ({ content, colors }) => {
+  const { t } = useTranslation();
+  const { amount, date, time } = extractNoteHighlights(content || '');
+  const hasAny = amount || date || time;
+  if (!hasAny) return null;
+
+  return (
+    <View style={[styles.dataCard, { backgroundColor: colors.surface }]}>
+      <View style={styles.cardHeader}>
+        <View style={[styles.cardIconContainer, { backgroundColor: '#607D8B' + '20' }]}>
+          <Ionicons name="flash" size={22} color="#607D8B" />
+        </View>
+        <Text style={[styles.cardTitle, { color: colors.text }]}>
+          {t('result.note')}
+        </Text>
+      </View>
+      {amount && (
+        <Text style={[styles.cardValue, { color: colors.text }]}>
+          {t('fields.amount')}: {amount}
+        </Text>
+      )}
+      {date && (
+        <Text style={[styles.cardValue, { color: colors.text }]}>
+          {t('fields.date')}: {date}
+        </Text>
+      )}
+      {time && (
+        <Text style={[styles.cardValue, { color: colors.text }]}>
+          {t('fields.time')}: {time}
+        </Text>
+      )}
+    </View>
+  );
+};
+
 // Individual Data Cards
 const DataCards = ({ entities, onActionPress, colors }) => {
   const { t } = useTranslation();
@@ -871,6 +942,11 @@ export default function ResultScreen() {
               text={job.fields?.content || job.ocrText}
               colors={colors}
             />
+          )}
+
+          {/* Note Highlights (for type note) */}
+          {!editing && job?.type === 'note' && (
+            <NoteHighlights content={job.fields?.content} colors={colors} />
           )}
           
           {/* Individual Data Cards */}
