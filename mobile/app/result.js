@@ -90,46 +90,16 @@ const FullTextSection = ({ text, colors }) => {
   );
 };
 
-// Extract quick highlights (amount, date, time) from free text notes
-const extractNoteHighlights = (text) => {
-  if (!text) return {};
-  const highlights = {};
-
-  try {
-    // Amount: prefer patterns near amount keywords, fallback to first currency-like number
-    const amountKeywordRegex = /(amount|total|paid|due|مبلغ|الإجمالي|المجموع)\s*[:\-]?[\s\n]*([\d.,]+)/i;
-    const amountNear = text.match(amountKeywordRegex);
-    if (amountNear && amountNear[2]) {
-      highlights.amount = amountNear[2];
-    } else {
-      const amountRegex = /\b\d{1,3}(?:[\s,]\d{3})*(?:[.,]\d+)?\b/;
-      const amountAny = text.match(amountRegex);
-      if (amountAny) highlights.amount = amountAny[0];
-    }
-
-    // Time: 12h or 24h formats (e.g., 1:01 PM, 13:05)
-    const timeRegex = /\b(\d{1,2}:\d{2}\s?(?:AM|PM)?)\b/i;
-    const timeMatch = text.match(timeRegex);
-    if (timeMatch) highlights.time = timeMatch[1];
-
-    // Date: Month name + day OR dd/mm(/yyyy) OR weekday + month + day
-    const monthNames = '(Jan|Feb|Mar|Apr|May|Jun|Jul|Aug|Sep|Oct|Nov|Dec)';
-    const dateWordRegex = new RegExp(`\\b(?:Sun|Mon|Tue|Wed|Thu|Fri|Sat)?[, ]*${monthNames}\\s+\\d{1,2}(?:,\\s*\\d{2,4})?\\b`, 'i');
-    const dateSlashRegex = /\b\d{1,2}[\/\-]\d{1,2}(?:[\/\-]\d{2,4})?\b/;
-    const dateWord = text.match(dateWordRegex);
-    const dateSlash = text.match(dateSlashRegex);
-    if (dateWord) highlights.date = dateWord[0];
-    else if (dateSlash) highlights.date = dateSlash[0];
-  } catch (_) {}
-
-  return highlights;
-};
-
-// Note Highlights Card
-const NoteHighlights = ({ content, colors }) => {
+// Note Highlights Card - uses server-extracted entities
+const NoteHighlights = ({ entities, fields, colors }) => {
   const { t } = useTranslation();
-  const { amount, date, time } = extractNoteHighlights(content || '');
-  const hasAny = amount || date || time;
+  
+  // Use AI-extracted data from server instead of hardcoded patterns
+  const amounts = entities?.amounts || [];
+  const dates = entities?.dates || [];
+  const merchant = fields?.merchant || fields?.name || null;
+  
+  const hasAny = amounts.length > 0 || dates.length > 0 || merchant;
   if (!hasAny) return null;
 
   return (
@@ -139,22 +109,22 @@ const NoteHighlights = ({ content, colors }) => {
           <Ionicons name="flash" size={22} color="#607D8B" />
         </View>
         <Text style={[styles.cardTitle, { color: colors.text }]}>
-          {t('result.note')}
+          Highlights
         </Text>
       </View>
-      {amount && (
+      {merchant && (
         <Text style={[styles.cardValue, { color: colors.text }]}>
-          {t('fields.amount')}: {amount}
+          {t('fields.merchant')}: {merchant}
         </Text>
       )}
-      {date && (
+      {amounts.length > 0 && (
         <Text style={[styles.cardValue, { color: colors.text }]}>
-          {t('fields.date')}: {date}
+          {t('fields.amount')}: {amounts[0]}
         </Text>
       )}
-      {time && (
+      {dates.length > 0 && (
         <Text style={[styles.cardValue, { color: colors.text }]}>
-          {t('fields.time')}: {time}
+          {t('fields.date')}: {dates[0]}
         </Text>
       )}
     </View>
@@ -944,9 +914,13 @@ export default function ResultScreen() {
             />
           )}
 
-          {/* Note Highlights (for type note) */}
-          {!editing && job?.type === 'note' && (
-            <NoteHighlights content={job.fields?.content} colors={colors} />
+          {/* Note Highlights (for receipts/notes with structured data) */}
+          {!editing && (job?.type === 'note' || job?.type === 'expense') && (
+            <NoteHighlights 
+              entities={entities} 
+              fields={job.fields} 
+              colors={colors} 
+            />
           )}
           
           {/* Individual Data Cards */}
