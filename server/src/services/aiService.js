@@ -156,7 +156,10 @@ TYPES: contact, expense, event, address, note, document
 
 RULES:
 - Extract phone numbers, emails, URLs, addresses exactly as they appear
-- For receipts: merchant = business name (not customer name), amount = total shown
+- For receipts/notes: extract merchant, amount, date if visible
+- For amounts: look for currency numbers (e.g., 43.83, 10823.44)
+- For dates: extract any date format (Aug 24, Wed Nov 201, 2024-01-15)
+- For merchants: extract business/bank names (Uber, BanK-AlAhly, etc.)
 - For addresses: each line with location info = separate address
 - Don't mix data from different lines
 - Don't invent or rewrite anything
@@ -170,7 +173,9 @@ JSON OUTPUT:
     "phones": ["exact_phone_numbers"],
     "emails": ["exact_emails"], 
     "urls": ["exact_urls"],
-    "addresses": ["each_address_line_separately"]
+    "addresses": ["each_address_line_separately"],
+    "amounts": ["currency_numbers_found"],
+    "dates": ["dates_found"]
   },
   "fields": {
     "title": "exact_title_or_null",
