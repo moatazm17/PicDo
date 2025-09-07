@@ -479,6 +479,15 @@ async function processJobAsync(job, imageBuffer, wantThumb, uiLang) {
       businessInfo: job.entities?.businessInfo || {}
     };
 
+    // Populate entities from fields data if AI didn't extract them
+    const extractedFields = extractFieldsByType(classification);
+    if (extractedFields.amount && !job.entities.amounts.length) {
+      job.entities.amounts = [extractedFields.amount];
+    }
+    if (extractedFields.date && !job.entities.dates.length) {
+      job.entities.dates = [extractedFields.date];
+    }
+
     console.log(`Job ${job.jobId}: Final phones:`, JSON.stringify(job.entities.phones));
 
     // Post-process addresses to remove ads/mega-lines/superstrings
