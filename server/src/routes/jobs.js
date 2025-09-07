@@ -488,6 +488,12 @@ async function processJobAsync(job, imageBuffer, wantThumb, uiLang) {
     job.entities.addresses = filteredAddresses;
     console.log(`Job ${job.jobId}: Addresses after filter:`, JSON.stringify(job.entities.addresses));
 
+    // Post-process URLs to remove generic/invalid
+    const beforeUrls = job.entities.urls || [];
+    console.log(`Job ${job.jobId}: URLs before filter:`, JSON.stringify(beforeUrls));
+    job.entities.urls = filterUrls(beforeUrls);
+    console.log(`Job ${job.jobId}: URLs after filter:`, JSON.stringify(job.entities.urls));
+
 
     // Split text into blocks if not already done
     job.textBlocks = classification.textBlocks || 
@@ -566,9 +572,35 @@ function filterAddresses(addressList) {
     return !arr.some((b, j) => j !== i && a !== b && a.includes(b) && b.length >= 10);
   });
 
-  // Suppress very long lines without clear location tokens
-  arr = arr.filter(a => !(a.length > 80 && !hasLocationTokens(a)));
+  // Require location tokens (drop vague lines like "مكتب 71")
+  arr = arr.filter(a => hasLocationTokens(a));
 
+  return arr;
+}
+
+// Lightweight URL post-processing to remove generic/invalid URLs
+function filterUrls(urlList) {
+  const normalize = (s) => (s || '').trim().replace(/[\u200E\u200F]/g, '');
+  const stripTrailingPunct = (s) => s.replace(/[\.,؛;:!؟?]+$/g, '');
+  const isLikelyUrl = (s) => {
+    if (!s) return false;
+    const val = s.toLowerCase();
+    // email-like tokens should not be in URLs list
+    if (/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(val)) return false;
+    // Must contain a dot and a valid domain pattern
+    const domainRegex = /^(https?:\/\/)?([a-z0-9-]+\.)+[a-z]{2,}(\/[^\s]*)?$/i;
+    return domainRegex.test(val);
+  };
+  const isGeneric = (s) => {
+    const v = s.toLowerCase().replace(/^https?:\/\//, '').replace(/^www\./, '');
+    return v === 'google.com' || v === 'facebook.com' || v === 'instagram.com' || v === 'tiktok.com' || v === 'youtube.com';
+  };
+
+  let arr = Array.from(new Set((urlList || []).map(u => stripTrailingPunct(normalize(u))).filter(Boolean)));
+  // Keep only likely URLs
+  arr = arr.filter(isLikelyUrl);
+  // Drop generic hubs
+  arr = arr.filter(u => !isGeneric(u));
   return arr;
 }
 
